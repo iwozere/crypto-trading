@@ -135,46 +135,6 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
                 
         return supertrend
 
-    def load_all_data(self):
-        """Load all data files once during initialization"""
-        data_files = [f for f in os.listdir(self.data_dir) if f.endswith('.csv')]
-        for data_file in data_files:
-            try:
-                df = pd.read_csv(os.path.join(self.data_dir, data_file))
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
-                df.set_index('timestamp', inplace=True)
-                required_columns = ['open', 'high', 'low', 'close', 'volume']
-                for col in required_columns:
-                    if col not in df.columns:
-                        raise ValueError(f"Missing required column: {col} in {data_file}")
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
-                
-                if df.isnull().values.any():
-                    print(f"Warning: NaN values found in {data_file}. Forward-filling and back-filling.")
-                    df.ffill(inplace=True)
-                    df.bfill(inplace=True)
-                
-                if df.isnull().values.any():
-                    print(f"Error: NaN values persist in {data_file} after fill. Skipping.")
-                    continue
-
-                self.raw_data[data_file] = df
-                print(f"Loaded data for {data_file}, shape: {df.shape}, date range: {df.index.min()} to {df.index.max()}")
-            except Exception as e:
-                print(f"Error loading {data_file}: {str(e)}")
-    
-    def params_to_dict(self, params):
-        param_names = [p.name for p in self.space]
-        param_dict = dict(zip(param_names, params))
-        
-        typed_param_dict = {}
-        for name, value in param_dict.items():
-            if name in ['rsi_period', 'st_period', 'vol_ma_period', 'atr_period', 'time_based_exit_period']:
-                typed_param_dict[name] = int(value)
-            else:
-                typed_param_dict[name] = float(value)
-        return typed_param_dict
-    
     def run_backtest(self, data, params):
         """Run backtest with given parameters"""
         cerebro = bt.Cerebro()

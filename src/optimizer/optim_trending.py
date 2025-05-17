@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import talib as ta
 from src.strats.CryptoTrendingStrategy import CryptoTrendStrategy
+import warnings
 
 class TrendOptimizer:
     def __init__(self):
@@ -44,6 +45,7 @@ class TrendOptimizer:
         # Initialize data storage
         self.raw_data = {}
         self.load_all_data()
+        warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
         
     def load_all_data(self):
         """Load all data files once during initialization"""

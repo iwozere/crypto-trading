@@ -50,58 +50,6 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
         warnings.filterwarnings('ignore', category=RuntimeWarning)
     
-    def load_all_data(self):
-        """Load all data files once during initialization"""
-        data_files = [f for f in os.listdir(self.data_dir) if f.endswith('.csv')]
-        for data_file in data_files:
-            try:
-                df = pd.read_csv(os.path.join(self.data_dir, data_file))
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
-                df.set_index('timestamp', inplace=True)
-                required_columns = ['open', 'high', 'low', 'close', 'volume']
-                for col in required_columns:
-                    if col not in df.columns:
-                        if col == 'volume':
-                            self.log_message(f"Warning: 'volume' column missing in {data_file}. Creating dummy 'volume' column with zeros.")
-                            df['volume'] = 0 
-                        else:
-                            raise ValueError(f"Missing required column: {col} in {data_file}")
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
-                
-                df.sort_index(inplace=True) 
-                if df.isnull().any().any():
-                    self.log_message(f"Warning: NaN values found in {data_file} after loading. Forward-filling and back-filling.")
-                    df.ffill(inplace=True)
-                    df.bfill(inplace=True)
-                
-                if df.isnull().any().any():
-                    self.log_message(f"Error: NaN values persist in {data_file} after fill. Skipping.")
-                    continue
-
-                self.raw_data[data_file] = df
-                self.log_message(f"Loaded data for {data_file}, shape: {df.shape}, date range: {df.index.min()} to {df.index.max()}")
-            except Exception as e:
-                self.log_message(f"Error loading {data_file}: {str(e)}")
-    
-    def log_message(self, message):
-        print(f"[{datetime.now().isoformat()}] {message}")
-    
-    def params_to_dict(self, params):
-        param_names = [p.name for p in self.space]
-        param_dict = dict(zip(param_names, params))
-        
-        typed_param_dict = {}
-        for name, value in param_dict.items():
-            if name in ['bb_period', 'rsi_period', 'atr_period']:
-                typed_param_dict[name] = int(value)
-            elif name == 'check_rsi_slope':
-                typed_param_dict[name] = bool(int(value))
-            elif name in ['bb_devfactor', 'rsi_oversold', 'rsi_overbought', 'rsi_mid_level', 'tp_atr_mult', 'sl_atr_mult']:
-                typed_param_dict[name] = float(value)
-            else:
-                 typed_param_dict[name] = value 
-        return typed_param_dict
-    
     def run_backtest(self, data, params):
         cerebro = bt.Cerebro()
         if not isinstance(data.index, pd.DatetimeIndex):

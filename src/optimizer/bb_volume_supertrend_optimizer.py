@@ -38,7 +38,6 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         self.current_data = None
         self.current_symbol = None
         self.raw_data = {}
-        self.load_all_data()
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
         warnings.filterwarnings('ignore', category=RuntimeWarning)
     

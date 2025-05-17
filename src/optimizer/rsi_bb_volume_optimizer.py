@@ -50,53 +50,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         # Initialize data storage
         self.raw_data = {}
         self.load_all_data()
-        
-        # Suppress specific warnings
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
-    
-    def load_all_data(self):
-        """Load all data files once during initialization"""
-        data_files = [f for f in os.listdir(self.data_dir) if f.endswith('.csv')]
-        for data_file in data_files:
-            try:
-                # Load and process the data
-                df = pd.read_csv(os.path.join(self.data_dir, data_file))
-                
-                # Ensure timestamp is properly formatted and set as index
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
-                df.set_index('timestamp', inplace=True)
-                
-                # Ensure all required columns are present and in correct format
-                required_columns = ['open', 'high', 'low', 'close', 'volume']
-                for col in required_columns:
-                    if col not in df.columns:
-                        raise ValueError(f"Missing required column: {col}")
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
-                
-                # Store data with full filename as key
-                self.raw_data[data_file] = df
-                print(f"Loaded data for {data_file}")
-                print(f"Data shape: {df.shape}")
-                print(f"Columns: {df.columns.tolist()}")
-                print(f"Date range: {df.index.min()} to {df.index.max()}")
-            except Exception as e:
-                print(f"Error loading {data_file}: {str(e)}")
-                raise
-    
-    def params_to_dict(self, params):
-        """Convert parameter list to dictionary with proper types"""
-        param_types = {
-            'rsi_period': int,
-            'boll_period': int,
-            'boll_devfactor': float,
-            'atr_period': int,
-            'vol_ma_period': int,
-            'tp_atr_mult': float,
-            'sl_atr_mult': float,
-            'rsi_oversold': float,
-            'rsi_overbought': float
-        }
-        return {name: param_types[name](value) for name, value in zip([p.name for p in self.space], params)}
     
     def run_backtest(self, data, params):
         """Run backtest with given parameters"""
