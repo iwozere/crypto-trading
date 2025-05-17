@@ -161,13 +161,13 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         try:
             results = cerebro.run()
             if not results or not hasattr(results[0], 'broker'):
-                print(f"Backtest failed: results={results}")
+                self.log_message(f"Backtest failed: results={results}", level='error')
                 return None
             strategy = results[0]
         except Exception as e:
             import traceback
-            print(f"Error during backtest run for params {params}: {str(e)}")
-            print(traceback.format_exc())
+            self.log_message(f"Error during backtest run for params {params}: {str(e)}", level='error')
+            self.log_message(str(traceback.format_exc()), level='error')
             return None
 
         sharpe = strategy.analyzers.sharpe.get_analysis()
@@ -201,7 +201,7 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         total_trades = trades_analysis.get('total', {}).get('total', 0)
         
         if total_trades < 5:
-            print(f"Penalizing due to low trade count: {total_trades} for params {param_dict}")
+            self.log_message(f"Penalizing due to low trade count: {total_trades} for params {param_dict}", level='error')
             return 500 - total_trades
 
         net_profit = float(trades_analysis.get('pnl', {}).get('net', {}).get('total', 0.0))
@@ -257,16 +257,16 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         return objective_score
 
     def optimize_single_file(self, data_file):
-        print(f"\nOptimizing for {data_file}...")
+        self.log_message(f"\nOptimizing for {data_file}...", level='info')
         self.current_symbol = data_file.split('_')[0]
         if data_file not in self.raw_data:
             raise ValueError(f"No data found for file {data_file}")
         self.current_data = self.raw_data[data_file].copy()
         if len(self.current_data) < 100:
-            print(f"Warning: Insufficient data points in {data_file}. Skipping...")
+            self.log_message(f"Warning: Insufficient data points in {data_file}. Skipping...", level='info')
             return None
         if self.current_data.isnull().any().any():
-            print(f"Warning: Found missing values in {data_file}. Cleaning data...")
+            self.log_message(f"Warning: Found missing values in {data_file}. Cleaning data...", level='info')
             self.current_data = self.current_data.fillna(method='ffill').fillna(method='bfill')
         self.current_metrics = {}
         try:
@@ -278,14 +278,14 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
                 noise=0.1, 
                 n_jobs=-1, 
                 verbose=False)
-            print(f"\nOptimization completed for {data_file}")
-            print(f"Best parameters: {self.params_to_dict(result.x)}")
-            print(f"Best score: {-result.fun:.2f}")
+            self.log_message(f"\nOptimization completed for {data_file}", level='info')
+            self.log_message(f"Best parameters: {self.params_to_dict(result.x)}", level='info')
+            self.log_message(f"Best score: {-result.fun:.2f}", level='info')
             return self.save_results(data_file, result)
         except Exception as e:
-            print(f"Error during optimization for {data_file}: {str(e)}")
+            self.log_message(f"Error during optimization for {data_file}: {str(e)}", level='error')
             import traceback
-            print(traceback.format_exc())
+            self.log_message(str(traceback.format_exc()), level='error')
             return None
     
     def plot_results(self, data, trades_df, params, data_file):
@@ -357,26 +357,26 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
 
     def save_results(self, data_file, result):
         try:
-            print(f"\nSaving results for {data_file}...")
+            self.log_message(f"\nSaving results for {data_file}...", level='info')
             os.makedirs(self.results_dir, exist_ok=True)
             best_params = self.params_to_dict(result.x)
-            print(f"Best parameters: {best_params}")
-            print("Running final backtest with best parameters...")
+            self.log_message(f"Best parameters: {best_params}", level='info')
+            self.log_message("Running final backtest with best parameters...", level='info')
             final_backtest_results = self.run_backtest(self.current_data, best_params)
             if not final_backtest_results or 'strategy' not in final_backtest_results:
-                print("Failed to run final backtest or get strategy.")
+                self.log_message("Failed to run final backtest or get strategy.", level='error')
                 return None
             
             trades_df = final_backtest_results['strategy'].get_trades()
-            print(f"Number of trades in final backtest: {len(trades_df)}")
+            self.log_message(f"Number of trades in final backtest: {len(trades_df)}", level='info')
 
             metrics_to_save = self.current_metrics
             metrics_to_save.update({'final_backtest_trades': len(trades_df)})
 
-            print(f"Metrics from optimizer's last call (best params): {metrics_to_save}")
-            print("Generating plot for best parameters...")
+            self.log_message(f"Metrics from optimizer's last call (best params): {metrics_to_save}", level='info')
+            self.log_message("Generating plot for best parameters...", level='info')
             plot_path = self.plot_results(self.current_data, trades_df, best_params, data_file)
-            print(f"Plot generated at: {plot_path}")
+            self.log_message(f"Plot generated at: {plot_path}", level='info')
             
             trades_records = []
             if not trades_df.empty:
@@ -396,7 +396,7 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
                     param_dict_iter = self.params_to_dict(x_iter)
                     optimization_history.append({'params': param_dict_iter, 'score': float(score_iter)})
                 except Exception as e:
-                    print(f"Warning: Could not process optimization history entry: {e}")
+                    self.log_message(f"Warning: Could not process optimization history entry: {e}", level='warning')
                     continue
             
             filename_base = f"{data_file}_optimization_results"
@@ -409,29 +409,29 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
                 'plot_path': plot_path }
             
             results_path = os.path.join(self.results_dir, f'{filename_base}.json')
-            print(f"Saving results to: {results_path}")
+            self.log_message(f"Saving results to: {results_path}", level='info')
             try:
                 json_str = json.dumps(results_dict, indent=4, cls=BaseOptimizer.DateTimeEncoder)
                 with open(results_path, 'w') as f: f.write(json_str)
             except Exception as e:
-                print(f"Error during JSON serialization: {e}. Trying to save simplified.")
+                self.log_message(f"Error during JSON serialization: {e}. Trying to save simplified.", level='error')
                 simplified_dict = {k: v for k, v in results_dict.items() if k not in ['trades_log', 'optimization_history']}
                 simplified_dict['error_in_serialization'] = str(e)
                 json_str = json.dumps(simplified_dict, indent=4, cls=BaseOptimizer.DateTimeEncoder)
                 with open(results_path, 'w') as f: f.write(json_str)
-                print("Saved simplified results due to serialization error.")
+                self.log_message("Saved simplified results due to serialization error.", level='error')
             
-            print(f"Results saved to {results_path}")
+            self.log_message(f"Results saved to {results_path}", level='info')
             return results_dict
             
         except Exception as e:
-            print(f"Error in save_results: {str(e)}")
+            self.log_message(f"Error in save_results: {str(e)}", level='error')
             import traceback
-            print(f"Full traceback: {traceback.format_exc()}")
+            self.log_message(f"Full traceback: {traceback.format_exc()}", level='error')
             return None
     
     def run_optimization(self):
-        print("Starting optimization process...")
+        self.log_message("Starting optimization process...", level='info')
         data_files = [f for f in os.listdir(self.data_dir) if f.endswith('.csv')]
         all_results = []
         for data_file in data_files:
@@ -439,11 +439,11 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
                 result = self.optimize_single_file(data_file)
                 if result is not None: all_results.append(result)
             except Exception as e:
-                print(f"Error processing {data_file}: {str(e)}")
+                self.log_message(f"Error processing {data_file}: {str(e)}", level='error')
         combined_results = {'timestamp': pd.Timestamp.now().isoformat(), 'results': all_results}
         combined_path = os.path.join(self.results_dir, 'combined_optimization_results.json')
         with open(combined_path, 'w') as f: json.dump(combined_results, f, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-        print(f"\nCombined results saved to {combined_path}")
+        self.log_message(f"\nCombined results saved to {combined_path}", level='info')
 
 if __name__ == "__main__":
     optimizer = RsiVolumeSuperTrendOptimizer(initial_capital=1000.0, commission=0.001)

@@ -3,6 +3,7 @@ from binance.enums import *
 import backtrader as bt
 import os
 
+
 class BinancePaperBroker(bt.brokers.BackBroker):
     def __init__(self, api_key, api_secret):
         super().__init__()

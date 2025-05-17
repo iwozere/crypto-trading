@@ -9,18 +9,11 @@ from binance.client import Client
 from binance.exceptions import BinanceAPIException
 from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
 from config.donotshare.donotshare import BINANCE_KEY, BINANCE_SECRET
+from src.bot.base_trading_bot import BaseTradingBot
 
-class RsiBbVolumeBot:
+class RsiBbVolumeBot(BaseTradingBot):
     def __init__(self, config):
-        self.config = config
-        self.trading_pair = config.get('trading_pair', 'BTCUSDT')
-        self.initial_balance = config.get('initial_balance', 1000.0)
-        self.is_running = False
-        self.active_positions = {}
-        self.trade_history = []
-        
-        # Initialize strategy with parameters
-        self.strategy = RSIBollVolumeATRStrategy(
+        strategy = RSIBollVolumeATRStrategy(
             rsi_period=config.get('rsi_period', 14),
             boll_period=config.get('boll_period', 20),
             boll_devfactor=config.get('boll_devfactor', 2.0),
@@ -31,10 +24,8 @@ class RsiBbVolumeBot:
             rsi_oversold=config.get('rsi_oversold', 30),
             rsi_overbought=config.get('rsi_overbought', 70)
         )
-        
-        self.current_balance = self.initial_balance
-        self.total_pnl = 0.0
-    
+        super().__init__(config, strategy)
+
     def run(self):
         """Main bot loop"""
         self.is_running = True
@@ -121,5 +112,19 @@ class RsiBbVolumeBot:
             self.execute_trade('sell', current_price, self.active_positions[pair]['size'])
 
 if __name__ == "__main__":
-    bot = RsiBbVolumeBot()
+    # Example config for standalone run
+    config = {
+        'trading_pair': 'BTCUSDT',
+        'initial_balance': 1000.0,
+        'rsi_period': 14,
+        'boll_period': 20,
+        'boll_devfactor': 2.0,
+        'atr_period': 14,
+        'vol_ma_period': 20,
+        'tp_atr_mult': 2.0,
+        'sl_atr_mult': 1.0,
+        'rsi_oversold': 30,
+        'rsi_overbought': 70
+    }
+    bot = RsiBbVolumeBot(config)
     bot.run() 

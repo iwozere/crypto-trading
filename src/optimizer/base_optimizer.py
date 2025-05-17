@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 from datetime import datetime
+from src.notification.logger import _logger
 
 class BaseOptimizer:
     class DateTimeEncoder(json.JSONEncoder):
@@ -48,8 +49,15 @@ class BaseOptimizer:
             pass
         return None
 
-    def log_message(self, message):
-        print(f"[{datetime.now().isoformat()}] {message}")
+    def log_message(self, message, level="info"):
+        """
+        Log a message using the configured logger.
+        - level: "info" (default) for normal messages, "error" for errors.
+        """
+        if level == "error":
+            _logger.error(message)
+        else:
+            _logger.info(message)
 
     def load_all_data(self, data_dir=None, required_columns=None, parse_dates=True, sort_index=True, fillna=True, log=True):
         """

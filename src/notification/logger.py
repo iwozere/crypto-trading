@@ -43,6 +43,12 @@ LOG_CONFIG = {
             "level": "DEBUG",
             "formatter": "detailed",
         },
+        "error_file": {
+            "class": "logging.FileHandler",
+            "filename": "app_errors.log",
+            "level": "ERROR",
+            "formatter": "detailed",
+        },
     },
     'loggers': {
         'matplotlib': {
@@ -57,7 +63,7 @@ LOG_CONFIG = {
         },
         'root': {
             'level': 'DEBUG',  # Logging level for the root logger
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'file', 'error_file'],
         },
     },    
 }
