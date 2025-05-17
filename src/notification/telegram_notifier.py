@@ -1,0 +1,200 @@
+import os
+import sys
+import asyncio
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+
+from telegram import Bot
+from telegram.error import TelegramError
+from datetime import datetime
+from typing import Dict, Any, Optional
+from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+from src.notification.logger import _logger
+
+
+class TelegramNotifier:
+    def __init__(self, token: str, chat_id: str):
+        """
+        Initialize the Telegram trade notifier.
+        
+        Args:
+            token (str): Telegram bot token
+            chat_id (str): Chat ID to send notifications to
+        """
+        self.logger = _logger
+        self.bot = Bot(token=token)
+        self.chat_id = chat_id
+        #self.logger.info("Telegram notifier initialized")
+    
+    async def send_trade_notification(self, trade_data: Dict[str, Any]) -> bool:
+        """
+        Send a trade notification to Telegram.
+        
+        Args:
+            trade_data (Dict[str, Any]): Dictionary containing trade information
+                Required keys:
+                - symbol: Trading pair symbol
+                - side: 'BUY' or 'SELL'
+                - entry_price: Entry price
+                - tp_price: Take profit price
+                - sl_price: Stop loss price
+                - quantity: Trade quantity
+                - timestamp: Trade timestamp
+                Optional keys:
+                - reason: Reason for the trade
+                - rsi: RSI value
+                - bb_position: Position relative to Bollinger Bands
+        
+        Returns:
+            bool: True if notification was sent successfully, False otherwise
+        """
+        try:
+            # Format the message
+            message = self._format_trade_message(trade_data)
+            
+            # Send the message
+            await self.bot.send_message(
+                chat_id=self.chat_id,
+                text=message,
+                parse_mode='HTML'
+            )
+            
+            self.logger.info(f"Trade notification sent successfully for {trade_data['symbol']}")
+            return True
+            
+        except TelegramError as e:
+            self.logger.error(f"Failed to send trade notification: {e}")
+            return False
+    
+    async def send_trade_update(self, trade_data: Dict[str, Any]) -> bool:
+        """
+        Send a trade update notification (TP/SL hit, trade closed).
+        
+        Args:
+            trade_data (Dict[str, Any]): Dictionary containing trade update information
+                Required keys:
+                - symbol: Trading pair symbol
+                - side: 'BUY' or 'SELL'
+                - entry_price: Entry price
+                - exit_price: Exit price
+                - pnl: Profit/Loss percentage
+                - exit_type: 'TP' or 'SL'
+                - timestamp: Exit timestamp
+        
+        Returns:
+            bool: True if notification was sent successfully, False otherwise
+        """
+        try:
+            # Format the message
+            message = self._format_trade_update_message(trade_data)
+            
+            # Send the message
+            await self.bot.send_message(
+                chat_id=self.chat_id,
+                text=message,
+                parse_mode='HTML'
+            )
+            
+            self.logger.info(f"Trade update notification sent successfully for {trade_data['symbol']}")
+            return True
+            
+        except TelegramError as e:
+            self.logger.error(f"Failed to send trade update notification: {e}")
+            return False
+    
+    async def send_error_notification(self, error_message: str) -> bool:
+        """
+        Send an error notification to Telegram.
+        
+        Args:
+            error_message (str): Error message to send
+        
+        Returns:
+            bool: True if notification was sent successfully, False otherwise
+        """
+        try:
+            message = f"⚠️ <b>Error Alert</b>\n\n{error_message}"
+            
+            await self.bot.send_message(
+                chat_id=self.chat_id,
+                text=message,
+                parse_mode='HTML'
+            )
+            
+            self.logger.info("Error notification sent successfully")
+            return True
+            
+        except TelegramError as e:
+            self.logger.error(f"Failed to send error notification: {e}")
+            return False
+    
+    def _format_trade_message(self, trade_data: Dict[str, Any]) -> str:
+        """Format trade entry message"""
+        message = [
+            f"🔔 <b>New Trade Alert</b>",
+            f"Symbol: {trade_data['symbol']}",
+            f"Side: {'🟢 BUY' if trade_data['side'] == 'BUY' else '🔴 SELL'}",
+            f"Entry Price: {trade_data['entry_price']:.8f}",
+            f"Take Profit: {trade_data['tp_price']:.8f}",
+            f"Stop Loss: {trade_data['sl_price']:.8f}",
+            f"Quantity: {trade_data['quantity']:.8f}",
+            f"Time: {trade_data['timestamp']}"
+        ]
+        
+        # Add optional information if available
+        if 'reason' in trade_data:
+            message.append(f"Reason: {trade_data['reason']}")
+        if 'rsi' in trade_data:
+            message.append(f"RSI: {trade_data['rsi']:.2f}")
+        if 'bb_position' in trade_data:
+            message.append(f"BB Position: {trade_data['bb_position']}")
+        
+        return "\n".join(message)
+    
+    def _format_trade_update_message(self, trade_data: Dict[str, Any]) -> str:
+        """Format trade update message"""
+        pnl = trade_data['pnl']
+        pnl_emoji = "🟢" if pnl > 0 else "🔴"
+        
+        message = [
+            f"📊 <b>Trade Update</b>",
+            f"Symbol: {trade_data['symbol']}",
+            f"Side: {'🟢 BUY' if trade_data['side'] == 'BUY' else '🔴 SELL'}",
+            f"Entry Price: {trade_data['entry_price']:.8f}",
+            f"Exit Price: {trade_data['exit_price']:.8f}",
+            f"Exit Type: {trade_data['exit_type']}",
+            f"PnL: {pnl_emoji} {pnl:.2f}%",
+            f"Time: {trade_data['timestamp']}"
+        ]
+        
+        return "\n".join(message)
+
+def create_notifier() -> Optional[TelegramNotifier]:
+    """
+    Create a TelegramNotifier instance using environment variables.
+    
+    Returns:
+        Optional[TelegramNotifier]: TelegramNotifier instance if credentials are available,
+                               None otherwise
+    """
+    token = TELEGRAM_BOT_TOKEN
+    chat_id = TELEGRAM_CHAT_ID
+    logger = _logger
+    
+    if not token or not chat_id:
+        logger.warning("Telegram credentials not found in environment variables")
+        return None
+    
+    try:
+        return TelegramNotifier(token=token, chat_id=chat_id)
+    except Exception as e:
+        logger.error(f"Failed to create TelegramNotifier: {e}")
+        return None 
+
+
+
+    
+if __name__ == "__main__":
+    n = create_notifier()
+    asyncio.run(n.send_trade_notification({'rsi': 50, 'symbol': 'BTCUSDT', 'side': 'BUY', 'entry_price': 1000, 'tp_price': 2000, 'sl_price': 500, 'quantity': 1, 'timestamp': datetime.now()}))    
+    

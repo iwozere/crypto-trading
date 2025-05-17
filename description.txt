@@ -1,0 +1,26 @@
+self.current_metrics = {
+    'total_profit': float(total_profit),        # Percentage (%). Sum of all trade PnLs
+    'num_trades': int(num_trades),              # Count (number of trades)
+    'win_rate': float(win_rate),                # Percentage (%). Ratio of winning trades to total trades
+    'sharpe_ratio': float(sharpe_ratio),        # Unitless ratio. Risk-adjusted return measure
+    'max_drawdown': float(max_drawdown),        # Percentage (%). Maximum peak-to-trough decline
+    'min_time_between_trades': min_time_between, # Hours. Minimum time between consecutive trades
+    'max_time_between_trades': max_time_between, # Hours. Maximum time between consecutive trades
+    'avg_time_between_trades': avg_time_between, # Hours. Average time between consecutive trades
+    'params': param_dict,                       # Dictionary of strategy parameters
+    'trades': trades                            # List of individual trade records
+}
+
+trade = {
+    'timestamp': timestamp,                     # DateTime. When the trade occurred
+    'symbol': symbol,                          # String. Trading pair (e.g., 'BTCUSDT')
+    'signal': signal,                          # String. 'buy' or 'sell'
+    'price': price,                            # Price in quote currency (e.g., USDT)
+    'size': size,                              # Position size in base currency (e.g., BTC)
+    'commission': commission,                   # Commission amount in quote currency
+    'reason': reason,                          # String. Reason for sell (e.g., 'take_profit', 'stop_loss')
+    'raw_pnl': raw_pnl,                        # Percentage (%). PnL before commission
+    'commission_pct': total_commission_pct,     # Percentage (%). Commission as percentage of trade
+    'pnl': adjusted_pnl,                       # Percentage (%). Final PnL after commission
+    'portfolio_value': portfolio_value          # Quote currency (e.g., USDT). Portfolio value after trade
+}

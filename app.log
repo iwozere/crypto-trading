@@ -1,0 +1,218 @@
+2025-05-11 21:44:09,008 - INFO - telegram.py - __init__ - 30 - Successfully connected to Telegram bot
+2025-05-11 21:44:43,337 - INFO - telegram.py - __init__ - 30 - Successfully connected to Telegram bot
+2025-05-11 21:47:23,980 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-11 21:47:27,349 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-11 21:47:30,602 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-11 21:47:33,546 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-11 21:47:36,858 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-11 21:47:40,176 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-11 21:47:43,455 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-11 21:47:46,788 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-11 21:47:49,861 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-11 21:47:52,868 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-11 21:48:09,351 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-11 21:48:13,814 - INFO - telegram.py - __init__ - 27 - Telegram notifier initialized
+2025-05-13 19:15:47,065 - INFO - _internal.py - _log - 97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.3:5000
+2025-05-13 19:15:47,066 - INFO - _internal.py - _log - 97 - [33mPress CTRL+C to quit[0m
+2025-05-13 19:15:47,070 - INFO - _internal.py - _log - 97 -  * Restarting with stat
+2025-05-13 19:18:28,896 - INFO - _internal.py - _log - 97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.3:5000
+2025-05-13 19:18:28,897 - INFO - _internal.py - _log - 97 - [33mPress CTRL+C to quit[0m
+2025-05-13 19:18:28,899 - INFO - _internal.py - _log - 97 -  * Restarting with stat
+2025-05-13 19:18:31,478 - WARNING - _internal.py - _log - 97 -  * Debugger is active!
+2025-05-13 19:18:31,483 - INFO - _internal.py - _log - 97 -  * Debugger PIN: 107-447-364
+2025-05-13 19:18:39,613 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:18:39] "GET / HTTP/1.1" 200 -
+2025-05-13 19:18:40,357 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:18:40] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:18:40,358 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:18:40] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:18:40,680 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:18:40] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-05-13 19:18:45,368 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:18:45] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:18:45,671 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:18:45] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:18:50,666 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:18:50] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:18:50,668 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:18:50] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:18:55,361 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:18:55] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:18:55,666 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:18:55] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:00,684 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:00] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:00,685 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:00] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:05,564 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:05] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:05,875 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:05] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:10,869 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:10] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:10,870 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:10] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:15,552 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:15] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:15,867 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:15] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:20,676 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:20] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:20,678 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:20] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:25,565 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:25] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:25,878 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:25] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:30,875 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:30] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:30,876 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:30] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:35,567 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:35] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:35,878 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:35] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:40,870 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:40] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:40,872 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:40] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:45,556 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:45] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:45,867 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:45] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:50,883 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:50] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:50,884 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:50] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:19:55,563 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:55] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:19:55,877 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:19:55] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:20:00,873 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:20:00] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:20:00,874 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:20:00] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:20:05,568 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:20:05] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:20:05,870 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:20:05] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:20:10,880 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:20:10] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:20:10,882 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:20:10] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:20:12,835 - INFO - _internal.py - _log - 97 -  * Detected change in 'C:\\dev\\cursor\\crypto-trading\\config\\donotshare\\donotshare.py', reloading
+2025-05-13 19:20:13,145 - INFO - _internal.py - _log - 97 -  * Restarting with stat
+2025-05-13 19:20:15,535 - WARNING - _internal.py - _log - 97 -  * Debugger is active!
+2025-05-13 19:20:15,540 - INFO - _internal.py - _log - 97 -  * Debugger PIN: 107-447-364
+2025-05-13 19:20:15,881 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:20:15] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:20:15,884 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:20:15] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:20:20,565 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:20:20] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:20:20,880 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:20:20] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:21:01,875 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:21:01] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:21:01,880 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:21:01] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:21:10,832 - INFO - _internal.py - _log - 97 -  * Detected change in 'C:\\dev\\cursor\\crypto-trading\\config\\donotshare\\donotshare.py', reloading
+2025-05-13 19:21:11,250 - INFO - _internal.py - _log - 97 -  * Restarting with stat
+2025-05-13 19:21:13,502 - WARNING - _internal.py - _log - 97 -  * Debugger is active!
+2025-05-13 19:21:13,507 - INFO - _internal.py - _log - 97 -  * Debugger PIN: 107-447-364
+2025-05-13 19:21:42,747 - INFO - _internal.py - _log - 97 -  * Detected change in 'C:\\dev\\cursor\\crypto-trading\\config\\donotshare\\donotshare.py', reloading
+2025-05-13 19:21:43,160 - INFO - _internal.py - _log - 97 -  * Restarting with stat
+2025-05-13 19:21:45,829 - WARNING - _internal.py - _log - 97 -  * Debugger is active!
+2025-05-13 19:21:45,832 - INFO - _internal.py - _log - 97 -  * Debugger PIN: 107-447-364
+2025-05-13 19:21:46,965 - INFO - _internal.py - _log - 97 -  * Detected change in 'C:\\dev\\cursor\\crypto-trading\\config\\donotshare\\donotshare.py', reloading
+2025-05-13 19:21:47,262 - INFO - _internal.py - _log - 97 -  * Restarting with stat
+2025-05-13 19:21:49,623 - WARNING - _internal.py - _log - 97 -  * Debugger is active!
+2025-05-13 19:21:49,628 - INFO - _internal.py - _log - 97 -  * Debugger PIN: 107-447-364
+2025-05-13 19:22:01,873 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:22:01] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:22:01,875 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:22:01] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:23:01,564 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:23:01] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:23:01,877 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:23:01] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:23:20,278 - INFO - _internal.py - _log - 97 -  * Detected change in 'C:\\dev\\cursor\\crypto-trading\\src\\webgui\\config_manager.py', reloading
+2025-05-13 19:23:20,610 - INFO - _internal.py - _log - 97 -  * Restarting with stat
+2025-05-13 19:23:23,403 - WARNING - _internal.py - _log - 97 -  * Debugger is active!
+2025-05-13 19:23:23,407 - INFO - _internal.py - _log - 97 -  * Debugger PIN: 107-447-364
+2025-05-13 19:23:28,089 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:23:28] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:23:28,095 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:23:28] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:23:29,795 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:23:29] "GET / HTTP/1.1" 200 -
+2025-05-13 19:23:30,095 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:23:30] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:23:30,128 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:23:30] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:23:35,130 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:23:35] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 19:23:35,132 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 19:23:35] "GET /api/bots/bot_1/trades HTTP/1.1" 200 -
+2025-05-13 19:23:39,183 - INFO - _internal.py - _log - 97 -  * Detected change in 'C:\\dev\\cursor\\crypto-trading\\src\\webgui\\app.py', reloading
+2025-05-13 19:23:39,468 - INFO - _internal.py - _log - 97 -  * Restarting with stat
+2025-05-13 20:07:28,616 - INFO - _internal.py - _log - 97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.3:5000
+2025-05-13 20:07:28,617 - INFO - _internal.py - _log - 97 - [33mPress CTRL+C to quit[0m
+2025-05-13 20:07:28,625 - INFO - _internal.py - _log - 97 -  * Restarting with stat
+2025-05-13 20:07:32,236 - WARNING - _internal.py - _log - 97 -  * Debugger is active!
+2025-05-13 20:07:32,243 - INFO - _internal.py - _log - 97 -  * Debugger PIN: 107-447-364
+2025-05-13 20:14:07,214 - INFO - _internal.py - _log - 97 -  * Detected change in 'C:\\dev\\cursor\\crypto-trading\\src\\webgui\\app.py', reloading
+2025-05-13 20:14:07,575 - INFO - _internal.py - _log - 97 -  * Restarting with stat
+2025-05-13 20:14:11,096 - WARNING - _internal.py - _log - 97 -  * Debugger is active!
+2025-05-13 20:14:11,101 - INFO - _internal.py - _log - 97 -  * Debugger PIN: 107-447-364
+2025-05-13 20:14:22,152 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:22] "[32mGET / HTTP/1.1[0m" 302 -
+2025-05-13 20:14:22,203 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:22] "GET /login?next=/ HTTP/1.1" 200 -
+2025-05-13 20:14:28,503 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:28] "[32mPOST /login?next=/ HTTP/1.1[0m" 302 -
+2025-05-13 20:14:28,816 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:28] "GET / HTTP/1.1" 200 -
+2025-05-13 20:14:29,344 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:29] "GET /static/css/style.css HTTP/1.1" 200 -
+2025-05-13 20:14:29,351 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:29] "GET /static/js/main.js HTTP/1.1" 200 -
+2025-05-13 20:14:29,398 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:29] "[33mGET /api/bot-types HTTP/1.1[0m" 404 -
+2025-05-13 20:14:34,396 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:34] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-13 20:14:34,700 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:34] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 20:14:39,712 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:39] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 20:14:39,713 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:39] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-13 20:14:44,561 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:44] "GET /api/bots HTTP/1.1" 200 -
+2025-05-13 20:14:44,874 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [13/May/2025 20:14:44] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-16 21:33:19,888 - DEBUG - _trace.py - atrace - 87 - connect_tcp.started host='api.telegram.org' port=443 local_address=None timeout=5.0 socket_options=None
+2025-05-16 21:33:19,939 - DEBUG - _trace.py - atrace - 87 - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024D72855E80>
+2025-05-16 21:33:19,939 - DEBUG - _trace.py - atrace - 87 - start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024D727E6720> server_hostname='api.telegram.org' timeout=5.0
+2025-05-16 21:33:19,972 - DEBUG - _trace.py - atrace - 87 - start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024D72817890>
+2025-05-16 21:33:19,973 - DEBUG - _trace.py - atrace - 87 - send_request_headers.started request=<Request [b'POST']>
+2025-05-16 21:33:19,975 - DEBUG - _trace.py - atrace - 87 - send_request_headers.complete
+2025-05-16 21:33:19,975 - DEBUG - _trace.py - atrace - 87 - send_request_body.started request=<Request [b'POST']>
+2025-05-16 21:33:19,977 - DEBUG - _trace.py - atrace - 87 - send_request_body.complete
+2025-05-16 21:33:19,977 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.started request=<Request [b'POST']>
+2025-05-16 21:33:20,033 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.complete return_value=(b'HTTP/1.1', 404, b'Not Found', [(b'Server', b'nginx/1.18.0'), (b'Date', b'Fri, 16 May 2025 19:33:19 GMT'), (b'Content-Type', b'application/json'), (b'Content-Length', b'55'), (b'Connection', b'keep-alive'), (b'Strict-Transport-Security', b'max-age=31536000; includeSubDomains; preload'), (b'Access-Control-Allow-Origin', b'*'), (b'Access-Control-Expose-Headers', b'Content-Length,Content-Type,Date,Server,Connection')])
+2025-05-16 21:33:20,037 - DEBUG - _trace.py - atrace - 87 - receive_response_body.started request=<Request [b'POST']>
+2025-05-16 21:33:20,038 - DEBUG - _trace.py - atrace - 87 - receive_response_body.complete
+2025-05-16 21:33:20,039 - DEBUG - _trace.py - atrace - 87 - response_closed.started
+2025-05-16 21:33:20,040 - DEBUG - _trace.py - atrace - 87 - response_closed.complete
+2025-05-16 21:33:20,042 - ERROR - telegram_notifier.py - send_trade_notification - 66 - Failed to send trade notification: Not Found
+2025-05-16 21:38:16,863 - DEBUG - _trace.py - atrace - 87 - connect_tcp.started host='api.telegram.org' port=443 local_address=None timeout=5.0 socket_options=None
+2025-05-16 21:38:16,910 - DEBUG - _trace.py - atrace - 87 - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x000002938DFE5D30>
+2025-05-16 21:38:16,911 - DEBUG - _trace.py - atrace - 87 - start_tls.started ssl_context=<ssl.SSLContext object at 0x000002938CF9E840> server_hostname='api.telegram.org' timeout=5.0
+2025-05-16 21:38:17,045 - DEBUG - _trace.py - atrace - 87 - start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x000002938CFCB750>
+2025-05-16 21:38:17,046 - DEBUG - _trace.py - atrace - 87 - send_request_headers.started request=<Request [b'POST']>
+2025-05-16 21:38:17,049 - DEBUG - _trace.py - atrace - 87 - send_request_headers.complete
+2025-05-16 21:38:17,050 - DEBUG - _trace.py - atrace - 87 - send_request_body.started request=<Request [b'POST']>
+2025-05-16 21:38:17,052 - DEBUG - _trace.py - atrace - 87 - send_request_body.complete
+2025-05-16 21:38:17,053 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.started request=<Request [b'POST']>
+2025-05-16 21:38:17,169 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.complete return_value=(b'HTTP/1.1', 404, b'Not Found', [(b'Server', b'nginx/1.18.0'), (b'Date', b'Fri, 16 May 2025 19:38:17 GMT'), (b'Content-Type', b'application/json'), (b'Content-Length', b'55'), (b'Connection', b'keep-alive'), (b'Strict-Transport-Security', b'max-age=31536000; includeSubDomains; preload'), (b'Access-Control-Allow-Origin', b'*'), (b'Access-Control-Expose-Headers', b'Content-Length,Content-Type,Date,Server,Connection')])
+2025-05-16 21:38:17,174 - DEBUG - _trace.py - atrace - 87 - receive_response_body.started request=<Request [b'POST']>
+2025-05-16 21:38:17,175 - DEBUG - _trace.py - atrace - 87 - receive_response_body.complete
+2025-05-16 21:38:17,176 - DEBUG - _trace.py - atrace - 87 - response_closed.started
+2025-05-16 21:38:17,177 - DEBUG - _trace.py - atrace - 87 - response_closed.complete
+2025-05-16 21:44:38,687 - DEBUG - _trace.py - atrace - 87 - connect_tcp.started host='api.telegram.org' port=443 local_address=None timeout=5.0 socket_options=None
+2025-05-16 21:44:38,753 - DEBUG - _trace.py - atrace - 87 - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x000001F6F76E5D30>
+2025-05-16 21:44:38,755 - DEBUG - _trace.py - atrace - 87 - start_tls.started ssl_context=<ssl.SSLContext object at 0x000001F6F669E840> server_hostname='api.telegram.org' timeout=5.0
+2025-05-16 21:44:38,802 - DEBUG - _trace.py - atrace - 87 - start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x000001F6F66CB750>
+2025-05-16 21:44:38,804 - DEBUG - _trace.py - atrace - 87 - send_request_headers.started request=<Request [b'POST']>
+2025-05-16 21:44:38,808 - DEBUG - _trace.py - atrace - 87 - send_request_headers.complete
+2025-05-16 21:44:38,808 - DEBUG - _trace.py - atrace - 87 - send_request_body.started request=<Request [b'POST']>
+2025-05-16 21:44:38,810 - DEBUG - _trace.py - atrace - 87 - send_request_body.complete
+2025-05-16 21:44:38,811 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.started request=<Request [b'POST']>
+2025-05-16 21:44:38,842 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.complete return_value=(b'HTTP/1.1', 404, b'Not Found', [(b'Server', b'nginx/1.18.0'), (b'Date', b'Fri, 16 May 2025 19:44:38 GMT'), (b'Content-Type', b'application/json'), (b'Content-Length', b'55'), (b'Connection', b'keep-alive'), (b'Strict-Transport-Security', b'max-age=31536000; includeSubDomains; preload'), (b'Access-Control-Allow-Origin', b'*'), (b'Access-Control-Expose-Headers', b'Content-Length,Content-Type,Date,Server,Connection')])
+2025-05-16 21:44:38,848 - DEBUG - _trace.py - atrace - 87 - receive_response_body.started request=<Request [b'POST']>
+2025-05-16 21:44:38,849 - DEBUG - _trace.py - atrace - 87 - receive_response_body.complete
+2025-05-16 21:44:38,850 - DEBUG - _trace.py - atrace - 87 - response_closed.started
+2025-05-16 21:44:38,851 - DEBUG - _trace.py - atrace - 87 - response_closed.complete
+2025-05-16 21:54:40,736 - DEBUG - _trace.py - atrace - 87 - connect_tcp.started host='api.telegram.org' port=443 local_address=None timeout=5.0 socket_options=None
+2025-05-16 21:54:40,789 - DEBUG - _trace.py - atrace - 87 - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000022CEA057B60>
+2025-05-16 21:54:40,790 - DEBUG - _trace.py - atrace - 87 - start_tls.started ssl_context=<ssl.SSLContext object at 0x0000022CEA035880> server_hostname='api.telegram.org' timeout=5.0
+2025-05-16 21:54:41,223 - DEBUG - _trace.py - atrace - 87 - start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000022CE9043D90>
+2025-05-16 21:54:41,225 - DEBUG - _trace.py - atrace - 87 - send_request_headers.started request=<Request [b'POST']>
+2025-05-16 21:54:41,227 - DEBUG - _trace.py - atrace - 87 - send_request_headers.complete
+2025-05-16 21:54:41,228 - DEBUG - _trace.py - atrace - 87 - send_request_body.started request=<Request [b'POST']>
+2025-05-16 21:54:41,229 - DEBUG - _trace.py - atrace - 87 - send_request_body.complete
+2025-05-16 21:54:41,230 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.started request=<Request [b'POST']>
+2025-05-16 21:54:41,344 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.complete return_value=(b'HTTP/1.1', 404, b'Not Found', [(b'Server', b'nginx/1.18.0'), (b'Date', b'Fri, 16 May 2025 19:54:41 GMT'), (b'Content-Type', b'application/json'), (b'Content-Length', b'55'), (b'Connection', b'keep-alive'), (b'Strict-Transport-Security', b'max-age=31536000; includeSubDomains; preload'), (b'Access-Control-Allow-Origin', b'*'), (b'Access-Control-Expose-Headers', b'Content-Length,Content-Type,Date,Server,Connection')])
+2025-05-16 21:54:41,350 - DEBUG - _trace.py - atrace - 87 - receive_response_body.started request=<Request [b'POST']>
+2025-05-16 21:54:41,351 - DEBUG - _trace.py - atrace - 87 - receive_response_body.complete
+2025-05-16 21:54:41,352 - DEBUG - _trace.py - atrace - 87 - response_closed.started
+2025-05-16 21:54:41,353 - DEBUG - _trace.py - atrace - 87 - response_closed.complete
+2025-05-16 21:58:41,517 - DEBUG - _trace.py - atrace - 87 - connect_tcp.started host='api.telegram.org' port=443 local_address=None timeout=5.0 socket_options=None
+2025-05-16 21:58:41,562 - DEBUG - _trace.py - atrace - 87 - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x000001DEAAA6BB60>
+2025-05-16 21:58:41,563 - DEBUG - _trace.py - atrace - 87 - start_tls.started ssl_context=<ssl.SSLContext object at 0x000001DEAAA49880> server_hostname='api.telegram.org' timeout=5.0
+2025-05-16 21:58:41,594 - DEBUG - _trace.py - atrace - 87 - start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x000001DEA9A53D90>
+2025-05-16 21:58:41,595 - DEBUG - _trace.py - atrace - 87 - send_request_headers.started request=<Request [b'POST']>
+2025-05-16 21:58:41,598 - DEBUG - _trace.py - atrace - 87 - send_request_headers.complete
+2025-05-16 21:58:41,599 - DEBUG - _trace.py - atrace - 87 - send_request_body.started request=<Request [b'POST']>
+2025-05-16 21:58:41,601 - DEBUG - _trace.py - atrace - 87 - send_request_body.complete
+2025-05-16 21:58:41,602 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.started request=<Request [b'POST']>
+2025-05-16 21:58:44,527 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Server', b'nginx/1.18.0'), (b'Date', b'Fri, 16 May 2025 19:58:44 GMT'), (b'Content-Type', b'application/json'), (b'Content-Length', b'257'), (b'Connection', b'keep-alive'), (b'Strict-Transport-Security', b'max-age=31536000; includeSubDomains; preload'), (b'Access-Control-Allow-Origin', b'*'), (b'Access-Control-Allow-Methods', b'GET, POST, OPTIONS'), (b'Access-Control-Expose-Headers', b'Content-Length,Content-Type,Date,Server,Connection')])
+2025-05-16 21:58:44,534 - DEBUG - _trace.py - atrace - 87 - receive_response_body.started request=<Request [b'POST']>
+2025-05-16 21:58:44,535 - DEBUG - _trace.py - atrace - 87 - receive_response_body.complete
+2025-05-16 21:58:44,536 - DEBUG - _trace.py - atrace - 87 - response_closed.started
+2025-05-16 21:58:44,537 - DEBUG - _trace.py - atrace - 87 - response_closed.complete
+2025-05-16 22:01:11,160 - DEBUG - _trace.py - atrace - 87 - connect_tcp.started host='api.telegram.org' port=443 local_address=None timeout=5.0 socket_options=None
+2025-05-16 22:01:11,219 - DEBUG - _trace.py - atrace - 87 - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x00000216218C4AD0>
+2025-05-16 22:01:11,220 - DEBUG - _trace.py - atrace - 87 - start_tls.started ssl_context=<ssl.SSLContext object at 0x0000021621811760> server_hostname='api.telegram.org' timeout=5.0
+2025-05-16 22:01:11,277 - DEBUG - _trace.py - atrace - 87 - start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x00000216218811D0>
+2025-05-16 22:01:11,288 - DEBUG - _trace.py - atrace - 87 - send_request_headers.started request=<Request [b'POST']>
+2025-05-16 22:01:11,290 - DEBUG - _trace.py - atrace - 87 - send_request_headers.complete
+2025-05-16 22:01:11,291 - DEBUG - _trace.py - atrace - 87 - send_request_body.started request=<Request [b'POST']>
+2025-05-16 22:01:11,293 - DEBUG - _trace.py - atrace - 87 - send_request_body.complete
+2025-05-16 22:01:11,293 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.started request=<Request [b'POST']>
+2025-05-16 22:01:11,368 - DEBUG - _trace.py - atrace - 87 - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Server', b'nginx/1.18.0'), (b'Date', b'Fri, 16 May 2025 20:01:11 GMT'), (b'Content-Type', b'application/json'), (b'Content-Length', b'509'), (b'Connection', b'keep-alive'), (b'Strict-Transport-Security', b'max-age=31536000; includeSubDomains; preload'), (b'Access-Control-Allow-Origin', b'*'), (b'Access-Control-Allow-Methods', b'GET, POST, OPTIONS'), (b'Access-Control-Expose-Headers', b'Content-Length,Content-Type,Date,Server,Connection')])
+2025-05-16 22:01:11,374 - DEBUG - _trace.py - atrace - 87 - receive_response_body.started request=<Request [b'POST']>
+2025-05-16 22:01:11,375 - DEBUG - _trace.py - atrace - 87 - receive_response_body.complete
+2025-05-16 22:01:11,377 - DEBUG - _trace.py - atrace - 87 - response_closed.started
+2025-05-16 22:01:11,378 - DEBUG - _trace.py - atrace - 87 - response_closed.complete
+2025-05-16 22:01:11,382 - INFO - telegram_notifier.py - send_trade_notification - 62 - Trade notification sent successfully for BTCUSDT
