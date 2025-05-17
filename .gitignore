@@ -41,5 +41,6 @@ htmlcov/
 .pytest_cache/ 
 
 data/
+!src/data/
 config/donotshare/
 results/
