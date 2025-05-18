@@ -32,6 +32,12 @@ def screen_stocks(tickers):
 			price = info.get("currentPrice", None)
 			fifty_day = info.get("fiftyDayAverage", None)
 			two_hundred_day = info.get("twoHundredDayAverage", None)
+
+			cf = ticker.cashflow
+			ocf = cf.loc["Total Cash From Operating Activities"]
+			capex = cf.loc["Capital Expenditures"]
+			fcf = ocf + capex  # CapEx — it is a negative number
+
 			if all([pe, roe, debt_equity, price, fifty_day, two_hundred_day]):
 				if (
 					pe < 25 and

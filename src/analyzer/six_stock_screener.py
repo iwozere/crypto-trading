@@ -1,7 +1,9 @@
 import pandas as pd
 import yfinance as yf
-import requests
-import io
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from src.analyzer.tickers_list import get_six_tickers
 
 """
 Screening criteria:
@@ -12,16 +14,6 @@ Screening criteria:
 - Price > 50D > 200D — positive momentum
 """
 
-# Step 1: Download SIX ticker list
-def get_six_tickers():
-    url = 'https://www.six-group.com/sheldon/equity_issuers/v1/equity_issuers.csv'
-    response = requests.get(url, verify=False)
-    df = pd.read_csv(io.StringIO(response.text), on_bad_lines='skip', header=0, sep=';')
-    print(f"Downloaded {len(df)} tickers from SIX Swiss Exchange")
-    print(df.head())
-    tickers = df['Symbol'].tolist()
-    tickers = [t.replace('.', '-') for t in tickers]  # Convert for yfinance
-    return tickers
 	
 # Step 2: Screening and filtering by metrics
 def screen_stocks(tickers):
