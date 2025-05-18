@@ -16,7 +16,9 @@ Screening criteria:
 def get_six_tickers():
     url = 'https://www.six-group.com/sheldon/equity_issuers/v1/equity_issuers.csv'
     response = requests.get(url, verify=False)
-    df = pd.read_csv(io.StringIO(response.text))
+    df = pd.read_csv(io.StringIO(response.text), on_bad_lines='skip', header=0, sep=';')
+    print(f"Downloaded {len(df)} tickers from SIX Swiss Exchange")
+    print(df.head())
     tickers = df['Symbol'].tolist()
     tickers = [t.replace('.', '-') for t in tickers]  # Convert for yfinance
     return tickers
