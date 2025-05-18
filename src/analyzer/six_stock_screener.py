@@ -1,5 +1,7 @@
 import pandas as pd
 import yfinance as yf
+import requests
+import io
 
 """
 Screening criteria:
@@ -12,18 +14,20 @@ Screening criteria:
 
 # Step 1: Download SIX ticker list
 def get_six_tickers():
-	url = 'https://www.six-group.com/sheldon/equity_issuers/v1/equity_issuers.csv'
-	tables = pd.read_html(url)
-	tickers = tables[0]['Symbol'].tolist()
-	tickers = [t.replace('.', '-') for t in tickers] # Convert for yfinance    
-	return tickers
+    url = 'https://www.six-group.com/sheldon/equity_issuers/v1/equity_issuers.csv'
+    response = requests.get(url, verify=False)
+    df = pd.read_csv(io.StringIO(response.text))
+    tickers = df['Symbol'].tolist()
+    tickers = [t.replace('.', '-') for t in tickers]  # Convert for yfinance
+    return tickers
 	
 # Step 2: Screening and filtering by metrics
 def screen_stocks(tickers):
 	results = []
 	for ticker in tickers:
 		try:
-			stock = yf.Ticker(ticker)
+			symbol = f'{ticker}.SW'
+			stock = yf.Ticker(symbol)
 			info = stock.info
 			pe = info.get("trailingPE", None)
 			roe = info.get("returnOnEquity", None)
