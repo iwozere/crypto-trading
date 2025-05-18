@@ -12,7 +12,7 @@ from sendgrid.helpers.mail import Mail, Email
 
 
 # Set up the server
-_sender_email = 'akossyrev@gmail.com'  # Your email address
+_sender_email = 'akossyrev@hotmail.com'  # Your email address
 _receiver_email = 'akossyrev@gmail.com'  # Receiver's email address
 
 

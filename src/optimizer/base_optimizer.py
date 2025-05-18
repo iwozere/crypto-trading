@@ -125,3 +125,79 @@ class BaseOptimizer:
             else:
                 typed_param_dict[name] = float(value)
         return typed_param_dict 
+
+    def save_results(self, data_file, best_params, metrics, trades_df, optimization_result=None, plot_path=None, strategy_name=None):
+        """
+        Unified method to save optimization results. Handles serialization, extra metrics, and logging.
+        """
+        try:
+            self.log_message(f"\nSaving results for {data_file}...", level='info')
+            os.makedirs(self.results_dir, exist_ok=True)
+            # Calculate extra metrics if possible
+            sqn_pct = None
+            cagr = None
+            final_value = metrics.get('final_value') or metrics.get('portfolio_value')
+            if trades_df is not None and not trades_df.empty and final_value is not None:
+                try:
+                    sqn_pct = self.calculate_sqn_pct(trades_df)
+                    if 'entry_dt' in trades_df.columns and 'exit_dt' in trades_df.columns:
+                        trades_df = trades_df.dropna(subset=['entry_dt', 'exit_dt'])
+                        if not trades_df.empty:
+                            cagr = self.calculate_cagr(self.initial_capital, final_value, trades_df['entry_dt'].iloc[0], trades_df['exit_dt'].iloc[-1])
+                except Exception as e:
+                    self.log_message(f"Error calculating sqn_pct/cagr: {e}", level='error')
+            # Prepare trades log
+            trades_records = []
+            if trades_df is not None and not trades_df.empty:
+                for _, trade_row in trades_df.iterrows():
+                    trade_dict = {}
+                    for col in trades_df.columns:
+                        value = trade_row[col]
+                        if pd.isna(value): trade_dict[col] = None
+                        elif isinstance(value, (pd.Timestamp, datetime)): trade_dict[col] = value.isoformat()
+                        elif isinstance(value, (np.integer, np.floating, int, float)): trade_dict[col] = float(value)
+                        else: trade_dict[col] = str(value)
+                    trades_records.append(trade_dict)
+            # Prepare optimization history
+            optimization_history = []
+            if optimization_result is not None and hasattr(optimization_result, 'x_iters'):
+                for x_iter, score_iter in zip(optimization_result.x_iters, optimization_result.func_vals):
+                    try:
+                        param_dict_iter = self.params_to_dict(x_iter)
+                        optimization_history.append({'params': param_dict_iter, 'score': float(score_iter)})
+                    except Exception as e:
+                        self.log_message(f"Warning: Could not process optimization history entry: {e}", level='warning')
+                        continue
+            # Compose results dict
+            results_dict = {
+                'timestamp': datetime.now().isoformat(),
+                'data_file': data_file,
+                'strategy_name': strategy_name,
+                'best_params': best_params,
+                'metrics': metrics,
+                'sqn_pct': sqn_pct,
+                'cagr': cagr,
+                'trades_log': trades_records,
+                'optimization_history': optimization_history,
+                'plot_path': plot_path
+            }
+            filename_base = f"{data_file}_optimization_results"
+            results_path = os.path.join(self.results_dir, f'{filename_base}.json')
+            self.log_message(f"Saving results to: {results_path}", level='info')
+            try:
+                json_str = json.dumps(results_dict, indent=4, cls=BaseOptimizer.DateTimeEncoder)
+                with open(results_path, 'w') as f: f.write(json_str)
+            except Exception as e:
+                self.log_message(f"Error during JSON serialization: {e}. Trying to save simplified.", level='error')
+                simplified_dict = {k: v for k, v in results_dict.items() if k not in ['trades_log', 'optimization_history']}
+                simplified_dict['error_in_serialization'] = str(e)
+                json_str = json.dumps(simplified_dict, indent=4, cls=BaseOptimizer.DateTimeEncoder)
+                with open(results_path, 'w') as f: f.write(json_str)
+                self.log_message("Saved simplified results due to serialization error.", level='error')
+            self.log_message(f"Results saved to {results_path}", level='info')
+            return results_dict
+        except Exception as e:
+            self.log_message(f"Error in save_results: {str(e)}", level='error')
+            import traceback
+            self.log_message(f"Full traceback: {traceback.format_exc()}", level='error')
+            return None 

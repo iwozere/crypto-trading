@@ -21,4 +21,5 @@ backtrader>=1.9.78
 sendgrid==6.12.0
 flask>=3.0.0  # For web GUI
 flask-login>=0.6.3  # For user authentication
-yfinance>=0.2.61  # For Yahoo Finance data 
+yfinance>=0.2.61  # For Yahoo Finance data
+lxml 

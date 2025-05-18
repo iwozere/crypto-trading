@@ -180,24 +180,18 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         return float(-net_profit)
     
     def optimize_single_file(self, data_file):
-        self.log_message(f"\nOptimizing {data_file} for MeanReversionRSBBATRStrategy...")
+        self.log_message(f"\nOptimizing {data_file} for MeanReversionRSBBATRStrategy...", level='info')
         self.current_symbol = data_file.split('_')[0]
-        
-        
         if data_file not in self.raw_data:
-            self.log_message(f"Error: No data for {data_file}.")
+            self.log_message(f"Error: No data for {data_file}.", level='error')
             return None
-        
         self.current_data = self.raw_data[data_file].copy()
-        
         max_period_param = max(self.space[i].low for i, p_name in enumerate([p.name for p in self.space]) 
                                if p_name in ['bb_period', 'rsi_period', 'atr_period'])
         min_data_len = max(max_period_param * 2, 100)
-
         if len(self.current_data) < min_data_len:
-            self.log_message(f"Warning: Insufficient data ({len(self.current_data)} < {min_data_len}) in {data_file}. Skipping.")
+            self.log_message(f"Warning: Insufficient data ({len(self.current_data)} < {min_data_len}) in {data_file}. Skipping.", level='info')
             return None
-        
         self.current_metrics = {} 
         try:
             result = gp_minimize(
@@ -209,24 +203,30 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
                 n_jobs=-1, 
                 verbose=False, 
                 acq_func="EI")
-            
-            self.log_message(f"\nOptimization completed for {data_file}")
-            best_params_values = result.x
-            best_score = result.fun
-            
-            final_metrics_for_best_params = self.current_metrics 
-            if not final_metrics_for_best_params or self.params_to_dict(best_params_values) != final_metrics_for_best_params.get('params'):
-                self.log_message("Re-evaluating with best skopt params for consistent metrics.")
-                _ = self.objective(best_params_values) 
-                final_metrics_for_best_params = self.current_metrics
-            
-            self.log_message(f"Best params for {data_file}: {final_metrics_for_best_params.get('params')}")
-            self.log_message(f"Best score: {best_score:.2f}. Metrics: {final_metrics_for_best_params}")
-            return self.save_results(data_file, result, final_metrics_for_best_params)
+            self.log_message(f"\nOptimization completed for {data_file}", level='info')
+            best_params = self.params_to_dict(result.x)
+            self.log_message(f"Best params for {data_file}: {best_params}", level='info')
+            self.log_message(f"Best score: {result.fun:.2f}. Metrics: {self.current_metrics}", level='info')
+            final_backtest_run = self.run_backtest(self.current_data.copy(), best_params)
+            trades_df = pd.DataFrame()
+            if final_backtest_run and hasattr(final_backtest_run['strategy_instance'], 'trades_log'):
+                trades_log_list = final_backtest_run['strategy_instance'].trades_log
+                if trades_log_list:
+                    trades_df = pd.DataFrame(trades_log_list)
+            plot_path = self.plot_results(self.current_data.copy(), trades_df, best_params, data_file)
+            return self.save_results(
+                data_file=data_file,
+                best_params=best_params,
+                metrics=self.current_metrics,
+                trades_df=trades_df,
+                optimization_result=result,
+                plot_path=plot_path,
+                strategy_name='MeanReversionRSBBATRStrategy'
+            )
         except Exception as e:
-            self.log_message(f"Error during optimization for {data_file}: {str(e)}")
+            self.log_message(f"Error during optimization for {data_file}: {str(e)}", level='error')
             import traceback
-            self.log_message(traceback.format_exc())
+            self.log_message(traceback.format_exc(), level='error')
             return None
     
     def plot_results(self, data_df: pd.DataFrame, trades_df: pd.DataFrame, params: dict, data_file_name: str):
@@ -302,77 +302,6 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         plt.savefig(plot_path, dpi=300, bbox_inches='tight'); plt.close()
         return plot_path
 
-    def save_results(self, data_file, optimization_result, final_metrics):
-        try:
-            self.log_message(f"\nSaving results for {data_file} (MeanReversionRSBBATRStrategy)...")
-            os.makedirs(self.results_dir, exist_ok=True)
-            best_params_values = optimization_result.x
-            best_params_dict = self.params_to_dict(best_params_values)
-            
-            self.log_message(f"Best parameters from skopt: {best_params_dict}")
-            self.log_message(f"Metrics for these best params: {final_metrics}")
-
-            self.log_message("Running final backtest with best parameters for trade log...")
-            final_backtest_run = self.run_backtest(self.current_data.copy(), best_params_dict)
-            
-            trades_df = pd.DataFrame()
-            if final_backtest_run and hasattr(final_backtest_run['strategy_instance'], 'trades_log'):
-                trades_log_list = final_backtest_run['strategy_instance'].trades_log
-                if trades_log_list:
-                    trades_df = pd.DataFrame(trades_log_list)
-                    self.log_message(f"Retrieved {len(trades_df)} trades from final backtest.")
-                else: self.log_message("No trades in trades_log from final backtest.")
-            else: self.log_message("Could not get trade log from final backtest.")
-
-            self.log_message("Generating plot for best parameters...")
-            plot_path = self.plot_results(self.current_data.copy(), trades_df, best_params_dict, data_file)
-            self.log_message(f"Plot for {data_file} at: {plot_path}")
-            
-            trades_records_for_json = []
-            if not trades_df.empty:
-                for col in ['entry_dt', 'exit_dt']:
-                    if col in trades_df.columns and pd.api.types.is_datetime64_any_dtype(trades_df[col]):
-                        trades_df[col] = pd.to_datetime(trades_df[col]).apply(lambda x: x.isoformat() if pd.notnull(x) else None)
-                trades_records_for_json = trades_df.to_dict(orient='records')
-            
-            opt_history = []
-            for x_iter, score_iter in zip(optimization_result.x_iters, optimization_result.func_vals):
-                try: opt_history.append({'params': self.params_to_dict(x_iter), 'score': float(score_iter)})
-                except Exception as e_hist: self.log_message(f"Warn: Can't process opt history item: {e_hist}")
-            
-            filename_base = f"{data_file}_optimization_results"
-
-            results_dict = {
-                'timestamp': datetime.now().isoformat(), 'data_file': data_file,
-                'strategy_name': 'MeanReversionRSBBATRStrategy',
-                'best_params': best_params_dict, 
-                'final_metrics': final_metrics,
-                'best_score_from_optimizer': float(optimization_result.fun), 
-                'trades_log': trades_records_for_json, 
-                'optimization_history': opt_history,
-                'plot_path': plot_path 
-            }
-            
-            results_path = os.path.join(self.results_dir, f'{filename_base}.json')
-            self.log_message(f"Saving results to: {results_path}")
-            try:
-                with open(results_path, 'w') as f: json.dump(results_dict, f, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-            except Exception as e_json: 
-                self.log_message(f"Error during JSON serialization: {e_json}. Saving simplified.")
-                simplified_dict = {k: (v if isinstance(v, (dict, list, str, int, float, bool, type(None))) else str(v)) for k, v in results_dict.items()}
-                for key_complex in ['trades_log', 'optimization_history', 'final_metrics', 'best_params']:
-                    if key_complex in simplified_dict and not isinstance(simplified_dict[key_complex], (list,dict)):
-                         simplified_dict[key_complex] = f"Error serializing {key_complex}, see logs or original dict."
-                simplified_dict['serialization_error'] = str(e_json)
-                with open(results_path, 'w') as f: json.dump(simplified_dict, f, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-            self.log_message(f"Results for {data_file} saved.")
-            return results_dict
-        except Exception as e_save:
-            self.log_message(f"Error in save_results for {data_file}: {str(e_save)}")
-            import traceback
-            self.log_message(f"Full save_results traceback: {traceback.format_exc()}")
-            return None
-    
     def run_optimization(self):
         self.log_message(f"Starting {self.__class__.__name__} optimization process...")
         data_files = [f for f in os.listdir(self.data_dir) if f.endswith('.csv') and not f.startswith('.')]

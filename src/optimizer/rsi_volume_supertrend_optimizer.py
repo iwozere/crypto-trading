@@ -279,9 +279,21 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
                 n_jobs=-1, 
                 verbose=False)
             self.log_message(f"\nOptimization completed for {data_file}", level='info')
-            self.log_message(f"Best parameters: {self.params_to_dict(result.x)}", level='info')
+            best_params = self.params_to_dict(result.x)
+            self.log_message(f"Best parameters: {best_params}", level='info')
             self.log_message(f"Best score: {-result.fun:.2f}", level='info')
-            return self.save_results(data_file, result)
+            final_backtest_results = self.run_backtest(self.current_data, best_params)
+            trades_df = final_backtest_results['strategy'].get_trades() if final_backtest_results and 'strategy' in final_backtest_results else pd.DataFrame()
+            plot_path = self.plot_results(self.current_data, trades_df, best_params, data_file)
+            return self.save_results(
+                data_file=data_file,
+                best_params=best_params,
+                metrics=self.current_metrics,
+                trades_df=trades_df,
+                optimization_result=result,
+                plot_path=plot_path,
+                strategy_name='RsiVolumeSuperTrendStrategy'
+            )
         except Exception as e:
             self.log_message(f"Error during optimization for {data_file}: {str(e)}", level='error')
             import traceback
@@ -355,81 +367,6 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         plt.savefig(plot_path, dpi=300, bbox_inches='tight'); plt.close()
         return plot_path
 
-    def save_results(self, data_file, result):
-        try:
-            self.log_message(f"\nSaving results for {data_file}...", level='info')
-            os.makedirs(self.results_dir, exist_ok=True)
-            best_params = self.params_to_dict(result.x)
-            self.log_message(f"Best parameters: {best_params}", level='info')
-            self.log_message("Running final backtest with best parameters...", level='info')
-            final_backtest_results = self.run_backtest(self.current_data, best_params)
-            if not final_backtest_results or 'strategy' not in final_backtest_results:
-                self.log_message("Failed to run final backtest or get strategy.", level='error')
-                return None
-            
-            trades_df = final_backtest_results['strategy'].get_trades()
-            self.log_message(f"Number of trades in final backtest: {len(trades_df)}", level='info')
-
-            metrics_to_save = self.current_metrics
-            metrics_to_save.update({'final_backtest_trades': len(trades_df)})
-
-            self.log_message(f"Metrics from optimizer's last call (best params): {metrics_to_save}", level='info')
-            self.log_message("Generating plot for best parameters...", level='info')
-            plot_path = self.plot_results(self.current_data, trades_df, best_params, data_file)
-            self.log_message(f"Plot generated at: {plot_path}", level='info')
-            
-            trades_records = []
-            if not trades_df.empty:
-                for _, trade_row in trades_df.iterrows():
-                    trade_dict = {}
-                    for col in trades_df.columns:
-                        value = trade_row[col]
-                        if pd.isna(value): trade_dict[col] = None
-                        elif isinstance(value, (pd.Timestamp, datetime)): trade_dict[col] = value.isoformat()
-                        elif isinstance(value, (np.integer, np.floating, int, float)): trade_dict[col] = float(value)
-                        else: trade_dict[col] = str(value)
-                    trades_records.append(trade_dict)
-            
-            optimization_history = []
-            for x_iter, score_iter in zip(result.x_iters, result.func_vals):
-                try:
-                    param_dict_iter = self.params_to_dict(x_iter)
-                    optimization_history.append({'params': param_dict_iter, 'score': float(score_iter)})
-                except Exception as e:
-                    self.log_message(f"Warning: Could not process optimization history entry: {e}", level='warning')
-                    continue
-            
-            filename_base = f"{data_file}_optimization_results"
-
-            results_dict = {
-                'timestamp': datetime.now().isoformat(), 'data_file': data_file,
-                'best_params': best_params, 'metrics': metrics_to_save,
-                'best_score_from_optimizer': float(-result.fun),
-                'trades_log': trades_records, 'optimization_history': optimization_history,
-                'plot_path': plot_path }
-            
-            results_path = os.path.join(self.results_dir, f'{filename_base}.json')
-            self.log_message(f"Saving results to: {results_path}", level='info')
-            try:
-                json_str = json.dumps(results_dict, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-                with open(results_path, 'w') as f: f.write(json_str)
-            except Exception as e:
-                self.log_message(f"Error during JSON serialization: {e}. Trying to save simplified.", level='error')
-                simplified_dict = {k: v for k, v in results_dict.items() if k not in ['trades_log', 'optimization_history']}
-                simplified_dict['error_in_serialization'] = str(e)
-                json_str = json.dumps(simplified_dict, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-                with open(results_path, 'w') as f: f.write(json_str)
-                self.log_message("Saved simplified results due to serialization error.", level='error')
-            
-            self.log_message(f"Results saved to {results_path}", level='info')
-            return results_dict
-            
-        except Exception as e:
-            self.log_message(f"Error in save_results: {str(e)}", level='error')
-            import traceback
-            self.log_message(f"Full traceback: {traceback.format_exc()}", level='error')
-            return None
-    
     def run_optimization(self):
         self.log_message("Starting optimization process...", level='info')
         data_files = [f for f in os.listdir(self.data_dir) if f.endswith('.csv')]

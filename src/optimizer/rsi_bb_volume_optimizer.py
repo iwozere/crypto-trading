@@ -210,55 +210,49 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
             return 1000  # Return a high score (bad) in case of error
     
     def optimize_single_file(self, data_file):
-        """Optimize parameters for a single data file"""
-        print(f"\nOptimizing for {data_file}...")
-        
-        # Extract symbol from filename
+        self.log_message(f"\nOptimizing for {data_file}...", level='info')
         self.current_symbol = data_file.split('_')[0]
-        
-        # Get data from pre-loaded storage
         if data_file not in self.raw_data:
             raise ValueError(f"No data found for file {data_file}")
-        
-        # Create a copy of the raw data for this optimization run
         self.current_data = self.raw_data[data_file].copy()
-        
-        # Validate data
-        if len(self.current_data) < 100:  # Minimum required data points
-            print(f"Warning: Insufficient data points in {data_file}. Skipping...")
+        if len(self.current_data) < 100:
+            self.log_message(f"Warning: Insufficient data points in {data_file}. Skipping...", level='info')
             return None
-            
-        # Check for missing or invalid values
         if self.current_data.isnull().any().any():
-            print(f"Warning: Found missing values in {data_file}. Cleaning data...")
+            self.log_message(f"Warning: Found missing values in {data_file}. Cleaning data...", level='info')
             self.current_data = self.current_data.fillna(method='ffill').fillna(method='bfill')
-            
-        # Store current metrics
         self.current_metrics = {}
-        
         try:
-            # Run optimization with reduced iterations for faster testing
             result = gp_minimize(
                 func=self.objective,
                 dimensions=self.space,
-                n_calls=100,  # Reduced from 50
-                n_random_starts=42,  # Reduced from 10
+                n_calls=100,
+                n_random_starts=42,
                 noise=0.1,
-                n_jobs=1,  # Use all available CPU cores
+                n_jobs=1,
                 verbose=False
             )
-            
-            print(f"\nOptimization completed for {data_file}")
-            print(f"Best parameters: {self.params_to_dict(result.x)}")
-            print(f"Best score: {-result.fun:.2f}")
-            
-            # Save results regardless of score
-            return self.save_results(data_file, result)
-            
+            self.log_message(f"\nOptimization completed for {data_file}", level='info')
+            best_params = self.params_to_dict(result.x)
+            self.log_message(f"Best parameters: {best_params}", level='info')
+            self.log_message(f"Best score: {-result.fun:.2f}", level='info')
+            # Run final backtest with best params
+            final_backtest_results = self.run_backtest(self.current_data, best_params)
+            trades_df = final_backtest_results['strategy'].get_trades() if final_backtest_results and 'strategy' in final_backtest_results else pd.DataFrame()
+            plot_path = self.plot_results(self.current_data, trades_df, best_params, data_file)
+            return self.save_results(
+                data_file=data_file,
+                best_params=best_params,
+                metrics=self.current_metrics,
+                trades_df=trades_df,
+                optimization_result=result,
+                plot_path=plot_path,
+                strategy_name='RSIBollVolumeATRStrategy'
+            )
         except Exception as e:
-            print(f"Error during optimization for {data_file}: {str(e)}")
+            self.log_message(f"Error during optimization for {data_file}: {str(e)}", level='error')
             import traceback
-            print(traceback.format_exc())
+            self.log_message(str(traceback.format_exc()), level='error')
             return None
     
     def plot_results(self, data, trades_df, params, data_file):
@@ -351,161 +345,6 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         
         return plot_path
 
-    def save_results(self, data_file, result):
-        """Save optimization results to file"""
-        try:
-            print(f"\nSaving results for {data_file}...")
-            os.makedirs(self.results_dir, exist_ok=True)
-            
-            # Get best parameters
-            best_params = self.params_to_dict(result.x)
-            print(f"Best parameters: {best_params}")
-            
-            # Run final backtest with best parameters
-            print("Running final backtest...")
-            results = self.run_backtest(self.current_data, best_params)
-            
-            # Get trade information
-            print("Getting trade information...")
-            trades_df = results['strategy'].get_trades()
-            print(f"Number of trades: {len(trades_df)}")
-            
-            # Calculate additional metrics
-            total_trades = len(trades_df) if not trades_df.empty else 0
-            winning_trades = len(trades_df[trades_df['pnl'] > 0]) if not trades_df.empty else 0
-            win_rate = winning_trades / total_trades if total_trades > 0 else 0
-            
-            # Calculate profit metrics
-            total_profit = trades_df['pnl'].sum() if not trades_df.empty else 0
-            avg_profit = trades_df['pnl'].mean() if not trades_df.empty else 0
-            max_profit = trades_df['pnl'].max() if not trades_df.empty else 0
-            max_loss = trades_df['pnl'].min() if not trades_df.empty else 0
-            
-            # Get drawdown and Sharpe ratio from analyzer results with safe handling
-            print("Getting analyzer results...")
-            drawdown = results['drawdown']
-            sharpe = results['sharpe']
-            
-            # Safely get values with defaults
-            max_drawdown = float(drawdown.get('max', {}).get('drawdown', 0) or 0)
-            sharpe_ratio = float(sharpe.get('sharperatio', 0) or 0)
-            
-            # Get trades analysis
-            trades = results['trades']
-            
-            # Calculate portfolio growth percentage
-            final_value = results['strategy'].broker.getvalue()
-            portfolio_growth = ((final_value - self.initial_capital) / self.initial_capital) * 100
-            
-            # Calculate additional metrics
-            avg_trade = total_profit / total_trades if total_trades > 0 else 0
-            max_consecutive_wins = trades.get('streak', {}).get('won', {}).get('longest', 0)
-            max_consecutive_losses = trades.get('streak', {}).get('lost', {}).get('longest', 0)
-            
-            # Prepare metrics dictionary
-            metrics = {
-                'total_trades': total_trades,
-                'winning_trades': winning_trades,
-                'win_rate': float(win_rate),
-                'total_profit': float(total_profit),
-                'avg_profit': float(avg_profit),
-                'max_profit': float(max_profit),
-                'max_loss': float(max_loss),
-                'max_drawdown': float(max_drawdown),
-                'sharpe_ratio': float(sharpe_ratio),
-                'portfolio_growth': float(portfolio_growth),
-                'final_value': float(final_value)
-            }
-            print(f"Metrics calculated: {metrics}")
-            
-            # Generate plot
-            print("Generating plot...")
-            plot_path = self.plot_results(self.current_data, trades_df, best_params, data_file)
-            print(f"Plot generated at: {plot_path}")
-            
-            # Convert trades DataFrame to records with proper timestamp handling
-            trades_records = []
-            if not trades_df.empty:
-                for _, trade in trades_df.iterrows():
-                    trade_dict = {}
-                    for col in trades_df.columns:
-                        value = trade[col]
-                        if pd.isna(value):
-                            trade_dict[col] = None
-                        elif isinstance(value, (pd.Timestamp, datetime)):
-                            trade_dict[col] = value.isoformat()
-                        elif isinstance(value, (np.integer, np.floating)):
-                            trade_dict[col] = float(value)
-                        else:
-                            trade_dict[col] = value
-                    trades_records.append(trade_dict)
-            
-            # Prepare optimization history
-            optimization_history = []
-            for x, score in zip(result.x_iters, result.func_vals):
-                try:
-                    param_dict = self.params_to_dict(x)
-                    optimization_history.append({
-                        'params': param_dict,
-                        'score': float(score)
-                    })
-                except Exception as e:
-                    print(f"Warning: Could not process optimization history entry: {e}")
-                    continue
-            
-            # Prepare results dictionary
-            results_dict = {
-                'timestamp': datetime.now().isoformat(),
-                'data_file': data_file,
-                'best_params': best_params,
-                'metrics': metrics,
-                'best_score': float(-result.fun),
-                'trades': trades_records,
-                'optimization_history': optimization_history,
-                'plot_path': plot_path
-            }
-            
-            # Save to JSON with custom encoder
-            results_path = os.path.join(self.results_dir, f'{data_file}_optimization_results.json')
-            print(f"Saving results to: {results_path}")
-            
-            # Calculate sqn_pct and cagr using BaseOptimizer utilities
-            sqn_pct = None
-            cagr = None
-            try:
-                trades_log = results['strategy'].get_trades() if hasattr(results['strategy'], 'get_trades') else []
-                if trades_log and len(trades_log) > 1:
-                    trades_df = trades_log if isinstance(trades_log, pd.DataFrame) else pd.DataFrame(trades_log)
-                    sqn_pct = BaseOptimizer.calculate_sqn_pct(trades_df)
-                    if 'entry_time' in trades_df.columns and 'exit_time' in trades_df.columns:
-                        trades_df = trades_df.dropna(subset=['entry_time', 'exit_time'])
-                        if not trades_df.empty:
-                            cagr = BaseOptimizer.calculate_cagr(self.initial_capital, final_value, trades_df['entry_time'].iloc[0], trades_df['exit_time'].iloc[-1])
-            except Exception:
-                pass
-            
-            try:
-                json_str = json.dumps(results_dict, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-                with open(results_path, 'w') as f: f.write(json_str)
-            except Exception as e:
-                print(f"Error during JSON serialization: {e}. Trying to save simplified.")
-                simplified_dict = {k: v for k, v in results_dict.items() if k not in ['trades_log', 'optimization_history']}
-                simplified_dict['error_in_serialization'] = str(e)
-                json_str = json.dumps(simplified_dict, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-                with open(results_path, 'w') as f: f.write(json_str)
-                print("Saved simplified results due to serialization error.")
-            
-            print(f"\nResults saved to {results_path}")
-            print(f"Plot saved to {plot_path}")
-            return results_dict
-            
-        except Exception as e:
-            print(f"Error saving results: {str(e)}")
-            import traceback
-            print("Full traceback:")
-            print(traceback.format_exc())
-            return None
-    
     def run_optimization(self):
         """Run optimization for all data files"""
         print("Starting optimization process...")

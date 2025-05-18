@@ -155,7 +155,7 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
             except Exception as e:
                 self.log_message(f"Error loading {data_file}: {str(e)}")
     
-    def log_message(self, message):
+    def log_message(self, message, level='info'):
         print(f"[{datetime.now().isoformat()}] {message}")
 
     def params_to_dict(self, params):
@@ -295,49 +295,54 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         return float(objective_score)
     
     def optimize_single_file(self, data_file):
-        self.log_message(f"\nOptimizing for {data_file}...")
+        self.log_message(f"\nOptimizing for {data_file}...", level='info')
         self.current_symbol = data_file.split('_')[0]
         if data_file not in self.raw_data:
-            self.log_message(f"Error: No data found for file {data_file}. Ensure it was loaded.")
+            self.log_message(f"Error: No data found for file {data_file}. Ensure it was loaded.", level='error')
             return None
         self.current_data = self.raw_data[data_file].copy()
         min_data_len = max(s.low for s in self.space if hasattr(s, 'low')) * 2
         min_data_len = max(min_data_len, 50)
-
         if len(self.current_data) < min_data_len:
-            self.log_message(f"Warning: Insufficient data points ({len(self.current_data)} < {min_data_len}) in {data_file}. Skipping...")
+            self.log_message(f"Warning: Insufficient data points ({len(self.current_data)} < {min_data_len}) in {data_file}. Skipping...", level='info')
             return None
         if self.current_data.isnull().any().any():
-            self.log_message(f"Warning: Found missing values in {data_file} before optimization. Cleaning data...")
+            self.log_message(f"Warning: Found missing values in {data_file} before optimization. Cleaning data...", level='info')
             self.current_data.ffill(inplace=True)
             self.current_data.bfill(inplace=True)
             if self.current_data.isnull().any().any():
-                 self.log_message(f"Error: NaN values persist in {data_file} even after fill. Skipping.")
+                 self.log_message(f"Error: NaN values persist in {data_file} even after fill. Skipping.", level='error')
                  return None
         self.current_metrics = {} 
         try:
             result = gp_minimize(
                 func=self.objective, dimensions=self.space, n_calls=100,
                 n_random_starts=20, noise=0.01, n_jobs=-1, verbose=False, acq_func="EI")
-            self.log_message(f"\nOptimization completed for {data_file}")
-            best_params_values = result.x
-            best_score = result.fun
-            
-            final_metrics_for_best_params = self.current_metrics 
-            if not final_metrics_for_best_params or self.params_to_dict(best_params_values) != final_metrics_for_best_params.get('params'):
-                self.log_message("Warning: current_metrics might not correspond to best skopt result. Re-evaluating for report.")
-                _ = self.objective(best_params_values)
-                final_metrics_for_best_params = self.current_metrics
-            
-            self.log_message(f"Best parameters found: {final_metrics_for_best_params.get('params')}")
-            self.log_message(f"Achieved objective score: {best_score:.2f}")
-            self.log_message(f"Metrics for best: {final_metrics_for_best_params}")
-
-            return self.save_results(data_file, result, final_metrics_for_best_params)
+            self.log_message(f"\nOptimization completed for {data_file}", level='info')
+            best_params = self.params_to_dict(result.x)
+            self.log_message(f"Best parameters found: {best_params}", level='info')
+            self.log_message(f"Achieved objective score: {result.fun:.2f}", level='info')
+            self.log_message(f"Metrics for best: {self.current_metrics}", level='info')
+            final_backtest_run = self.run_backtest(self.current_data.copy(), best_params)
+            trades_df = pd.DataFrame()
+            if final_backtest_run and hasattr(final_backtest_run['strategy_instance'], 'trades_log'):
+                trades_log_list = final_backtest_run['strategy_instance'].trades_log
+                if trades_log_list:
+                    trades_df = pd.DataFrame(trades_log_list)
+            plot_path = self.plot_results(self.current_data, trades_df, best_params, data_file)
+            return self.save_results(
+                data_file=data_file,
+                best_params=best_params,
+                metrics=self.current_metrics,
+                trades_df=trades_df,
+                optimization_result=result,
+                plot_path=plot_path,
+                strategy_name='BBSuperTrendVolumeBreakoutStrategy'
+            )
         except Exception as e:
-            self.log_message(f"Error during optimization for {data_file}: {str(e)}")
+            self.log_message(f"Error during optimization for {data_file}: {str(e)}", level='error')
             import traceback
-            self.log_message(traceback.format_exc())
+            self.log_message(traceback.format_exc(), level='error')
             return None
     
     def plot_results(self, data_df: pd.DataFrame, trades_df: pd.DataFrame, params: dict, data_file_name: str):
@@ -406,18 +411,16 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         self.log_message(f"Plot saved to {plot_path}")
         return plot_path
 
-    def save_results(self, data_file, optimization_result, final_metrics):
+    def save_results(self, data_file, best_params, metrics, trades_df, optimization_result, plot_path, strategy_name):
         try:
             self.log_message(f"\nSaving results for {data_file}...")
             os.makedirs(self.results_dir, exist_ok=True)
-            best_params_values = optimization_result.x
-            best_params_dict = self.params_to_dict(best_params_values)
             
-            self.log_message(f"Best parameters determined by skopt: {best_params_dict}")
-            self.log_message(f"Metrics from final evaluation with these params: {final_metrics}")
+            self.log_message(f"Best parameters determined by skopt: {best_params}")
+            self.log_message(f"Metrics from final evaluation with these params: {metrics}")
 
             self.log_message("Running final backtest with best parameters to capture trade log...")
-            final_backtest_run = self.run_backtest(self.current_data.copy(), best_params_dict)
+            final_backtest_run = self.run_backtest(self.current_data.copy(), best_params)
             
             trades_df = pd.DataFrame()
             if final_backtest_run and hasattr(final_backtest_run['strategy_instance'], 'trades_log'):
@@ -431,7 +434,7 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
                 self.log_message("Could not retrieve trade log from final backtest run.")
 
             self.log_message("Generating plot for best parameters...")
-            plot_path = self.plot_results(self.current_data, trades_df, best_params_dict, data_file)
+            plot_path = self.plot_results(self.current_data, trades_df, best_params, data_file)
             self.log_message(f"Plot generated at: {plot_path}")
             
             trades_records_for_json = []
@@ -449,13 +452,13 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
                 except Exception as e:
                     self.log_message(f"Warning: Could not process optimization history entry: {e}")
             
-            param_str_part = "_params_" + "_".join([f"{k[:3]}{v:.2f if isinstance(v, float) else v}" for k,v in best_params_dict.items()])[:60].replace(" ","").replace(".", "")
+            param_str_part = "_params_" + "_".join([f"{k[:3]}{v:.2f if isinstance(v, float) else v}" for k,v in best_params.items()])[:60].replace(" ","").replace(".", "")
             filename_base = f"{self.current_symbol}_{data_file.replace('.csv','')}{param_str_part}_BBSTV_optim"
 
             results_dict = {
                 'timestamp': datetime.now().isoformat(), 'data_file': data_file,
-                'best_params': best_params_dict, 
-                'final_metrics': final_metrics,
+                'best_params': best_params, 
+                'final_metrics': metrics,
                 'best_score_from_optimizer': float(optimization_result.fun), 
                 'trades_log': trades_records_for_json, 
                 'optimization_history': optimization_history,
@@ -477,7 +480,7 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
                     if 'entry_dt' in trades_df.columns and 'exit_dt' in trades_df.columns:
                         trades_df = trades_df.dropna(subset=['entry_dt', 'exit_dt'])
                         if not trades_df.empty:
-                            cagr = BaseOptimizer.calculate_cagr(self.initial_capital, final_metrics.get('final_value', 0), trades_df['entry_dt'].iloc[0], trades_df['exit_dt'].iloc[-1])
+                            cagr = BaseOptimizer.calculate_cagr(self.initial_capital, metrics.get('final_value', 0), trades_df['entry_dt'].iloc[0], trades_df['exit_dt'].iloc[-1])
             except Exception:
                 pass
             try:
