@@ -1,3 +1,8 @@
+"""
+Provides a Backtrader-compatible live data feed using Binance API and Pandas.
+
+This module defines BinanceLiveFeed, a custom Backtrader data feed that fetches and updates live market data from Binance for algorithmic trading.
+"""
 import pandas as pd
 import time
 import backtrader as bt

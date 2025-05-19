@@ -1,3 +1,8 @@
+"""
+Provides logging utilities for the trading system, including console and file logging.
+
+This module sets up application-wide logging configuration and exposes a logger for use throughout the project.
+"""
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

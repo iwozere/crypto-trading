@@ -1,3 +1,8 @@
+"""
+Downloads historical OHLCV data from Binance and saves it as CSV for backtesting and analysis.
+
+This module provides BinanceDataDownloader, a utility for fetching and storing historical market data for multiple symbols and intervals.
+"""
 import os
 from datetime import datetime, timedelta
 import pandas as pd

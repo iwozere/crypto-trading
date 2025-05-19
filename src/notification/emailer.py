@@ -1,3 +1,8 @@
+"""
+Sends trade notifications and alerts via email using SendGrid.
+
+This module defines EmailNotifier, which can send trade and system notifications to configured email addresses for trading bots.
+"""
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

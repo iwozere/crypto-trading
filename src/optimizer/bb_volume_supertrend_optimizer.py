@@ -322,8 +322,14 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         self.current_metrics = {} 
         try:
             result = gp_minimize(
-                func=self.objective, dimensions=self.space, n_calls=100,
-                n_random_starts=20, noise=0.01, n_jobs=-1, verbose=False, acq_func="EI")
+                func=self.objective, 
+                dimensions=self.space, 
+                n_calls=100,
+                n_random_starts=20, 
+                noise=0.01, 
+                n_jobs=-1, 
+                verbose=False, 
+                acq_func="EI")
             self.log_message(f"\nOptimization completed for {data_file}", level='info')
             best_params = self.params_to_dict(result.x)
             self.log_message(f"Best parameters found: {best_params}", level='info')

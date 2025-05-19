@@ -27,13 +27,36 @@ pip install -r requirements.txt
 ## Project Structure
 
 ```
-.
+crypto-trading/
 ├── README.md
 ├── requirements.txt
+├── setup.py
+├── data/
+│   └── all/
+├── results/
+│   └── archive/
 ├── src/
-│   └── __init__.py
-└── tests/
-    └── __init__.py
+│   ├── analyzer/
+│   ├── bot/
+│   ├── data/
+│   ├── notification/
+│   ├── optimizer/
+│   │   ├── base_optimizer.py
+│   │   ├── rsi_bb_atr_optimizer.py
+│   │   ├── rsi_bb_volume_optimizer.py
+│   │   ├── bb_volume_supertrend_optimizer.py
+│   │   └── rsi_volume_supertrend_optimizer.py
+│   ├── strats/
+│   │   ├── rsi_bb_atr_strategy.py
+│   │   ├── rsi_bb_volume_strategy.py
+│   │   ├── bb_volume_supertrend_strategy.py
+│   │   └── rsi_volume_supertrend_strategy.py
+│   ├── webgui/
+│   │   ├── static/
+│   │   └── templates/
+│   └── ...
+├── tests/
+└── ...
 ```
 
 ## Optimizers and Strategies

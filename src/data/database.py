@@ -1,3 +1,8 @@
+"""
+Provides a simple SQLite database interface for storing trades and performance metrics for trading strategies.
+
+This module defines the Database class, which manages trade and performance metric records for backtesting and live trading analysis.
+"""
 import sqlite3
 from typing import Dict, List, Any
 from datetime import datetime

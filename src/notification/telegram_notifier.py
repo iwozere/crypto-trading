@@ -1,3 +1,8 @@
+"""
+Sends trade and error notifications to Telegram using a bot, for real-time trading alerts.
+
+This module defines TelegramNotifier, which can send trade entries, updates, and error alerts to a configured Telegram chat for trading bots.
+"""
 import os
 import sys
 import asyncio

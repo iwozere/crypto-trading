@@ -1,3 +1,9 @@
+"""
+Summarizes and extracts key metrics from optimization result JSON files in the 'results' directory.
+
+This script processes each *_optimization_results.json file, extracts relevant trading metrics and parameters,
+and outputs a summary CSV for further analysis and reporting.
+"""
 import os
 import json
 import pandas as pd
