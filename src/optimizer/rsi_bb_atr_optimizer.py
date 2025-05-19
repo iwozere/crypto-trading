@@ -29,12 +29,13 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         - Finds optimal parameters for the strategy to maximize risk-adjusted returns
     """
     def __init__(self, initial_capital=1000.0, commission=0.001):
+        self.strategy_name = 'MeanReversionRSBBATRStrategy'
+        self.strategy_class = MeanReversionRSBBATRStrategy
+        super().__init__(initial_capital, commission)
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
         os.makedirs(self.results_dir, exist_ok=True)
         
-        self.initial_capital = initial_capital
-        self.commission = commission
         plt.style.use('default')
         sns.set_theme(style="darkgrid")
         plt.rcParams['figure.figsize'] = (15, 10)
@@ -60,185 +61,6 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         self.load_all_data()
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
         warnings.filterwarnings('ignore', category=RuntimeWarning)
-    
-    def run_backtest(self, data, params):
-        cerebro = bt.Cerebro()
-        if not isinstance(data.index, pd.DatetimeIndex):
-            self.log_message("Error: Data for backtest must have a DatetimeIndex.")
-            return None
-        expected_cols = ['open', 'high', 'low', 'close', 'volume'] 
-        if not all(col in data.columns for col in expected_cols):
-            self.log_message(f"Error: Data missing one of required columns: {expected_cols}. Check load_all_data.")
-            return None
-
-        data_feed = bt.feeds.PandasData(
-            dataname=data.copy(),
-            datetime=None, open='open', high='high', low='low', close='close', volume='volume',
-            openinterest=-1
-        )
-        
-        cerebro.adddata(data_feed)
-        cerebro.addstrategy(MeanReversionRSBBATRStrategy, **params)
-        cerebro.broker.setcash(self.initial_capital)
-        cerebro.broker.setcommission(commission=self.commission)
-        cerebro.broker.set_checksubmit(False)  # Don't check if we can submit orders
-        
-        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.0, timeframe=bt.TimeFrame.Days, compression=1, annualize=True)
-        cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
-        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
-        cerebro.addanalyzer(bt.analyzers.SQN, _name='sqn')
-        cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annual_return')
-        
-        try:
-            results = cerebro.run()
-            if not results:
-                self.log_message(f"Backtest with params {params} did not yield valid results object.")
-                return None
-            
-            # Get analyzer results
-            sharpe = results[0].analyzers.sharpe.get_analysis()
-            drawdown = results[0].analyzers.drawdown.get_analysis()
-            trades = results[0].analyzers.trades.get_analysis()
-            sqn = results[0].analyzers.sqn.get_analysis()
-            annual_return = results[0].analyzers.annual_return.get_analysis()
-
-            return {
-                'strategy_instance': results[0],
-                'sharpe': sharpe,
-                'drawdown': drawdown,
-                'sqn': sqn,
-                'annual_return': annual_return,
-                'trades': trades
-            }            
-        except Exception as e:
-            self.log_message(f"Error during backtest run for params {params}: {str(e)}")
-            import traceback
-            self.log_message(traceback.format_exc())
-            return None
-
-    
-    def objective(self, params):
-        param_dict = self.params_to_dict(params)
-        backtest_results = self.run_backtest(self.current_data.copy(), param_dict)
-        
-        if backtest_results is None:
-            self.log_message(f"Backtest failed for params {param_dict}, returning high penalty.")
-            return 1000.0 
-
-        trades_analysis = backtest_results.get('trades', {})
-        sharpe_analysis = backtest_results.get('sharpe', {})
-        drawdown_analysis = backtest_results.get('drawdown', {})
-        sqn_analysis = backtest_results.get('sqn', {})
-
-        total_trades = trades_analysis.get('total', {}).get('total', 0)
-        if total_trades < 5:
-            #self.log_message(f"Penalizing due to low trade count: {total_trades} for params {param_dict}")
-            return 500.0 - total_trades * 10 
-
-        net_profit = float(trades_analysis.get('pnl', {}).get('net', {}).get('total', 0.0))
-        objective_score = -net_profit
-
-        max_drawdown_pct = float(drawdown_analysis.get('max', {}).get('drawdown', 100.0))
-        if max_drawdown_pct > 35: 
-            objective_score += (max_drawdown_pct - 35) * 10 
-
-        sharpe_ratio = float(sharpe_analysis.get('sharperatio', -5.0) if sharpe_analysis.get('sharperatio') is not None else -5.0)
-        if sharpe_ratio < 0.1:
-             objective_score += (0.1 - sharpe_ratio) * 1000 
-
-        sqn_val = float(sqn_analysis.get('sqn', -5.0) if sqn_analysis.get('sqn') is not None else -5.0)
-        if sqn_val < 1.0:
-            objective_score += (1.0 - sqn_val) * 200
-
-        final_value = backtest_results['strategy_instance'].broker.getvalue()
-        portfolio_growth = ((final_value - self.initial_capital) / self.initial_capital) * 100
-        win_rate = trades_analysis.get('won', {}).get('total', 0) / total_trades if total_trades > 0 else 0
-        gross_profit = trades_analysis.get('won', {}).get('pnl', {}).get('total', 0)
-        gross_loss = abs(trades_analysis.get('lost', {}).get('pnl', {}).get('total', 0))
-        profit_factor_val = gross_profit / gross_loss if gross_loss > 0 else 0
-
-        # Calculate sqn_pct and cagr using BaseOptimizer utilities
-        sqn_pct = None
-        cagr = None
-        try:
-            trades_log = backtest_results['strategy_instance'].trades_log if hasattr(backtest_results['strategy_instance'], 'trades_log') else []
-            if trades_log and len(trades_log) > 1:
-                import pandas as pd
-                trades_df = pd.DataFrame(trades_log)
-                sqn_pct = BaseOptimizer.calculate_sqn_pct(trades_df)
-                if 'entry_dt' in trades_df.columns and 'exit_dt' in trades_df.columns:
-                    trades_df = trades_df.dropna(subset=['entry_dt', 'exit_dt'])
-                    if not trades_df.empty:
-                        cagr = BaseOptimizer.calculate_cagr(self.initial_capital, final_value, trades_df['entry_dt'].iloc[0], trades_df['exit_dt'].iloc[-1])
-        except Exception:
-            pass
-
-        self.current_metrics = {
-            'total_trades': total_trades, 
-            'win_rate': win_rate, 
-            'profit_factor': profit_factor_val,
-            'max_drawdown_pct': max_drawdown_pct, 
-            'sharpe_ratio': sharpe_ratio, 
-            'sqn': sqn_val,
-            'sqn_pct': sqn_pct,
-            'cagr': cagr,
-            'net_profit': net_profit,
-            'portfolio_growth_pct': portfolio_growth,
-            'final_value': final_value, 
-            'params': param_dict
-        }
-        #self.log_message(f"Params: {param_dict} -> Score: {objective_score:.2f}, NetProfit%: {net_profit_pct:.2f}, Trades: {total_trades}, Sharpe: {sharpe_ratio:.2f}, DD: {max_drawdown_pct:.2f}%, SQN: {sqn_val:.2f}")
-        return float(-net_profit)
-    
-    def optimize_single_file(self, data_file):
-        self.log_message(f"\nOptimizing {data_file} for MeanReversionRSBBATRStrategy...", level='info')
-        self.current_symbol = data_file.split('_')[0]
-        if data_file not in self.raw_data:
-            self.log_message(f"Error: No data for {data_file}.", level='error')
-            return None
-        self.current_data = self.raw_data[data_file].copy()
-        max_period_param = max(self.space[i].low for i, p_name in enumerate([p.name for p in self.space]) 
-                               if p_name in ['bb_period', 'rsi_period', 'atr_period'])
-        min_data_len = max(max_period_param * 2, 100)
-        if len(self.current_data) < min_data_len:
-            self.log_message(f"Warning: Insufficient data ({len(self.current_data)} < {min_data_len}) in {data_file}. Skipping.", level='info')
-            return None
-        self.current_metrics = {} 
-        try:
-            result = gp_minimize(
-                func=self.objective, 
-                dimensions=self.space,
-                n_calls=100, 
-                n_random_starts=20, 
-                noise=0.01, 
-                n_jobs=-1, 
-                verbose=False, 
-                acq_func="EI")
-            self.log_message(f"\nOptimization completed for {data_file}", level='info')
-            best_params = self.params_to_dict(result.x)
-            self.log_message(f"Best params for {data_file}: {best_params}", level='info')
-            self.log_message(f"Best score: {result.fun:.2f}. Metrics: {self.current_metrics}", level='info')
-            final_backtest_run = self.run_backtest(self.current_data.copy(), best_params)
-            trades_df = pd.DataFrame()
-            if final_backtest_run and hasattr(final_backtest_run['strategy_instance'], 'trades_log'):
-                trades_log_list = final_backtest_run['strategy_instance'].trades_log
-                if trades_log_list:
-                    trades_df = pd.DataFrame(trades_log_list)
-            plot_path = self.plot_results(self.current_data.copy(), trades_df, best_params, data_file)
-            return self.save_results(
-                data_file=data_file,
-                best_params=best_params,
-                metrics=self.current_metrics,
-                trades_df=trades_df,
-                optimization_result=result,
-                plot_path=plot_path,
-                strategy_name='MeanReversionRSBBATRStrategy'
-            )
-        except Exception as e:
-            self.log_message(f"Error during optimization for {data_file}: {str(e)}", level='error')
-            import traceback
-            self.log_message(traceback.format_exc(), level='error')
-            return None
     
     def plot_results(self, data_df: pd.DataFrame, trades_df: pd.DataFrame, params: dict, data_file_name: str):
         plt.style.use('dark_background')
@@ -312,66 +134,6 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         plot_path = os.path.join(self.results_dir, f'{data_file_name}_plot.png')
         plt.savefig(plot_path, dpi=300, bbox_inches='tight'); plt.close()
         return plot_path
-
-    def run_optimization(self):
-        self.log_message(f"Starting {self.__class__.__name__} optimization process...")
-        data_files = [f for f in os.listdir(self.data_dir) if f.endswith('.csv') and not f.startswith('.')]
-        if not data_files: self.log_message("No data files found. Exiting."); return
-        
-        all_results = []
-        for data_file in data_files:
-            try:
-                if data_file not in self.raw_data:
-                    self.log_message(f"Data for {data_file} not pre-loaded. Attempting dynamic load.")
-                    try:
-                        df = pd.read_csv(os.path.join(self.data_dir, data_file), index_col='timestamp', parse_dates=True)
-                        required_cols = ['open', 'high', 'low', 'close', 'volume']
-                        if not all(col in df.columns for col in required_cols):
-                             df['volume'] = 0
-                        if not all(col in df.columns for col in ['open', 'high', 'low', 'close']):
-                            self.log_message(f"Skipping {data_file}, missing OHLC columns.")
-                            continue
-                        df = df[required_cols].copy()
-                        for col in df.columns: df[col] = pd.to_numeric(df[col], errors='coerce')
-                        df.sort_index(inplace=True)
-                        df.ffill(inplace=True).bfill(inplace=True)
-                        if df.isnull().values.any(): self.log_message(f"Skipping {data_file}, NaNs persist after fill."); continue
-                        self.raw_data[data_file] = df
-                        self.log_message(f"Dynamically loaded and prepared {data_file}.")
-                    except Exception as load_e: self.log_message(f"Dynamic load for {data_file} failed: {load_e}. Skipping."); continue
-                
-                result = self.optimize_single_file(data_file)
-                if result is not None: all_results.append(result)
-            except Exception as e_file_opt:
-                self.log_message(f"Major error optimizing {data_file}: {str(e_file_opt)}")
-                import traceback
-                self.log_message(f"Traceback: {traceback.format_exc()}")
-
-        if not all_results: self.log_message("No optimization results generated."); return
-            
-        combined_results_data = {
-            'optimization_run_timestamp': datetime.now().isoformat(),
-            'optimizer_class': self.__class__.__name__,
-            'strategy_name': 'MeanReversionRSBBATRStrategy',
-            'results_summary': [
-                { 'data_file': r.get('data_file'), 'best_score': r.get('best_score_from_optimizer'),
-                  'best_params': r.get('best_params'),
-                  'total_trades': r.get('metrics',{}).get('total_trades'),
-                  'net_profit': r.get('metrics',{}).get('net_profit'),
-                  'sharpe_ratio': r.get('metrics',{}).get('sharpe_ratio'),
-                  'max_drawdown_pct': r.get('metrics',{}).get('max_drawdown_pct'),
-                  'sqn': r.get('metrics',{}).get('sqn'),
-                  'plot_path': r.get('plot_path') } for r in all_results if r
-            ],
-            'full_results': all_results
-        }
-        ts_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        combined_filename = f'combined_optim_results.json'
-        combined_path = os.path.join(self.results_dir, combined_filename)
-        try:
-            with open(combined_path, 'w') as f: json.dump(combined_results_data, f, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-            self.log_message(f"\nCombined results saved to {combined_path}")
-        except Exception as e_comb_save: self.log_message(f"Error saving combined JSON: {e_comb_save}")
 
 if __name__ == "__main__":
     optimizer = MeanReversionRSBBATROptimizer(initial_capital=1000.0, commission=0.001)
