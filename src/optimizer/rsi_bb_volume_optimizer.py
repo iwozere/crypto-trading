@@ -17,6 +17,17 @@ from datetime import datetime
 from src.optimizer.base_optimizer import BaseOptimizer
 
 class RsiBBVolumeOptimizer(BaseOptimizer):
+    """
+    Optimizer for the RSIBollVolumeATRStrategy.
+    
+    This optimizer uses Bayesian optimization to tune parameters for a mean-reversion strategy
+    that combines RSI, Bollinger Bands, and Volume with ATR-based position management. It is suitable for assets
+    that exhibit mean-reverting behavior with volume spikes, such as certain crypto pairs or stocks.
+    
+    Use Case:
+        - Markets with mean-reverting tendencies and volume-driven moves
+        - Finds optimal parameters for maximizing profit and minimizing drawdown
+    """
     def __init__(self, initial_capital=1000.0, commission=0.001):
         super().__init__(initial_capital, commission)
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')

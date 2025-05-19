@@ -6,6 +6,10 @@ from datetime import datetime
 from src.notification.logger import _logger
 
 class BaseOptimizer:
+    def __init__(self, initial_capital=1000.0, commission=0.001):
+        self.initial_capital = initial_capital
+        self.commission = commission
+
     class DateTimeEncoder(json.JSONEncoder):
         def default(self, obj):
             if isinstance(obj, (pd.Timestamp, datetime)):

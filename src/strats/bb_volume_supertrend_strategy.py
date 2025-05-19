@@ -23,44 +23,41 @@ class SuperTrend(bt.Indicator):
         # Final Upper Band and Final Lower Band
         self.final_ub = bt.indicators.Max(self.basic_ub) # Placeholder, logic will be in next
         self.final_lb = bt.indicators.Min(self.basic_lb) # Placeholder, logic will be in next
-        
-        # Initialize direction and supertrend in the first valid calculation point
-        self.lines.direction[0] = 0 # 0 for undefined, 1 for long, -1 for short
-        self.lines.supertrend[0] = np.nan
-
+        # Do not assign to self.lines.direction[0] or self.lines.supertrend[0] here
 
     def next(self):
         # If ATR is not yet valid, do nothing or carry forward
-        if len(self.atr.lines.atr) < self.p.period : # ATR needs 'period' bars to calculate
+        if len(self.atr.lines.atr) < self.p.period or len(self) < 2:
             self.lines.supertrend[0] = np.nan
             self.lines.direction[0] = 0 # Undefined
             return
 
         # Calculate current final upper and lower bands
-        # If basic_ub < previous final_ub OR previous_close > previous final_ub => final_ub = basic_ub
-        # Else final_ub = previous final_ub
-        if self.basic_ub[0] < self.final_ub[-1] or self.datas[0].close[-1] > self.final_ub[-1]:
+        # Only use negative indices if len(self) > 1
+        prev_final_ub = self.final_ub[-1] if len(self) > 1 else self.basic_ub[0]
+        prev_final_lb = self.final_lb[-1] if len(self) > 1 else self.basic_lb[0]
+        prev_close = self.datas[0].close[-1] if len(self) > 1 else self.datas[0].close[0]
+
+        if self.basic_ub[0] < prev_final_ub or prev_close > prev_final_ub:
             self.final_ub[0] = self.basic_ub[0]
         else:
-            self.final_ub[0] = self.final_ub[-1]
+            self.final_ub[0] = prev_final_ub
 
-        # If basic_lb > previous final_lb OR previous_close < previous final_lb => final_lb = basic_lb
-        # Else final_lb = previous final_lb
-        if self.basic_lb[0] > self.final_lb[-1] or self.datas[0].close[-1] < self.final_lb[-1]:
+        if self.basic_lb[0] > prev_final_lb or prev_close < prev_final_lb:
             self.final_lb[0] = self.basic_lb[0]
         else:
-            self.final_lb[0] = self.final_lb[-1]
+            self.final_lb[0] = prev_final_lb
         
         # Set initial direction if it's undefined (first proper calculation)
-        if self.lines.direction[-1] == 0 :
-             if self.datas[0].close[0] > self.final_ub[-1]: # Using previous final_ub for initial trend check
-                 self.lines.direction[0] = 1
-             elif self.datas[0].close[0] < self.final_lb[-1]: # Using previous final_lb for initial trend check
-                 self.lines.direction[0] = -1
-             else: # If close is between bands at init, direction remains 0 until a clear break
-                 self.lines.direction[0] = 0 # Still undefined
-                 self.lines.supertrend[0] = np.nan
-                 return # Wait for a clearer signal
+        if self.lines.direction[-1] == 0:
+            if self.datas[0].close[0] > prev_final_ub:
+                self.lines.direction[0] = 1
+            elif self.datas[0].close[0] < prev_final_lb:
+                self.lines.direction[0] = -1
+            else:
+                self.lines.direction[0] = 0 # Still undefined
+                self.lines.supertrend[0] = np.nan
+                return
 
         # Determine current direction and SuperTrend line
         if self.lines.direction[-1] == 1: # Previous trend was up
@@ -73,8 +70,6 @@ class SuperTrend(bt.Indicator):
                 self.lines.direction[0] = 1
             else:
                 self.lines.direction[0] = -1
-        # else: # if direction[-1] was 0, it means we are still waiting for initial break
-            # This case is handled by the initial direction setting part or should default to previous (0)
 
         # Set SuperTrend line value
         if self.lines.direction[0] == 1:

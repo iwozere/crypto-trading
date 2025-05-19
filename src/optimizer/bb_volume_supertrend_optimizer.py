@@ -16,10 +16,21 @@ from ta.volatility import AverageTrueRange, BollingerBands
 from src.optimizer.base_optimizer import BaseOptimizer
 
 class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
+    """
+    Optimizer for the BBSuperTrendVolumeBreakoutStrategy.
+    
+    This optimizer uses Bayesian optimization to tune parameters for a breakout strategy that combines
+    Bollinger Bands, SuperTrend, and Volume. It is designed for volatile breakout markets (crypto, small-cap stocks)
+    and seeks to maximize net profit while controlling drawdown and risk.
+    
+    Use Case:
+        - Volatile breakout markets
+        - Finds optimal parameters for capturing large moves early while filtering out fakeouts
+    """
     def __init__(self, initial_capital=1000.0, commission=0.001):
         super().__init__(initial_capital, commission)
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
-        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results_bb_supertrend_volume_breakout')
+        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
         os.makedirs(self.results_dir, exist_ok=True)
         
         self.space = [
@@ -174,7 +185,7 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
     
     def run_backtest(self, data, params):
         """Run backtest with given parameters"""
-        cerebro = bt.Cerebro(stdstats=False)
+        cerebro = bt.Cerebro()
         
         if not isinstance(data.index, pd.DatetimeIndex):
             self.log_message("Error: Data for backtest must have a DatetimeIndex.")
@@ -191,11 +202,10 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
             openinterest=-1
         )
         cerebro.adddata(data_feed)
-               
-        cerebro.addstrategy(BBSuperTrendVolumeBreakoutStrategy, **params)
-        
         cerebro.broker.setcash(self.initial_capital)
         cerebro.broker.setcommission(commission=self.commission)
+               
+        cerebro.addstrategy(BBSuperTrendVolumeBreakoutStrategy, **params)
         
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.0, timeframe=bt.TimeFrame.Days, compression=1, annualize=True)
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
@@ -205,34 +215,30 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         
         try:
             results = cerebro.run()
-            if not results or not results[0]:
+            if not results:
                 self.log_message(f"Backtest with params {params} did not yield valid results object.")
                 return None
-            strategy_instance = results[0]
+            
+            # Get analyzer results
+            sharpe = results[0].analyzers.sharpe.get_analysis()
+            drawdown = results[0].analyzers.drawdown.get_analysis()
+            trades = results[0].analyzers.trades.get_analysis()
+            sqn = results[0].analyzers.sqn.get_analysis()
+            annual_return = results[0].analyzers.annual_return.get_analysis()
+
+            return {
+                'strategy_instance': results[0],
+                'sharpe': sharpe,
+                'drawdown': drawdown,
+                'sqn': sqn,
+                'annual_return': annual_return,
+                'trades': trades
+            }            
         except Exception as e:
             self.log_message(f"Error during backtest run for params {params}: {str(e)}")
             import traceback
             self.log_message(traceback.format_exc())
             return None
-
-        if not strategy_instance:
-             self.log_message(f"Backtest failed to produce strategy instance for params {params}")
-             return None
-
-        sharpe = strategy_instance.analyzers.sharpe.get_analysis() if hasattr(strategy_instance.analyzers, 'sharpe') else {}
-        drawdown = strategy_instance.analyzers.drawdown.get_analysis() if hasattr(strategy_instance.analyzers, 'drawdown') else {}
-        trades = strategy_instance.analyzers.trades.get_analysis() if hasattr(strategy_instance.analyzers, 'trades') else {}
-        sqn = strategy_instance.analyzers.sqn.get_analysis() if hasattr(strategy_instance.analyzers, 'sqn') else {}
-        annual_return = strategy_instance.analyzers.annual_return.get_analysis() if hasattr(strategy_instance.analyzers, 'annual_return') else {}
-        
-        return {
-            'strategy_instance': strategy_instance,
-            'sharpe': sharpe,
-            'drawdown': drawdown,
-            'trades': trades,
-            'sqn': sqn,
-            'annual_return': annual_return
-        }
     
     def objective(self, params):
         param_dict = self.params_to_dict(params)
@@ -411,98 +417,6 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         self.log_message(f"Plot saved to {plot_path}")
         return plot_path
 
-    def save_results(self, data_file, best_params, metrics, trades_df, optimization_result, plot_path, strategy_name):
-        try:
-            self.log_message(f"\nSaving results for {data_file}...")
-            os.makedirs(self.results_dir, exist_ok=True)
-            
-            self.log_message(f"Best parameters determined by skopt: {best_params}")
-            self.log_message(f"Metrics from final evaluation with these params: {metrics}")
-
-            self.log_message("Running final backtest with best parameters to capture trade log...")
-            final_backtest_run = self.run_backtest(self.current_data.copy(), best_params)
-            
-            trades_df = pd.DataFrame()
-            if final_backtest_run and hasattr(final_backtest_run['strategy_instance'], 'trades_log'):
-                trades_log_list = final_backtest_run['strategy_instance'].trades_log
-                if trades_log_list:
-                    trades_df = pd.DataFrame(trades_log_list)
-                    self.log_message(f"Retrieved {len(trades_df)} trades from final backtest run.")
-                else:
-                    self.log_message("No trades in the trades_log from final backtest run.")
-            else:
-                self.log_message("Could not retrieve trade log from final backtest run.")
-
-            self.log_message("Generating plot for best parameters...")
-            plot_path = self.plot_results(self.current_data, trades_df, best_params, data_file)
-            self.log_message(f"Plot generated at: {plot_path}")
-            
-            trades_records_for_json = []
-            if not trades_df.empty:
-                for col in ['entry_dt', 'exit_dt']:
-                    if col in trades_df.columns and pd.api.types.is_datetime64_any_dtype(trades_df[col]):
-                        trades_df[col] = pd.to_datetime(trades_df[col]).apply(lambda x: x.isoformat() if pd.notnull(x) else None)
-                trades_records_for_json = trades_df.to_dict(orient='records')
-            
-            optimization_history = []
-            for x_iter, score_iter in zip(optimization_result.x_iters, optimization_result.func_vals):
-                try:
-                    param_dict_iter = self.params_to_dict(x_iter)
-                    optimization_history.append({'params': param_dict_iter, 'score': float(score_iter)})
-                except Exception as e:
-                    self.log_message(f"Warning: Could not process optimization history entry: {e}")
-            
-            param_str_part = "_params_" + "_".join([f"{k[:3]}{v:.2f if isinstance(v, float) else v}" for k,v in best_params.items()])[:60].replace(" ","").replace(".", "")
-            filename_base = f"{self.current_symbol}_{data_file.replace('.csv','')}{param_str_part}_BBSTV_optim"
-
-            results_dict = {
-                'timestamp': datetime.now().isoformat(), 'data_file': data_file,
-                'best_params': best_params, 
-                'metrics': metrics,
-                'best_score_from_optimizer': float(optimization_result.fun), 
-                'trades_log': trades_records_for_json, 
-                'optimization_history': optimization_history,
-                'plot_path': plot_path 
-            }
-            
-            results_path = os.path.join(self.results_dir, f'{filename_base}_results.json')
-            self.log_message(f"Saving results to: {results_path}")
-            
-            # Calculate sqn_pct and cagr using BaseOptimizer utilities
-            sqn_pct = None
-            cagr = None
-            try:
-                trades_log = final_backtest_run['strategy_instance'].trades_log if final_backtest_run and hasattr(final_backtest_run['strategy_instance'], 'trades_log') else []
-                if trades_log and len(trades_log) > 1:
-                    import pandas as pd
-                    trades_df = pd.DataFrame(trades_log)
-                    sqn_pct = BaseOptimizer.calculate_sqn_pct(trades_df)
-                    if 'entry_dt' in trades_df.columns and 'exit_dt' in trades_df.columns:
-                        trades_df = trades_df.dropna(subset=['entry_dt', 'exit_dt'])
-                        if not trades_df.empty:
-                            cagr = BaseOptimizer.calculate_cagr(self.initial_capital, metrics.get('final_value', 0), trades_df['entry_dt'].iloc[0], trades_df['exit_dt'].iloc[-1])
-            except Exception:
-                pass
-            try:
-                with open(results_path, 'w') as f: json.dump(results_dict, f, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-            except Exception as e_json: 
-                self.log_message(f"Error during JSON serialization: {e_json}. Trying to save simplified.")
-                simplified_dict = {k: (v if isinstance(v, (dict, list, str, int, float, bool)) else str(v)) for k, v in results_dict.items()}
-                if 'trades_log' in simplified_dict: simplified_dict['trades_log'] = "Error during serialization, see logs"
-                if 'optimization_history' in simplified_dict: simplified_dict['optimization_history'] = "Error during serialization, see logs"
-                simplified_dict['serialization_error'] = str(e_json)
-                with open(results_path, 'w') as f: json.dump(simplified_dict, f, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-                self.log_message("Saved simplified results due to serialization error.")
-            
-            self.log_message(f"Results for {data_file} saved.")
-            return results_dict
-            
-        except Exception as e:
-            self.log_message(f"Error in save_results for {data_file}: {str(e)}")
-            import traceback
-            self.log_message(f"Full traceback: {traceback.format_exc()}")
-            return None
-    
     def run_optimization(self):
         self.log_message("Starting BBSuperTrendVolumeBreakoutStrategy optimization process...")
         data_files = [f for f in os.listdir(self.data_dir) if f.endswith('.csv') and not f.startswith('.')]
@@ -573,5 +487,5 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
             self.log_message(f"Error saving combined JSON results: {e}")
 
 if __name__ == "__main__":
-    optimizer = BBSuperTrendVolumeBreakoutOptimizer(initial_capital=10000.0, commission=0.001)
+    optimizer = BBSuperTrendVolumeBreakoutOptimizer(initial_capital=1000.0, commission=0.001)
     optimizer.run_optimization()

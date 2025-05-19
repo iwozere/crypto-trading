@@ -17,6 +17,17 @@ from datetime import datetime
 from src.optimizer.base_optimizer import BaseOptimizer
 
 class MeanReversionRSBBATROptimizer(BaseOptimizer):
+    """
+    Optimizer for the MeanReversionRSBBATRStrategy.
+    
+    This optimizer uses Bayesian optimization (skopt) to tune parameters for a mean-reversion strategy
+    that combines Bollinger Bands, RSI, and ATR. It is designed for ranging or sideways markets (e.g., forex pairs, altcoins)
+    and works on timeframes from 5m to 4H. The optimizer seeks to maximize net profit while penalizing high drawdown and low Sharpe ratio.
+    
+    Use Case:
+        - Ranging/sideways markets
+        - Finds optimal parameters for the strategy to maximize risk-adjusted returns
+    """
     def __init__(self, initial_capital=1000.0, commission=0.001):
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')

@@ -17,6 +17,17 @@ from ta.volatility import AverageTrueRange
 from src.optimizer.base_optimizer import BaseOptimizer
 
 class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
+    """
+    Optimizer for the RsiVolumeSuperTrendStrategy.
+    
+    This optimizer uses Bayesian optimization to tune parameters for a trend-following strategy that combines
+    SuperTrend, RSI, and Volume for entry/exit signals, with ATR-based risk management. It is suitable for trending markets
+    (crypto, strong stocks, indices) and aims to maximize risk-adjusted returns while avoiding choppy/ranging conditions.
+    
+    Use Case:
+        - Trending markets (crypto, stocks, indices)
+        - Finds optimal parameters for maximizing trend capture and minimizing whipsaws
+    """
     def __init__(self, initial_capital=1000.0, commission=0.001):
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
