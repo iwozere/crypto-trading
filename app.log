@@ -229,3 +229,63 @@ Optimizing ETHUSDT_4h_20240501_20250501.csv for MeanReversionRSBBATRStrategy...
 Optimizing for ETHUSDT_4h_20240501_20250501.csv...
 2025-05-19 15:30:29,067 - ERROR - base_optimizer.py - log_message - 62 - Penalizing due to low trade count: 0 for params {'rsi_period': 15, 'rsi_entry_long_level': 31.82701078492973, 'rsi_entry_short_level': 63.34723520939799, 'rsi_exit_long_level': 81.47844475874831, 'rsi_exit_short_level': 23.51440811480903, 'st_period': 14, 'st_multiplier': 3.103502364558088, 'vol_ma_period': 19, 'atr_period': 19, 'tp_atr_mult': 4.341044941036528, 'sl_atr_mult': 2.236308318712622, 'time_based_exit_period': 5}
 2025-05-19 15:30:37,206 - ERROR - base_optimizer.py - log_message - 62 - Penalizing due to low trade count: 3 for params {'rsi_period': 15, 'rsi_entry_long_level': 35.867665569905824, 'rsi_entry_short_level': 68.9993769719766, 'rsi_exit_long_level': 70.62926954513861, 'rsi_exit_short_level': 17.941591831946756, 'st_period': 12, 'st_multiplier': 1.7842814292092783, 'vol_ma_period': 24, 'atr_period': 9, 'tp_atr_mult': 3.8526220523263257, 'sl_atr_mult': 0.6477664435328241, 'time_based_exit_period': 14}
+2025-05-19 18:55:14,854 - INFO - _internal.py - _log - 97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.3:5000
+2025-05-19 18:55:14,855 - INFO - _internal.py - _log - 97 - [33mPress CTRL+C to quit[0m
+2025-05-19 18:55:14,857 - INFO - _internal.py - _log - 97 -  * Restarting with stat
+2025-05-19 18:55:18,879 - WARNING - _internal.py - _log - 97 -  * Debugger is active!
+2025-05-19 18:55:18,882 - INFO - _internal.py - _log - 97 -  * Debugger PIN: 107-447-364
+2025-05-19 18:55:18,974 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:18] "[32mGET /api/bots HTTP/1.1[0m" 302 -
+2025-05-19 18:55:18,976 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:18] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:55:18,991 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:18] "GET /login?next=/api/bots HTTP/1.1" 200 -
+2025-05-19 18:55:28,061 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:28] "[32mGET / HTTP/1.1[0m" 302 -
+2025-05-19 18:55:28,072 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:28] "GET /login?next=/ HTTP/1.1" 200 -
+2025-05-19 18:55:28,322 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:28] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-05-19 18:55:34,034 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:34] "[32mPOST /login?next=/ HTTP/1.1[0m" 302 -
+2025-05-19 18:55:34,044 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:34] "GET / HTTP/1.1" 200 -
+2025-05-19 18:55:34,367 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:34] "GET /static/css/style.css HTTP/1.1" 200 -
+2025-05-19 18:55:34,376 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:34] "GET /static/js/main.js HTTP/1.1" 200 -
+2025-05-19 18:55:34,688 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:34] "[33mGET /api/bot-types HTTP/1.1[0m" 404 -
+2025-05-19 18:55:39,392 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:39] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:55:39,704 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:39] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:55:43,485 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:43] "GET /ticker-analyze HTTP/1.1" 200 -
+2025-05-19 18:55:43,699 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:43] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-19 18:55:43,730 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:43] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-19 18:55:43,812 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:43] "[33mGET /api/bot-types HTTP/1.1[0m" 404 -
+2025-05-19 18:55:47,332 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:47] "GET /ticker-analyze HTTP/1.1" 200 -
+2025-05-19 18:55:47,645 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:47] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-19 18:55:47,647 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:47] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-19 18:55:47,908 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:47] "[33mGET /api/bot-types HTTP/1.1[0m" 404 -
+2025-05-19 18:55:52,667 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:52] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:55:52,986 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:52] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:55:57,981 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:57] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:55:57,983 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:55:57] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:02,746 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:02] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:03,062 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:03] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:08,069 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:08] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:08,070 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:08] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:12,756 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:12] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:13,067 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:13] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:17,069 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:17] "[32mGET /api/bots HTTP/1.1[0m" 302 -
+2025-05-19 18:56:17,071 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:17] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:17,340 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:17] "GET /login?next=/api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:18,056 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:18] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:18,057 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:18] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:22,763 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:22] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:23,067 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:23] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:28,062 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:28] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:28,063 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:28] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:32,750 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:32] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:33,062 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:33] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:38,066 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:38] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:38,067 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:38] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:42,748 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:42] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:43,060 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:43] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:48,058 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:48] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:48,059 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:48] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:52,742 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:52] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:53,055 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:53] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -
+2025-05-19 18:56:58,061 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:58] "GET /api/bots HTTP/1.1" 200 -
+2025-05-19 18:56:58,063 - INFO - _internal.py - _log - 97 - 127.0.0.1 - - [19/May/2025 18:56:58] "[33mGET /api/trade-history HTTP/1.1[0m" 404 -

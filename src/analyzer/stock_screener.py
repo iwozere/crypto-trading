@@ -24,16 +24,28 @@ class StockScreener:
                 pe = info.get("trailingPE", None)
                 roe = info.get("returnOnEquity", None)
                 debt_equity = info.get("debtToEquity", None)
-                fcf = info.get("freeCashflow", 0)
                 price = info.get("currentPrice", None)
                 fifty_day = info.get("fiftyDayAverage", None)
                 two_hundred_day = info.get("twoHundredDayAverage", None)
-                if all([pe, roe, debt_equity, price, fifty_day, two_hundred_day]):
+                # Use get_fcf_growth for FCF calculation
+                fcf_info = self.get_fcf_growth(symbol)
+                fcf_latest = None
+                ocf_latest = None
+                capex_latest = None
+                if fcf_info and isinstance(fcf_info, dict) and 'FCF (oldest → newest)' in fcf_info:
+                    fcf_list = fcf_info['FCF (oldest → newest)']
+                    if fcf_list:
+                        fcf_latest = fcf_list[-1]
+                    if 'OCF (oldest → newest)' in fcf_info:
+                        ocf_latest = fcf_info['OCF (oldest → newest)'][-1] if fcf_info['OCF (oldest → newest)'] else None
+                    if 'CapEx (oldest → newest)' in fcf_info:
+                        capex_latest = fcf_info['CapEx (oldest → newest)'][-1] if fcf_info['CapEx (oldest → newest)'] else None
+                if all([pe, roe, debt_equity, price, fifty_day, two_hundred_day, fcf_latest]):
                     if (
                         pe < 25 and
                         roe > 0.15 and
                         debt_equity < 100 and
-                        fcf and fcf > 0 and
+                        fcf_latest and fcf_latest > 0 and
                         price > fifty_day > two_hundred_day
                     ):
                         results.append({
@@ -43,12 +55,16 @@ class StockScreener:
                             'D/E': round(debt_equity, 1),
                             'Price': price,
                             '50D Avg': round(fifty_day, 2),
-                            '200D Avg': round(two_hundred_day, 2)
+                            '200D Avg': round(two_hundred_day, 2),
+                            'OCF': ocf_latest,
+                            'CapEx': capex_latest,
+                            'FCF': fcf_latest
                         })
             except Exception as e:
                 print(f"{ticker}: {e}")
         return pd.DataFrame(results)
 
+    @staticmethod
     def get_fcf_growth(ticker):
         try:
             t = yf.Ticker(ticker)
@@ -60,8 +76,9 @@ class StockScreener:
             capex = cf.loc['Capital Expenditures']
             fcf = ocf + capex
 
-            fcf = fcf.dropna().astype(float)
-            fcf = fcf[::-1]  # from old to new
+            ocf = ocf.dropna().astype(float)[::-1]
+            capex = capex.dropna().astype(float)[::-1]
+            fcf = fcf.dropna().astype(float)[::-1]
 
             is_positive = (fcf > 0).all()
             is_growing = all(earlier <= later for earlier, later in zip(fcf, fcf[1:]))
@@ -70,7 +87,9 @@ class StockScreener:
                 "Ticker": ticker,
                 "FCF Positive": is_positive,
                 "FCF Growing": is_growing,
-                "FCF (oldest → newest)": list(fcf)
+                "FCF (oldest → newest)": list(fcf),
+                "OCF (oldest → newest)": list(ocf),
+                "CapEx (oldest → newest)": list(capex)
             }
 
         except Exception as e:

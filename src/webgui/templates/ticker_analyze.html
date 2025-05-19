@@ -1,0 +1,54 @@
+{% extends 'index.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Ticker Analyzer</h2>
+    <form method="post" class="mb-4">
+        <div class="form-group">
+            <label for="symbol">Enter Symbol:</label>
+            <input type="text" class="form-control" id="symbol" name="symbol" placeholder="e.g. AAPL" value="{{ symbol or '' }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Analyze</button>
+    </form>
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    {% if fundamentals %}
+        <h4>Fundamental Data</h4>
+        <ul class="list-group mb-4">
+            {% for key, val in fundamentals.items() %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>{{ key }}</span>
+                    <span>{{ val }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {% if df is not none and not df.empty %}
+        <h4>Technical Indicators (last 1000 candles)</h4>
+        <div style="overflow-x:auto; max-width:100vw;">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        {% for col in df.columns %}
+                            <th>{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in df.itertuples() %}
+                        <tr>
+                            {% for col in df.columns %}
+                                <td>{{ getattr(row, col) }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+    {% if plot_path %}
+        <h4>Chart</h4>
+        <img src="/{{ plot_path }}" alt="Ticker Chart" class="img-fluid" style="max-width:100%; border:1px solid #ccc;">
+    {% endif %}
+</div>
+{% endblock %} 

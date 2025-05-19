@@ -7,6 +7,9 @@ from datetime import datetime
 from src.bot.rsi_bb_volume_bot import RsiBbVolumeBot
 from src.webgui.config_manager import ConfigManager
 from config.donotshare.donotshare import WEBGUI_LOGIN, WEBGUI_PASSWORD
+from src.analyzer.ticker_analyzer import TickerAnalyzer
+import matplotlib.pyplot as plt
+import uuid
 
 app = Flask(__name__, 
             static_folder='static',
@@ -140,6 +143,34 @@ def get_bot_parameters(bot_id):
 @login_required
 def get_archived_configs(bot_id):
     return jsonify(config_manager.get_archived_configs(bot_id))
+
+@app.route('/ticker-analyze', methods=['GET', 'POST'])
+@login_required
+def ticker_analyze():
+    if request.method == 'POST':
+        symbol = request.form.get('symbol', '').upper()
+        fundamentals, df = TickerAnalyzer.analyze_ticker(symbol)
+        plot_path = None
+        error = None
+        if fundamentals and df is not None and not df.empty:
+            try:
+                fig, ax = plt.subplots(figsize=(14, 8))
+                df[-1000:].plot(y=['Close', 'SMA_20', 'EMA_20', 'BB_High', 'BB_Low'], ax=ax)
+                ax.set_title(f"{symbol} - Last 1000 Candles with Indicators")
+                ax.set_ylabel('Price')
+                ax.grid(True, linestyle=':')
+                # Candlestick overlay (optional, simple version)
+                # Save plot
+                img_name = f"ticker_{symbol}_{uuid.uuid4().hex[:8]}.png"
+                plot_path = f'static/{img_name}'
+                plt.savefig(os.path.join(app.static_folder, img_name), bbox_inches='tight')
+                plt.close(fig)
+            except Exception as e:
+                error = f"Plotting error: {e}"
+        else:
+            error = "No data found for this symbol."
+        return render_template('ticker_analyze.html', symbol=symbol, fundamentals=fundamentals, df=df[-1000:] if df is not None else None, plot_path=plot_path, error=error)
+    return render_template('ticker_analyze.html')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 
