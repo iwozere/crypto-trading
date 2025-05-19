@@ -345,11 +345,11 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
             'results_summary': [
                 { 'data_file': r.get('data_file'), 'best_score': r.get('best_score_from_optimizer'),
                   'best_params': r.get('best_params'),
-                  'total_trades': r.get('final_metrics',{}).get('total_trades'),
-                  'net_profit': r.get('final_metrics',{}).get('net_profit'),
-                  'sharpe_ratio': r.get('final_metrics',{}).get('sharpe_ratio'),
-                  'max_drawdown_pct': r.get('final_metrics',{}).get('max_drawdown_pct'),
-                  'sqn': r.get('final_metrics',{}).get('sqn'),
+                  'total_trades': r.get('metrics',{}).get('total_trades'),
+                  'net_profit': r.get('metrics',{}).get('net_profit'),
+                  'sharpe_ratio': r.get('metrics',{}).get('sharpe_ratio'),
+                  'max_drawdown_pct': r.get('metrics',{}).get('max_drawdown_pct'),
+                  'sqn': r.get('metrics',{}).get('sqn'),
                   'plot_path': r.get('plot_path') } for r in all_results if r
             ],
             'full_results': all_results

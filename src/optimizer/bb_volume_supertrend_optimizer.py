@@ -458,7 +458,7 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
             results_dict = {
                 'timestamp': datetime.now().isoformat(), 'data_file': data_file,
                 'best_params': best_params, 
-                'final_metrics': metrics,
+                'metrics': metrics,
                 'best_score_from_optimizer': float(optimization_result.fun), 
                 'trades_log': trades_records_for_json, 
                 'optimization_history': optimization_history,
@@ -553,11 +553,11 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
                     'data_file': r.get('data_file'),
                     'best_score': r.get('best_score_from_optimizer'),
                     'best_params': r.get('best_params'),
-                    'total_trades': r.get('final_metrics',{}).get('total_trades'),
-                    'net_profit_pct': r.get('final_metrics',{}).get('net_profit_pct'),
-                    'sharpe_ratio': r.get('final_metrics',{}).get('sharpe_ratio'),
-                    'max_drawdown_pct': r.get('final_metrics',{}).get('max_drawdown_pct'),
-                    'sqn': r.get('final_metrics',{}).get('sqn'),
+                    'total_trades': r.get('metrics',{}).get('total_trades'),
+                    'net_profit_pct': r.get('metrics',{}).get('net_profit_pct'),
+                    'sharpe_ratio': r.get('metrics',{}).get('sharpe_ratio'),
+                    'max_drawdown_pct': r.get('metrics',{}).get('max_drawdown_pct'),
+                    'sqn': r.get('metrics',{}).get('sqn'),
                     'plot_path': r.get('plot_path')
                 } for r in all_results
             ],

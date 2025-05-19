@@ -30,12 +30,24 @@ def process_json_file(file_path):
         return None
     # Get best parameters and metrics
     best_params = data.get('best_params', {})
+    # Check both 'metrics' and 'final_metrics'
     metrics = data.get('metrics', {})
-    # Always present metrics
-    always_metrics = [
-        'total_trades', 'win_rate', 'profit_factor', 'max_drawdown_pct', 'sharpe_ratio',
-        'sqn', 'sqn_pct', 'cagr', 'net_profit', 'portfolio_growth_pct', 'final_value'
-    ]
+    if not metrics and 'final_metrics' in data:
+        metrics = data['final_metrics']
+    # Always present metrics and their possible alternative keys
+    metric_keys = {
+        'total_trades': ['total_trades'],
+        'win_rate': ['win_rate'],
+        'profit_factor': ['profit_factor'],
+        'max_drawdown_pct': ['max_drawdown_pct', 'max_drawdown'],
+        'sharpe_ratio': ['sharpe_ratio'],
+        'sqn': ['sqn'],
+        'sqn_pct': ['sqn_pct'],
+        'cagr': ['cagr'],
+        'net_profit': ['net_profit', 'total_profit'],
+        'portfolio_growth_pct': ['portfolio_growth_pct', 'portfolio_growth'],
+        'final_value': ['final_value'],
+    }
     result = {
         'symbol': symbol,
         'interval': interval,
@@ -43,9 +55,14 @@ def process_json_file(file_path):
         'data_end_date': end_date,
         'strategy_type': data.get('strategy_name') or metrics.get('strategy_type') or 'unknown',
     }
-    # Add always-present metrics
-    for k in always_metrics:
-        result[k] = metrics.get(k)
+    # Add always-present metrics, mapping alternative keys
+    for col, keys in metric_keys.items():
+        value = None
+        for k in keys:
+            if k in metrics:
+                value = metrics[k]
+                break
+        result[col] = value
     # Add all best_params as columns (variable part)
     for k, v in best_params.items():
         result[k] = v
