@@ -21,7 +21,7 @@ class BaseStrategy(bt.Strategy):
 
     def on_trade_entry(self, trade_dict):
         if self.notifier:
-            self.notifier.send_trade_notification(trade_dict)
+            self.notifier.send_trade_update(trade_dict)
 
     def on_trade_exit(self, trade_dict):
         if self.notifier:
@@ -30,3 +30,4 @@ class BaseStrategy(bt.Strategy):
     def on_error(self, error):
         if self.notifier:
             self.notifier.send_error_notification(str(error))
+            

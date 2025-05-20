@@ -514,3 +514,686 @@ AttributeError: 'Lines_LineSeries_LineSeriesStub' object has no attribute 'high'
 2025-05-20 18:43:12,120 - INFO - base_optimizer.py - log_message - 148 - Starting RsiVolumeSuperTrendOptimizer optimization process...
 2025-05-20 18:43:12,122 - INFO - base_optimizer.py - log_message - 148 - 
 Optimizing LTCUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 18:48:17,484 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 18:48:17,504 - INFO - base_optimizer.py - log_message - 148 - Starting RsiVolumeSuperTrendOptimizer optimization process...
+2025-05-20 18:48:17,505 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 18:56:25,398 - INFO - base_optimizer.py - log_message - 148 - 
+Optimization completed for LTCUSDT_4h_20240501_20250501.csv
+2025-05-20 18:56:25,399 - INFO - base_optimizer.py - log_message - 148 - Best params for LTCUSDT_4h_20240501_20250501.csv: {'rsi_period': 19, 'rsi_entry_long_level': 32.285005278541206, 'rsi_entry_short_level': 69.81905400763418, 'rsi_exit_long_level': 78.40540195996564, 'rsi_exit_short_level': 23.162708923675574, 'st_period': 9, 'st_multiplier': 3.0295070094139205, 'vol_ma_period': 20, 'atr_period': 12, 'tp_atr_mult': 1.8878510765364125, 'sl_atr_mult': 1.341445278790613, 'time_based_exit_period': 12}
+2025-05-20 18:56:25,399 - INFO - base_optimizer.py - log_message - 148 - Best score: -0.00. Metrics: {'total_trades': 0, 'win_rate': 0, 'profit_factor': 0, 'max_drawdown_pct': 0.0, 'sharpe_ratio': -5.0, 'sqn': 0.0, 'sqn_pct': None, 'cagr': None, 'net_profit': 0.0, 'portfolio_growth_pct': 0.0, 'final_value': 1000.0, 'params': {'rsi_period': 7, 'rsi_entry_long_level': 50.0, 'rsi_entry_short_level': 70.0, 'rsi_exit_long_level': 85.0, 'rsi_exit_short_level': 35.0, 'st_period': 5, 'st_multiplier': 1.5, 'vol_ma_period': 5, 'atr_period': 21, 'tp_atr_mult': 5.0, 'sl_atr_mult': 3.0, 'time_based_exit_period': 3}}
+2025-05-20 18:56:44,299 - INFO - base_optimizer.py - log_message - 148 - 
+Saving results for LTCUSDT_4h_20240501_20250501.csv...
+2025-05-20 18:56:44,302 - INFO - base_optimizer.py - log_message - 148 - Saving results to: c:\dev\cursor\crypto-trading\results\LTCUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 18:56:44,304 - INFO - base_optimizer.py - log_message - 148 - Results saved to c:\dev\cursor\crypto-trading\results\LTCUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 18:56:44,468 - INFO - base_optimizer.py - log_message - 148 - 
+Combined results saved to c:\dev\cursor\crypto-trading\results\combined_optimization_results_20250520_185644.json
+2025-05-20 19:08:16,054 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 19:08:16,095 - INFO - base_optimizer.py - log_message - 148 - Starting RsiBBVolumeOptimizer optimization process...
+2025-05-20 19:08:16,096 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for RSIBollVolumeATRStrategy...
+2025-05-20 19:17:42,870 - INFO - base_optimizer.py - log_message - 148 - 
+Optimization completed for LTCUSDT_4h_20240501_20250501.csv
+2025-05-20 19:17:42,871 - INFO - base_optimizer.py - log_message - 148 - Best params for LTCUSDT_4h_20240501_20250501.csv: {'rsi_period': 14, 'boll_period': 17, 'boll_devfactor': 1.5, 'atr_period': 18, 'vol_ma_period': 30, 'tp_atr_mult': 4.0, 'sl_atr_mult': 2.2609051092257397, 'rsi_oversold': 26.61497194291936, 'rsi_overbought': 75.0}
+2025-05-20 19:17:42,873 - INFO - base_optimizer.py - log_message - 148 - Best score: -133.85. Metrics: {'total_trades': 16, 'win_rate': 0.6875, 'profit_factor': 5.958894234736213, 'max_drawdown_pct': 1.8183079250199046, 'sharpe_ratio': 2.3709909935657865, 'sqn': 2.71619764421261, 'sqn_pct': None, 'cagr': None, 'net_profit': 129.35098062966068, 'portfolio_growth_pct': 12.935098062966063, 'final_value': 1129.3509806296606, 'params': {'rsi_period': 13, 'boll_period': 40, 'boll_devfactor': 1.9950059860033746, 'atr_period': 19, 'vol_ma_period': 40, 'tp_atr_mult': 4.0, 'sl_atr_mult': 2.410171286673597, 'rsi_oversold': 25.87573999719032, 'rsi_overbought': 75.0}}
+2025-05-20 19:17:59,867 - INFO - base_optimizer.py - log_message - 148 - 
+Saving results for LTCUSDT_4h_20240501_20250501.csv...
+2025-05-20 19:17:59,869 - ERROR - base_optimizer.py - log_message - 146 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-20 19:17:59,879 - INFO - base_optimizer.py - log_message - 148 - Saving results to: c:\dev\cursor\crypto-trading\results\LTCUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 19:17:59,882 - INFO - base_optimizer.py - log_message - 148 - Results saved to c:\dev\cursor\crypto-trading\results\LTCUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 19:18:00,009 - INFO - base_optimizer.py - log_message - 148 - 
+Combined results saved to c:\dev\cursor\crypto-trading\results\combined_optimization_results_20250520_191759.json
+2025-05-20 19:21:33,259 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 19:21:33,279 - INFO - base_optimizer.py - log_message - 148 - Starting MeanReversionRSBBATROptimizer optimization process...
+2025-05-20 19:21:33,280 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for MeanReversionRSBBATRStrategy...
+2025-05-20 19:21:36,091 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 23, 'bb_devfactor': 2.7664165101389315, 'rsi_period': 25, 'rsi_oversold': 21.590132478184852, 'rsi_overbought': 75.38767065579093, 'rsi_mid_level': 50, 'atr_period': 23, 'tp_atr_mult': 1.608995601794954, 'sl_atr_mult': 1.2651268521495733, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:21:36,102 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:21:36,103 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 23, 'bb_devfactor': 2.7664165101389315, 'rsi_period': 25, 'rsi_oversold': 21.590132478184852, 'rsi_overbought': 75.38767065579093, 'rsi_mid_level': 50, 'atr_period': 23, 'tp_atr_mult': 1.608995601794954, 'sl_atr_mult': 1.2651268521495733, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:21:38,425 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 43, 'bb_devfactor': 2.546469999197482, 'rsi_period': 12, 'rsi_oversold': 28.65842835647279, 'rsi_overbought': 60.55238596883895, 'rsi_mid_level': 45, 'atr_period': 12, 'tp_atr_mult': 1.3752759164076807, 'sl_atr_mult': 1.835842088502952, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:21:38,429 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:21:38,430 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 43, 'bb_devfactor': 2.546469999197482, 'rsi_period': 12, 'rsi_oversold': 28.65842835647279, 'rsi_overbought': 60.55238596883895, 'rsi_mid_level': 45, 'atr_period': 12, 'tp_atr_mult': 1.3752759164076807, 'sl_atr_mult': 1.835842088502952, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:21:40,733 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 17, 'bb_devfactor': 3.344511413195699, 'rsi_period': 13, 'rsi_oversold': 34.78202547891702, 'rsi_overbought': 71.59726023252132, 'rsi_mid_level': 51, 'atr_period': 11, 'tp_atr_mult': 2.3133668781679138, 'sl_atr_mult': 1.3698626578635977, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:21:40,737 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:21:40,738 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 17, 'bb_devfactor': 3.344511413195699, 'rsi_period': 13, 'rsi_oversold': 34.78202547891702, 'rsi_overbought': 71.59726023252132, 'rsi_mid_level': 51, 'atr_period': 11, 'tp_atr_mult': 2.3133668781679138, 'sl_atr_mult': 1.3698626578635977, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:21:43,189 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 17, 'bb_devfactor': 2.102872988502041, 'rsi_period': 9, 'rsi_oversold': 30.4839314647775, 'rsi_overbought': 70.76439937352123, 'rsi_mid_level': 52, 'atr_period': 19, 'tp_atr_mult': 1.514435460075433, 'sl_atr_mult': 1.4030921491827888, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:21:43,194 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:21:43,195 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 17, 'bb_devfactor': 2.102872988502041, 'rsi_period': 9, 'rsi_oversold': 30.4839314647775, 'rsi_overbought': 70.76439937352123, 'rsi_mid_level': 52, 'atr_period': 19, 'tp_atr_mult': 1.514435460075433, 'sl_atr_mult': 1.4030921491827888, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:21:45,373 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 49, 'bb_devfactor': 2.075594180110892, 'rsi_period': 22, 'rsi_oversold': 26.7118448614817, 'rsi_overbought': 69.85906315639201, 'rsi_mid_level': 52, 'atr_period': 11, 'tp_atr_mult': 1.723318470871967, 'sl_atr_mult': 0.9692039604731619, 'check_rsi_slope': 1.0}: no running event loop
+2025-05-20 19:21:45,377 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:21:45,378 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 49, 'bb_devfactor': 2.075594180110892, 'rsi_period': 22, 'rsi_oversold': 26.7118448614817, 'rsi_overbought': 69.85906315639201, 'rsi_mid_level': 52, 'atr_period': 11, 'tp_atr_mult': 1.723318470871967, 'sl_atr_mult': 0.9692039604731619, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:21:47,535 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 35, 'bb_devfactor': 2.587277981870836, 'rsi_period': 20, 'rsi_oversold': 23.101750801414138, 'rsi_overbought': 75.65805191574842, 'rsi_mid_level': 46, 'atr_period': 21, 'tp_atr_mult': 2.7819908867737393, 'sl_atr_mult': 1.937529278705257, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:21:47,539 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:21:47,540 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 35, 'bb_devfactor': 2.587277981870836, 'rsi_period': 20, 'rsi_oversold': 23.101750801414138, 'rsi_overbought': 75.65805191574842, 'rsi_mid_level': 46, 'atr_period': 21, 'tp_atr_mult': 2.7819908867737393, 'sl_atr_mult': 1.937529278705257, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:21:49,728 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 41, 'bb_devfactor': 2.342888965460215, 'rsi_period': 13, 'rsi_oversold': 20.12229292251997, 'rsi_overbought': 76.74876806414161, 'rsi_mid_level': 46, 'atr_period': 16, 'tp_atr_mult': 2.913378487592505, 'sl_atr_mult': 1.08961098801007, 'check_rsi_slope': 1.0}: no running event loop
+2025-05-20 19:21:49,732 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:21:49,733 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 41, 'bb_devfactor': 2.342888965460215, 'rsi_period': 13, 'rsi_oversold': 20.12229292251997, 'rsi_overbought': 76.74876806414161, 'rsi_mid_level': 46, 'atr_period': 16, 'tp_atr_mult': 2.913378487592505, 'sl_atr_mult': 1.08961098801007, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:21:52,433 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 36, 'bb_devfactor': 1.8957111980684482, 'rsi_period': 22, 'rsi_oversold': 31.998679256508915, 'rsi_overbought': 72.24182418486042, 'rsi_mid_level': 45, 'atr_period': 20, 'tp_atr_mult': 1.1843477037878696, 'sl_atr_mult': 1.662054708371338, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:21:52,437 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:21:52,438 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 36, 'bb_devfactor': 1.8957111980684482, 'rsi_period': 22, 'rsi_oversold': 31.998679256508915, 'rsi_overbought': 72.24182418486042, 'rsi_mid_level': 45, 'atr_period': 20, 'tp_atr_mult': 1.1843477037878696, 'sl_atr_mult': 1.662054708371338, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:21:55,066 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 48, 'bb_devfactor': 2.0580675557413763, 'rsi_period': 12, 'rsi_oversold': 35.8473608219129, 'rsi_overbought': 64.55991669096716, 'rsi_mid_level': 45, 'atr_period': 10, 'tp_atr_mult': 1.8175691042563866, 'sl_atr_mult': 1.4099890298554993, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:21:55,070 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:21:55,071 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 48, 'bb_devfactor': 2.0580675557413763, 'rsi_period': 12, 'rsi_oversold': 35.8473608219129, 'rsi_overbought': 64.55991669096716, 'rsi_mid_level': 45, 'atr_period': 10, 'tp_atr_mult': 1.8175691042563866, 'sl_atr_mult': 1.4099890298554993, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:21:57,437 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 27, 'bb_devfactor': 2.9362300547425, 'rsi_period': 12, 'rsi_oversold': 21.22531061772139, 'rsi_overbought': 68.56993584666284, 'rsi_mid_level': 52, 'atr_period': 17, 'tp_atr_mult': 2.4963313820627535, 'sl_atr_mult': 0.7511948720288651, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:21:57,440 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:21:57,441 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 27, 'bb_devfactor': 2.9362300547425, 'rsi_period': 12, 'rsi_oversold': 21.22531061772139, 'rsi_overbought': 68.56993584666284, 'rsi_mid_level': 52, 'atr_period': 17, 'tp_atr_mult': 2.4963313820627535, 'sl_atr_mult': 0.7511948720288651, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:22:05,925 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 40, 'bb_devfactor': 2.211891556948426, 'rsi_period': 11, 'rsi_oversold': 33.287225129291144, 'rsi_overbought': 78.89717611717121, 'rsi_mid_level': 54, 'atr_period': 19, 'tp_atr_mult': 2.3539930197341117, 'sl_atr_mult': 1.6838698908766405, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:22:05,929 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:22:05,930 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 40, 'bb_devfactor': 2.211891556948426, 'rsi_period': 11, 'rsi_oversold': 33.287225129291144, 'rsi_overbought': 78.89717611717121, 'rsi_mid_level': 54, 'atr_period': 19, 'tp_atr_mult': 2.3539930197341117, 'sl_atr_mult': 1.6838698908766405, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:22:08,144 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 35, 'bb_devfactor': 3.2580312466341868, 'rsi_period': 14, 'rsi_oversold': 29.073593645881594, 'rsi_overbought': 63.13411520125108, 'rsi_mid_level': 52, 'atr_period': 20, 'tp_atr_mult': 2.4034438068395034, 'sl_atr_mult': 0.8292942909887805, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:22:08,148 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:22:08,148 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 35, 'bb_devfactor': 3.2580312466341868, 'rsi_period': 14, 'rsi_oversold': 29.073593645881594, 'rsi_overbought': 63.13411520125108, 'rsi_mid_level': 52, 'atr_period': 20, 'tp_atr_mult': 2.4034438068395034, 'sl_atr_mult': 0.8292942909887805, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:22:10,349 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 41, 'bb_devfactor': 2.5911195931905135, 'rsi_period': 22, 'rsi_oversold': 33.16894797269221, 'rsi_overbought': 63.186166322840755, 'rsi_mid_level': 53, 'atr_period': 12, 'tp_atr_mult': 2.4676869663422023, 'sl_atr_mult': 0.7604088204192883, 'check_rsi_slope': 1.0}: no running event loop
+2025-05-20 19:22:10,352 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:22:10,353 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 41, 'bb_devfactor': 2.5911195931905135, 'rsi_period': 22, 'rsi_oversold': 33.16894797269221, 'rsi_overbought': 63.186166322840755, 'rsi_mid_level': 53, 'atr_period': 12, 'tp_atr_mult': 2.4676869663422023, 'sl_atr_mult': 0.7604088204192883, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:22:12,506 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 35, 'bb_devfactor': 1.9825712317029893, 'rsi_period': 8, 'rsi_oversold': 21.421096736227664, 'rsi_overbought': 69.02262434169846, 'rsi_mid_level': 53, 'atr_period': 8, 'tp_atr_mult': 1.7290688764084732, 'sl_atr_mult': 1.938766797978722, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:22:12,510 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:22:12,511 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 35, 'bb_devfactor': 1.9825712317029893, 'rsi_period': 8, 'rsi_oversold': 21.421096736227664, 'rsi_overbought': 69.02262434169846, 'rsi_mid_level': 53, 'atr_period': 8, 'tp_atr_mult': 1.7290688764084732, 'sl_atr_mult': 1.938766797978722, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:22:14,716 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 44, 'bb_devfactor': 2.2884398881020838, 'rsi_period': 26, 'rsi_oversold': 26.036969628677667, 'rsi_overbought': 71.0861581975259, 'rsi_mid_level': 45, 'atr_period': 19, 'tp_atr_mult': 2.7155667646704087, 'sl_atr_mult': 1.2064423582569024, 'check_rsi_slope': 1.0}: no running event loop
+2025-05-20 19:22:14,721 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:22:14,722 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 44, 'bb_devfactor': 2.2884398881020838, 'rsi_period': 26, 'rsi_oversold': 26.036969628677667, 'rsi_overbought': 71.0861581975259, 'rsi_mid_level': 45, 'atr_period': 19, 'tp_atr_mult': 2.7155667646704087, 'sl_atr_mult': 1.2064423582569024, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:22:16,868 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 15, 'bb_devfactor': 2.385377078498624, 'rsi_period': 14, 'rsi_oversold': 33.38626435163256, 'rsi_overbought': 73.11155178914854, 'rsi_mid_level': 53, 'atr_period': 10, 'tp_atr_mult': 1.6990249086173406, 'sl_atr_mult': 0.8680680999240101, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:22:16,871 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:22:16,872 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 15, 'bb_devfactor': 2.385377078498624, 'rsi_period': 14, 'rsi_oversold': 33.38626435163256, 'rsi_overbought': 73.11155178914854, 'rsi_mid_level': 53, 'atr_period': 10, 'tp_atr_mult': 1.6990249086173406, 'sl_atr_mult': 0.8680680999240101, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:22:19,011 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 26, 'bb_devfactor': 1.8273800496438022, 'rsi_period': 19, 'rsi_oversold': 34.87433146438538, 'rsi_overbought': 70.22569320835491, 'rsi_mid_level': 48, 'atr_period': 23, 'tp_atr_mult': 1.0129126236167971, 'sl_atr_mult': 0.8957171785761452, 'check_rsi_slope': 0.0}: no running event loop
+2025-05-20 19:22:19,015 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:22:19,016 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 26, 'bb_devfactor': 1.8273800496438022, 'rsi_period': 19, 'rsi_oversold': 34.87433146438538, 'rsi_overbought': 70.22569320835491, 'rsi_mid_level': 48, 'atr_period': 23, 'tp_atr_mult': 1.0129126236167971, 'sl_atr_mult': 0.8957171785761452, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:22:21,260 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 40, 'bb_devfactor': 3.049791369455886, 'rsi_period': 22, 'rsi_oversold': 28.961489942671477, 'rsi_overbought': 71.1912058783254, 'rsi_mid_level': 46, 'atr_period': 22, 'tp_atr_mult': 1.477335466180433, 'sl_atr_mult': 1.768337113589921, 'check_rsi_slope': 1.0}: no running event loop
+2025-05-20 19:22:21,264 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 596, in _notify
+    self.notify_trade(trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_bb_atr_strategy.py", line 136, in notify_trade
+    self.record_trade(trade_dict)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 21, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 29, in on_trade_exit
+    asyncio.create_task(self.notifier.send_trade_update(trade_dict))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\akoss\AppData\Local\Programs\Python\Python313\Lib\asyncio\tasks.py", line 407, in create_task
+    loop = events.get_running_loop()
+RuntimeError: no running event loop
+
+2025-05-20 19:22:21,264 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 40, 'bb_devfactor': 3.049791369455886, 'rsi_period': 22, 'rsi_oversold': 28.961489942671477, 'rsi_overbought': 71.1912058783254, 'rsi_mid_level': 46, 'atr_period': 22, 'tp_atr_mult': 1.477335466180433, 'sl_atr_mult': 1.768337113589921, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:27:37,699 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 19:27:37,714 - INFO - base_optimizer.py - log_message - 148 - Starting MeanReversionRSBBATROptimizer optimization process...
+2025-05-20 19:27:37,715 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for MeanReversionRSBBATRStrategy...
+2025-05-20 19:27:40,076 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 35, 'bb_devfactor': 2.835333290482496, 'rsi_period': 16, 'rsi_oversold': 24.766888770391525, 'rsi_overbought': 66.40549999824974, 'rsi_mid_level': 52, 'atr_period': 18, 'tp_atr_mult': 2.6134535435606576, 'sl_atr_mult': 1.5710804019314133, 'check_rsi_slope': 1.0}: 'side'
+2025-05-20 19:27:40,198 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 35, 'bb_devfactor': 2.835333290482496, 'rsi_period': 16, 'rsi_oversold': 24.766888770391525, 'rsi_overbought': 66.40549999824974, 'rsi_mid_level': 52, 'atr_period': 18, 'tp_atr_mult': 2.6134535435606576, 'sl_atr_mult': 1.5710804019314133, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:27:42,221 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 28, 'bb_devfactor': 3.3027872975080124, 'rsi_period': 13, 'rsi_oversold': 24.966679095262347, 'rsi_overbought': 72.4284658642891, 'rsi_mid_level': 46, 'atr_period': 10, 'tp_atr_mult': 1.9550951276206547, 'sl_atr_mult': 0.9505482335731451, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:27:42,245 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 28, 'bb_devfactor': 3.3027872975080124, 'rsi_period': 13, 'rsi_oversold': 24.966679095262347, 'rsi_overbought': 72.4284658642891, 'rsi_mid_level': 46, 'atr_period': 10, 'tp_atr_mult': 1.9550951276206547, 'sl_atr_mult': 0.9505482335731451, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:27:47,137 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 42, 'bb_devfactor': 2.987256217921744, 'rsi_period': 22, 'rsi_oversold': 33.715937336794255, 'rsi_overbought': 65.99010710413107, 'rsi_mid_level': 54, 'atr_period': 23, 'tp_atr_mult': 1.5726765421561706, 'sl_atr_mult': 1.8456772744029377, 'check_rsi_slope': 1.0}: 'side'
+2025-05-20 19:27:47,158 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 42, 'bb_devfactor': 2.987256217921744, 'rsi_period': 22, 'rsi_oversold': 33.715937336794255, 'rsi_overbought': 65.99010710413107, 'rsi_mid_level': 54, 'atr_period': 23, 'tp_atr_mult': 1.5726765421561706, 'sl_atr_mult': 1.8456772744029377, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:27:49,172 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 46, 'bb_devfactor': 1.839060376125906, 'rsi_period': 19, 'rsi_oversold': 31.871775623232992, 'rsi_overbought': 76.72280994217971, 'rsi_mid_level': 48, 'atr_period': 28, 'tp_atr_mult': 1.6752004794104387, 'sl_atr_mult': 0.697483348761893, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:27:49,191 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 46, 'bb_devfactor': 1.839060376125906, 'rsi_period': 19, 'rsi_oversold': 31.871775623232992, 'rsi_overbought': 76.72280994217971, 'rsi_mid_level': 48, 'atr_period': 28, 'tp_atr_mult': 1.6752004794104387, 'sl_atr_mult': 0.697483348761893, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:27:51,312 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 30, 'bb_devfactor': 2.7846600409025615, 'rsi_period': 21, 'rsi_oversold': 23.971504751774617, 'rsi_overbought': 71.39426632252325, 'rsi_mid_level': 51, 'atr_period': 13, 'tp_atr_mult': 1.7697554955221075, 'sl_atr_mult': 0.900569650399821, 'check_rsi_slope': 1.0}: 'side'
+2025-05-20 19:27:51,333 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 30, 'bb_devfactor': 2.7846600409025615, 'rsi_period': 21, 'rsi_oversold': 23.971504751774617, 'rsi_overbought': 71.39426632252325, 'rsi_mid_level': 51, 'atr_period': 13, 'tp_atr_mult': 1.7697554955221075, 'sl_atr_mult': 0.900569650399821, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:27:53,375 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 39, 'bb_devfactor': 2.606052901521129, 'rsi_period': 20, 'rsi_oversold': 33.43617427438135, 'rsi_overbought': 60.335802973997154, 'rsi_mid_level': 48, 'atr_period': 11, 'tp_atr_mult': 2.8356670604877365, 'sl_atr_mult': 0.6134690211467355, 'check_rsi_slope': 1.0}: 'side'
+2025-05-20 19:27:53,396 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 39, 'bb_devfactor': 2.606052901521129, 'rsi_period': 20, 'rsi_oversold': 33.43617427438135, 'rsi_overbought': 60.335802973997154, 'rsi_mid_level': 48, 'atr_period': 11, 'tp_atr_mult': 2.8356670604877365, 'sl_atr_mult': 0.6134690211467355, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:27:55,431 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 45, 'bb_devfactor': 2.140053745257037, 'rsi_period': 11, 'rsi_oversold': 21.676601906742334, 'rsi_overbought': 68.55452598303063, 'rsi_mid_level': 54, 'atr_period': 26, 'tp_atr_mult': 1.752231792437846, 'sl_atr_mult': 0.6953488528464645, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:27:55,454 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 45, 'bb_devfactor': 2.140053745257037, 'rsi_period': 11, 'rsi_oversold': 21.676601906742334, 'rsi_overbought': 68.55452598303063, 'rsi_mid_level': 54, 'atr_period': 26, 'tp_atr_mult': 1.752231792437846, 'sl_atr_mult': 0.6953488528464645, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:31:44,408 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 19:31:44,430 - INFO - base_optimizer.py - log_message - 148 - Starting MeanReversionRSBBATROptimizer optimization process...
+2025-05-20 19:31:44,431 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for MeanReversionRSBBATRStrategy...
+2025-05-20 19:31:47,611 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 23, 'bb_devfactor': 2.631303424842593, 'rsi_period': 13, 'rsi_oversold': 26.343355374829756, 'rsi_overbought': 64.6044091493156, 'rsi_mid_level': 47, 'atr_period': 18, 'tp_atr_mult': 1.0498542971224414, 'sl_atr_mult': 1.9360537704519536, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:31:47,645 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 23, 'bb_devfactor': 2.631303424842593, 'rsi_period': 13, 'rsi_oversold': 26.343355374829756, 'rsi_overbought': 64.6044091493156, 'rsi_mid_level': 47, 'atr_period': 18, 'tp_atr_mult': 1.0498542971224414, 'sl_atr_mult': 1.9360537704519536, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:31:49,898 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 40, 'bb_devfactor': 1.7437684797090673, 'rsi_period': 10, 'rsi_oversold': 28.462885856533166, 'rsi_overbought': 78.91840222968844, 'rsi_mid_level': 45, 'atr_period': 23, 'tp_atr_mult': 1.517148539650349, 'sl_atr_mult': 1.632861134682063, 'check_rsi_slope': 1.0}: 'side'
+2025-05-20 19:31:49,919 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 40, 'bb_devfactor': 1.7437684797090673, 'rsi_period': 10, 'rsi_oversold': 28.462885856533166, 'rsi_overbought': 78.91840222968844, 'rsi_mid_level': 45, 'atr_period': 23, 'tp_atr_mult': 1.517148539650349, 'sl_atr_mult': 1.632861134682063, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:31:51,928 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 41, 'bb_devfactor': 1.982108976204508, 'rsi_period': 27, 'rsi_oversold': 38.979370133395825, 'rsi_overbought': 65.97794881214223, 'rsi_mid_level': 48, 'atr_period': 19, 'tp_atr_mult': 2.1851939060812757, 'sl_atr_mult': 1.9521121982091472, 'check_rsi_slope': 1.0}: 'side'
+2025-05-20 19:31:51,948 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 41, 'bb_devfactor': 1.982108976204508, 'rsi_period': 27, 'rsi_oversold': 38.979370133395825, 'rsi_overbought': 65.97794881214223, 'rsi_mid_level': 48, 'atr_period': 19, 'tp_atr_mult': 2.1851939060812757, 'sl_atr_mult': 1.9521121982091472, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:32:00,110 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 37, 'bb_devfactor': 2.35952770078842, 'rsi_period': 23, 'rsi_oversold': 36.20577986828581, 'rsi_overbought': 61.63671831967129, 'rsi_mid_level': 51, 'atr_period': 23, 'tp_atr_mult': 2.00905992958147, 'sl_atr_mult': 1.5346996507806274, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:32:00,131 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 37, 'bb_devfactor': 2.35952770078842, 'rsi_period': 23, 'rsi_oversold': 36.20577986828581, 'rsi_overbought': 61.63671831967129, 'rsi_mid_level': 51, 'atr_period': 23, 'tp_atr_mult': 2.00905992958147, 'sl_atr_mult': 1.5346996507806274, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:32:02,443 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 15, 'bb_devfactor': 2.313589599891851, 'rsi_period': 24, 'rsi_oversold': 36.24260562837409, 'rsi_overbought': 65.6485097450358, 'rsi_mid_level': 47, 'atr_period': 24, 'tp_atr_mult': 2.2130526273421154, 'sl_atr_mult': 0.6919031665754338, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:32:02,480 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 15, 'bb_devfactor': 2.313589599891851, 'rsi_period': 24, 'rsi_oversold': 36.24260562837409, 'rsi_overbought': 65.6485097450358, 'rsi_mid_level': 47, 'atr_period': 24, 'tp_atr_mult': 2.2130526273421154, 'sl_atr_mult': 0.6919031665754338, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:32:06,552 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 42, 'bb_devfactor': 1.5732601850441645, 'rsi_period': 14, 'rsi_oversold': 34.85743481030372, 'rsi_overbought': 74.16543429600146, 'rsi_mid_level': 50, 'atr_period': 7, 'tp_atr_mult': 2.1397248476005193, 'sl_atr_mult': 1.5869215362455573, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:32:06,576 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 42, 'bb_devfactor': 1.5732601850441645, 'rsi_period': 14, 'rsi_oversold': 34.85743481030372, 'rsi_overbought': 74.16543429600146, 'rsi_mid_level': 50, 'atr_period': 7, 'tp_atr_mult': 2.1397248476005193, 'sl_atr_mult': 1.5869215362455573, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:32:11,168 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 29, 'bb_devfactor': 1.8652729756529454, 'rsi_period': 28, 'rsi_oversold': 32.70597194602172, 'rsi_overbought': 65.64529217933683, 'rsi_mid_level': 51, 'atr_period': 13, 'tp_atr_mult': 1.099912066953327, 'sl_atr_mult': 1.6211078722561605, 'check_rsi_slope': 1.0}: 'side'
+2025-05-20 19:32:11,279 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 29, 'bb_devfactor': 1.8652729756529454, 'rsi_period': 28, 'rsi_oversold': 32.70597194602172, 'rsi_overbought': 65.64529217933683, 'rsi_mid_level': 51, 'atr_period': 13, 'tp_atr_mult': 1.099912066953327, 'sl_atr_mult': 1.6211078722561605, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:32:16,364 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 33, 'bb_devfactor': 3.464610006003567, 'rsi_period': 22, 'rsi_oversold': 27.26225862006869, 'rsi_overbought': 63.785045566413345, 'rsi_mid_level': 51, 'atr_period': 26, 'tp_atr_mult': 1.0913650518726525, 'sl_atr_mult': 1.5759295595897092, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:32:16,384 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 33, 'bb_devfactor': 3.464610006003567, 'rsi_period': 22, 'rsi_oversold': 27.26225862006869, 'rsi_overbought': 63.785045566413345, 'rsi_mid_level': 51, 'atr_period': 26, 'tp_atr_mult': 1.0913650518726525, 'sl_atr_mult': 1.5759295595897092, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:32:18,511 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 19, 'bb_devfactor': 1.5620537295576442, 'rsi_period': 26, 'rsi_oversold': 24.644328709513793, 'rsi_overbought': 67.2716418846158, 'rsi_mid_level': 49, 'atr_period': 8, 'tp_atr_mult': 1.5063706754623976, 'sl_atr_mult': 1.8030723335452425, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:32:18,530 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 19, 'bb_devfactor': 1.5620537295576442, 'rsi_period': 26, 'rsi_oversold': 24.644328709513793, 'rsi_overbought': 67.2716418846158, 'rsi_mid_level': 49, 'atr_period': 8, 'tp_atr_mult': 1.5063706754623976, 'sl_atr_mult': 1.8030723335452425, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:32:20,611 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 46, 'bb_devfactor': 1.5569159864665172, 'rsi_period': 15, 'rsi_oversold': 29.245141988908266, 'rsi_overbought': 70.10211464960334, 'rsi_mid_level': 46, 'atr_period': 18, 'tp_atr_mult': 1.3534724852370286, 'sl_atr_mult': 1.5867865715724991, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:32:20,630 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 46, 'bb_devfactor': 1.5569159864665172, 'rsi_period': 15, 'rsi_oversold': 29.245141988908266, 'rsi_overbought': 70.10211464960334, 'rsi_mid_level': 46, 'atr_period': 18, 'tp_atr_mult': 1.3534724852370286, 'sl_atr_mult': 1.5867865715724991, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:32:22,709 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 36, 'bb_devfactor': 2.1527231907861597, 'rsi_period': 14, 'rsi_oversold': 29.689001165079127, 'rsi_overbought': 66.25636560148128, 'rsi_mid_level': 49, 'atr_period': 17, 'tp_atr_mult': 1.8890101307039473, 'sl_atr_mult': 1.3955073529448558, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:32:22,728 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 36, 'bb_devfactor': 2.1527231907861597, 'rsi_period': 14, 'rsi_oversold': 29.689001165079127, 'rsi_overbought': 66.25636560148128, 'rsi_mid_level': 49, 'atr_period': 17, 'tp_atr_mult': 1.8890101307039473, 'sl_atr_mult': 1.3955073529448558, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:32:24,919 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 44, 'bb_devfactor': 2.8405582959031883, 'rsi_period': 10, 'rsi_oversold': 23.063198207014192, 'rsi_overbought': 70.78773401828664, 'rsi_mid_level': 54, 'atr_period': 24, 'tp_atr_mult': 1.3771507293780774, 'sl_atr_mult': 1.821286516009884, 'check_rsi_slope': 1.0}: 'side'
+2025-05-20 19:32:24,939 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 44, 'bb_devfactor': 2.8405582959031883, 'rsi_period': 10, 'rsi_oversold': 23.063198207014192, 'rsi_overbought': 70.78773401828664, 'rsi_mid_level': 54, 'atr_period': 24, 'tp_atr_mult': 1.3771507293780774, 'sl_atr_mult': 1.821286516009884, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:32:27,155 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 36, 'bb_devfactor': 2.5891055748772827, 'rsi_period': 23, 'rsi_oversold': 33.272829961650004, 'rsi_overbought': 66.66776839465174, 'rsi_mid_level': 50, 'atr_period': 26, 'tp_atr_mult': 2.414213885600863, 'sl_atr_mult': 1.5573377384787799, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:32:27,175 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 36, 'bb_devfactor': 2.5891055748772827, 'rsi_period': 23, 'rsi_oversold': 33.272829961650004, 'rsi_overbought': 66.66776839465174, 'rsi_mid_level': 50, 'atr_period': 26, 'tp_atr_mult': 2.414213885600863, 'sl_atr_mult': 1.5573377384787799, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:32:29,355 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 32, 'bb_devfactor': 2.5022132546340137, 'rsi_period': 15, 'rsi_oversold': 35.57842186470378, 'rsi_overbought': 64.46218250727478, 'rsi_mid_level': 50, 'atr_period': 20, 'tp_atr_mult': 1.0885505861786808, 'sl_atr_mult': 1.8526229156885758, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:32:29,376 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 32, 'bb_devfactor': 2.5022132546340137, 'rsi_period': 15, 'rsi_oversold': 35.57842186470378, 'rsi_overbought': 64.46218250727478, 'rsi_mid_level': 50, 'atr_period': 20, 'tp_atr_mult': 1.0885505861786808, 'sl_atr_mult': 1.8526229156885758, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:32:31,555 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 12, 'bb_devfactor': 2.141031493583857, 'rsi_period': 12, 'rsi_oversold': 32.01552660334105, 'rsi_overbought': 67.09041922888795, 'rsi_mid_level': 52, 'atr_period': 8, 'tp_atr_mult': 1.9369050210607508, 'sl_atr_mult': 1.762078905796118, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:32:31,576 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 12, 'bb_devfactor': 2.141031493583857, 'rsi_period': 12, 'rsi_oversold': 32.01552660334105, 'rsi_overbought': 67.09041922888795, 'rsi_mid_level': 52, 'atr_period': 8, 'tp_atr_mult': 1.9369050210607508, 'sl_atr_mult': 1.762078905796118, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:32:36,659 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 30, 'bb_devfactor': 2.453987411175369, 'rsi_period': 13, 'rsi_oversold': 21.474275272363194, 'rsi_overbought': 71.93311054837078, 'rsi_mid_level': 54, 'atr_period': 16, 'tp_atr_mult': 2.2876942086264975, 'sl_atr_mult': 1.538956976474555, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:32:36,679 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 30, 'bb_devfactor': 2.453987411175369, 'rsi_period': 13, 'rsi_oversold': 21.474275272363194, 'rsi_overbought': 71.93311054837078, 'rsi_mid_level': 54, 'atr_period': 16, 'tp_atr_mult': 2.2876942086264975, 'sl_atr_mult': 1.538956976474555, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:33:26,123 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 19:33:26,138 - INFO - base_optimizer.py - log_message - 148 - Starting MeanReversionRSBBATROptimizer optimization process...
+2025-05-20 19:33:26,139 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for MeanReversionRSBBATRStrategy...
+2025-05-20 19:33:37,393 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 19:33:37,412 - INFO - base_optimizer.py - log_message - 148 - Starting MeanReversionRSBBATROptimizer optimization process...
+2025-05-20 19:33:37,413 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for MeanReversionRSBBATRStrategy...
+2025-05-20 19:33:39,872 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 14, 'bb_devfactor': 2.0141318796464835, 'rsi_period': 9, 'rsi_oversold': 29.92099882547378, 'rsi_overbought': 60.88344556188402, 'rsi_mid_level': 47, 'atr_period': 26, 'tp_atr_mult': 2.2588660371737435, 'sl_atr_mult': 1.9104468876558398, 'check_rsi_slope': 1.0}: 'side'
+2025-05-20 19:33:39,902 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 14, 'bb_devfactor': 2.0141318796464835, 'rsi_period': 9, 'rsi_oversold': 29.92099882547378, 'rsi_overbought': 60.88344556188402, 'rsi_mid_level': 47, 'atr_period': 26, 'tp_atr_mult': 2.2588660371737435, 'sl_atr_mult': 1.9104468876558398, 'check_rsi_slope': 1.0}, returning high penalty.
+2025-05-20 19:36:13,846 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 19:36:13,865 - INFO - base_optimizer.py - log_message - 148 - Starting MeanReversionRSBBATROptimizer optimization process...
+2025-05-20 19:36:13,866 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for MeanReversionRSBBATRStrategy...
+2025-05-20 19:36:16,657 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'bb_period': 40, 'bb_devfactor': 2.5266936430033624, 'rsi_period': 23, 'rsi_oversold': 32.78726776532376, 'rsi_overbought': 66.68886381749799, 'rsi_mid_level': 46, 'atr_period': 15, 'tp_atr_mult': 1.1640772765700724, 'sl_atr_mult': 1.1954529588940574, 'check_rsi_slope': 0.0}: 'side'
+2025-05-20 19:36:16,695 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'bb_period': 40, 'bb_devfactor': 2.5266936430033624, 'rsi_period': 23, 'rsi_oversold': 32.78726776532376, 'rsi_overbought': 66.68886381749799, 'rsi_mid_level': 46, 'atr_period': 15, 'tp_atr_mult': 1.1640772765700724, 'sl_atr_mult': 1.1954529588940574, 'check_rsi_slope': 0.0}, returning high penalty.
+2025-05-20 19:37:58,032 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 19:37:58,049 - INFO - base_optimizer.py - log_message - 148 - Starting MeanReversionRSBBATROptimizer optimization process...
+2025-05-20 19:37:58,050 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for MeanReversionRSBBATRStrategy...

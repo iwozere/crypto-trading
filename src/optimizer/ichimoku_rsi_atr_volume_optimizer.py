@@ -1,17 +1,15 @@
 import os
-import json
-import pandas as pd
-import numpy as np
 from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
 from src.strats.ichimoku_rsi_atr_volume_strategy import IchimokuRSIATRVolumeStrategy
-import backtrader as bt
 import matplotlib.gridspec as gridspec
 from ta.momentum import RSIIndicator
 from ta.volatility import AverageTrueRange
 from src.optimizer.base_optimizer import BaseOptimizer
+import backtrader as bt
+import pandas as pd
 
 class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
     """

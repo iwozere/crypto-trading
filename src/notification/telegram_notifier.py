@@ -31,9 +31,9 @@ class TelegramNotifier:
         self.chat_id = chat_id
         #self.logger.info("Telegram notifier initialized")
     
-    async def send_trade_notification(self, trade_data: Dict[str, Any]) -> bool:
+    def send_trade_notification(self, trade_data: Dict[str, Any]) -> bool:
         """
-        Send a trade notification to Telegram.
+        Send a trade notification to Telegram (synchronous).
         
         Args:
             trade_data (Dict[str, Any]): Dictionary containing trade information
@@ -58,7 +58,7 @@ class TelegramNotifier:
             message = self._format_trade_message(trade_data)
             
             # Send the message
-            await self.bot.send_message(
+            self.bot.send_message(
                 chat_id=self.chat_id,
                 text=message,
                 parse_mode='HTML'
@@ -71,9 +71,9 @@ class TelegramNotifier:
             self.logger.error(f"Failed to send trade notification: {e}")
             return False
     
-    async def send_trade_update(self, trade_data: Dict[str, Any]) -> bool:
+    def send_trade_update(self, trade_data: Dict[str, Any]) -> bool:
         """
-        Send a trade update notification (TP/SL hit, trade closed).
+        Send a trade update notification (TP/SL hit, trade closed) to Telegram (synchronous).
         
         Args:
             trade_data (Dict[str, Any]): Dictionary containing trade update information
@@ -94,7 +94,7 @@ class TelegramNotifier:
             message = self._format_trade_update_message(trade_data)
             
             # Send the message
-            await self.bot.send_message(
+            self.bot.send_message(
                 chat_id=self.chat_id,
                 text=message,
                 parse_mode='HTML'
@@ -107,9 +107,9 @@ class TelegramNotifier:
             self.logger.error(f"Failed to send trade update notification: {e}")
             return False
     
-    async def send_error_notification(self, error_message: str) -> bool:
+    def send_error_notification(self, error_message: str) -> bool:
         """
-        Send an error notification to Telegram.
+        Send an error notification to Telegram (synchronous).
         
         Args:
             error_message (str): Error message to send
@@ -120,7 +120,7 @@ class TelegramNotifier:
         try:
             message = f"⚠️ <b>Error Alert</b>\n\n{error_message}"
             
-            await self.bot.send_message(
+            self.bot.send_message(
                 chat_id=self.chat_id,
                 text=message,
                 parse_mode='HTML'

@@ -173,4 +173,79 @@ pip freeze > requirements.txt
 Run tests with:
 ```bash
 pytest
-``` 
+```
+
+## Quick Start Example
+
+Here is a minimal example of how to run a Backtrader strategy using the new conventions:
+
+```python
+import backtrader as bt
+import pandas as pd
+from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
+
+# Load your data (CSV with columns: datetime, open, high, low, close, volume)
+df = pd.read_csv('data/all/ETHUSDT_4h_20220101_20230101.csv', parse_dates=['datetime'], index_col='datetime')
+
+# Prepare Backtrader data feed
+data = bt.feeds.PandasData(dataname=df)
+
+# Set up Cerebro
+cerebro = bt.Cerebro()
+cerebro.adddata(data)
+cerebro.addstrategy(RSIBollVolumeATRStrategy, printlog=True)
+cerebro.broker.setcash(10000.0)
+cerebro.broker.setcommission(commission=0.001)
+
+# Run the backtest
+print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
+cerebro.run()
+print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
+
+# Access trade logs from the strategy instance
+strategy_instance = cerebro.runstrats[0][0]
+import pandas as pd
+trades_df = pd.DataFrame(strategy_instance.trades)
+print(trades_df)
+```
+
+- Replace the CSV path and strategy as needed.
+- All strategies follow the same conventions for logging and parameterization.
+
+## Quick Start Example: Optimizer
+
+Here is a minimal example of how to run an optimizer for a strategy:
+
+```python
+from src.optimizer.rsi_bb_volume_optimizer import RSIBBVolumeOptimizer
+
+# Path to your historical data CSV
+csv_path = 'data/all/ETHUSDT_4h_20220101_20230101.csv'
+
+# Create the optimizer instance
+optimizer = RSIBBVolumeOptimizer(
+    strategy_name='RSIBollVolumeATRStrategy',
+    strategy_class=None  # The optimizer will import the correct class internally
+)
+
+# Run optimization (this will search for the best parameters)
+results = optimizer.run_optimization(
+    data_file=csv_path,
+    n_calls=20,  # Number of optimization iterations
+    n_initial_points=5,  # Number of random initial points
+    random_state=42
+)
+
+# Print the best result
+print('Best parameters:', results['best_params'])
+print('Best metrics:', results['best_metrics'])
+
+# Save all results to a file
+import json
+with open('optimization_results.json', 'w') as f:
+    json.dump(results, f, indent=2)
+```
+
+- Replace the optimizer and CSV path as needed.
+- Each optimizer exposes a `run_optimization` method and uses the standardized strategy interface.
+- Results include the best parameters, best metrics, and a full optimization history. 

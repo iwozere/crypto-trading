@@ -2,18 +2,14 @@ import os
 import json
 import pandas as pd
 import numpy as np
-from skopt import gp_minimize
 from skopt.space import Real, Integer
-from skopt.utils import use_named_args
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
 from src.strats.rsi_bb_atr_strategy import MeanReversionRSBBATRStrategy
-import backtrader as bt
 import matplotlib.gridspec as gridspec
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
-from datetime import datetime
 from src.optimizer.base_optimizer import BaseOptimizer
 
 class MeanReversionRSBBATROptimizer(BaseOptimizer):
