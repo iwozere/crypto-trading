@@ -1,8 +1,15 @@
 import backtrader as bt
-import pandas as pd
 from src.notification.telegram_notifier import create_notifier
+from src.strats.base_strategy import BaseStrategy
 
-class IchimokuRSIATRVolumeStrategy(bt.Strategy):
+class IchimokuRSIATRVolumeStrategy(BaseStrategy):
+    """
+    Backtrader-native strategy using Ichimoku, RSI, ATR (for trailing stop), and a volume confirmation.
+    - Inherits from BaseStrategy (Backtrader-native, standardized trade logging, notification, and event-driven architecture)
+    - Uses Backtrader's param system (self.p)
+    - Uses self.trades and self.record_trade for trade logging
+    - All logic in __init__, next, notify_order, notify_trade
+    """
     params = (
         ('tenkan_period', 9),
         ('kijun_period', 26),
@@ -16,7 +23,7 @@ class IchimokuRSIATRVolumeStrategy(bt.Strategy):
     )
 
     def __init__(self):
-        # Ichimoku
+        super().__init__()
         self.ichimoku = bt.ind.Ichimoku(
             self.data,
             tenkan=self.p.tenkan_period,
@@ -28,26 +35,15 @@ class IchimokuRSIATRVolumeStrategy(bt.Strategy):
         self.senkou_a = self.ichimoku.senkou_span_a
         self.senkou_b = self.ichimoku.senkou_span_b
         self.chikou = self.ichimoku.chikou_span
-
-        # RSI
         self.rsi = bt.ind.RSI(period=self.p.rsi_period)
-        # ATR
         self.atr = bt.ind.ATR(period=self.p.atr_period)
-        # Volume MA
         self.vol_ma = bt.ind.SMA(self.data.volume, period=self.p.vol_ma_period)
-        # Trade tracking
         self.order = None
         self.entry_price = None
         self.trailing_stop = None
-        self.position_type = None  # 'long' or 'short'
-        self.trades = []
+        self.position_type = None
         self.current_trade = None
         self.notifier = create_notifier()
-
-    def log(self, txt, dt=None, doprint=False):
-        if self.p.printlog or doprint:
-            dt = dt or self.datas[0].datetime.date(0)
-            print(f'{dt.isoformat()} {txt}')
 
     def next(self):
         if self.order:
@@ -63,10 +59,7 @@ class IchimokuRSIATRVolumeStrategy(bt.Strategy):
         atr = self.atr[0]
         cloud_top = max(senkou_a, senkou_b)
         cloud_bot = min(senkou_a, senkou_b)
-
-        # --- Entry Logic ---
         if not self.position:
-            # Long entry
             if (
                 close > cloud_top and
                 tenkan > kijun and self.tenkan[-1] <= self.kijun[-1] and
@@ -90,7 +83,6 @@ class IchimokuRSIATRVolumeStrategy(bt.Strategy):
                     'cloud_bot': cloud_bot
                 }
                 self.log(f'LONG ENTRY: {close:.2f} (RSI {rsi:.2f}, Vol {volume:.0f} > MA {vol_ma:.0f})')
-            # Short entry
             elif (
                 close < cloud_bot and
                 tenkan < kijun and self.tenkan[-1] >= self.kijun[-1] and
@@ -115,15 +107,12 @@ class IchimokuRSIATRVolumeStrategy(bt.Strategy):
                 }
                 self.log(f'SHORT ENTRY: {close:.2f} (RSI {rsi:.2f}, Vol {volume:.0f} > MA {vol_ma:.0f})')
         else:
-            # --- Trailing Stop Update ---
             if self.position_type == 'long':
                 new_stop = close - self.p.atr_mult * atr
                 if new_stop > self.trailing_stop:
                     self.trailing_stop = new_stop
-                # --- Exit Logic ---
                 exit_signal = False
                 exit_reason = ''
-                # Opposite cross or price below cloud
                 if tenkan < kijun and self.tenkan[-1] >= self.kijun[-1]:
                     exit_signal = True
                     exit_reason = 'Tenkan cross down'
@@ -142,7 +131,7 @@ class IchimokuRSIATRVolumeStrategy(bt.Strategy):
                             'exit_reason': exit_reason,
                             'pnl': (close - self.entry_price) / self.entry_price * 100
                         })
-                        self.trades.append(self.current_trade)
+                        self.record_trade(self.current_trade)
                         self.current_trade = None
                     self.log(f'LONG EXIT: {close:.2f} ({exit_reason})')
             elif self.position_type == 'short':
@@ -169,7 +158,7 @@ class IchimokuRSIATRVolumeStrategy(bt.Strategy):
                             'exit_reason': exit_reason,
                             'pnl': (self.entry_price - close) / self.entry_price * 100
                         })
-                        self.trades.append(self.current_trade)
+                        self.record_trade(self.current_trade)
                         self.current_trade = None
                     self.log(f'SHORT EXIT: {close:.2f} ({exit_reason})')
 

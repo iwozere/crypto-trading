@@ -2,13 +2,12 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-
 import backtrader as bt
 import pandas as pd
 import numpy as np
-# from src.notification.telegram import create_notifier # Temporarily commented out
+from src.strats.base_strategy import BaseStrategy
 
-class MeanReversionRSBBATRStrategy(bt.Strategy):
+class MeanReversionRSBBATRStrategy(BaseStrategy):
     """
     A mean-reversion strategy using Bollinger Bands, RSI, and ATR.
     
@@ -57,38 +56,26 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
     )
 
     def __init__(self):
-        try:
-            self.boll = bt.indicators.BollingerBands(
-                period=self.p.bb_period,
-                devfactor=self.p.bb_devfactor
-            )
-            self.rsi = bt.indicators.RSI(period=self.p.rsi_period)
-            self.atr = bt.indicators.ATR(period=self.p.atr_period)
-            self.order = None
-            self.entry_price = None
-            self.entry_bar_idx = None
-            self.active_tp_price = None
-            self.active_sl_price = None
-            self.trades = []
-            self.last_exit_price = None
-            self.last_exit_dt = None
-            # Trailing stop state
-            self.highest_close = None
-            self.trailing_stop = None
-            # self.notifier = create_notifier() # Temporarily commented out
-        except Exception as e:
-            print(f"Error in MeanReversionRSBBATRStrategy __init__: {e}")
-            raise
-
-    def log(self, txt, dt=None, doprint=False):
-        if self.params.printlog or doprint:
-            dt = dt or self.datas[0].datetime.date(0)
-            print(f'{dt.isoformat()} {txt}')
+        super().__init__()
+        self.boll = bt.indicators.BollingerBands(
+            period=self.p.bb_period,
+            devfactor=self.p.bb_devfactor
+        )
+        self.rsi = bt.indicators.RSI(period=self.p.rsi_period)
+        self.atr = bt.indicators.ATR(period=self.p.atr_period)
+        self.order = None
+        self.entry_price = None
+        self.entry_bar_idx = None
+        self.active_tp_price = None
+        self.active_sl_price = None
+        self.last_exit_price = None
+        self.last_exit_dt = None
+        self.highest_close = None
+        self.trailing_stop = None
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
             return
-
         if order.status == order.Completed:
             current_bar_idx = len(self)
             atr_at_entry_signal = self.atr[-(current_bar_idx - self.entry_bar_idx)] if self.entry_bar_idx is not None else self.atr[0]
@@ -99,7 +86,6 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
                      self.log('Error: ATR is still zero or invalid. TP/SL will not be set.')
                      self.active_tp_price = None
                      self.active_sl_price = None
-
             if order.isbuy():
                 self.log(f'BUY EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
                 self.entry_price = order.executed.price
@@ -107,7 +93,6 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
                     self.active_tp_price = self.entry_price + self.p.tp_atr_mult * atr_at_entry_signal
                     self.active_sl_price = self.entry_price - self.p.sl_atr_mult * atr_at_entry_signal
                     self.log(f'BUY TP: {self.active_tp_price:.2f}, SL: {self.active_sl_price:.2f}, ATR@EntrySignal: {atr_at_entry_signal:.2f}')
-                    # Trailing stop: set on entry
                     self.highest_close = self.entry_price
                     self.trailing_stop = self.entry_price - self.p.trail_atr_mult * atr_at_entry_signal
                     self.log(f'Trailing Stop set at {self.trailing_stop:.2f} (ATR x {self.p.trail_atr_mult})')
@@ -116,7 +101,6 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
                     self.active_tp_price = None; self.active_sl_price = None;
                     self.highest_close = None; self.trailing_stop = None;
             elif order.issell():
-                # Only allow sell to close an existing long position
                 if self.position.size == 0:
                     self.entry_price = None
                     self.active_tp_price = None
@@ -133,15 +117,13 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
                 self.active_tp_price = None
                 self.active_sl_price = None
                 self.entry_bar_idx = None
-
         self.order = None
 
     def notify_trade(self, trade):
         if not trade.isclosed:
             return
-
         self.log(f'TRADE CLOSED, PNL GROSS {trade.pnl:.2f}, PNL NET {trade.pnlcomm:.2f}')
-        self.trades.append({
+        trade_dict = {
             'ref': trade.ref, 'symbol': self.data._name,
             'entry_dt': bt.num2date(trade.dtopen).isoformat() if trade.dtopen else None,
             'entry_price': trade.price, 
@@ -150,7 +132,8 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
             'exit_price': getattr(self, 'last_exit_price', None),
             'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
             'size': trade.size
-        })
+        }
+        self.record_trade(trade_dict)
         self.last_exit_price = None
         self.last_exit_dt = None
         self.entry_price = None
@@ -163,7 +146,6 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
     def next(self):
         if self.order:
             return
-
         close = self.data.close[0]
         rsi_val = self.rsi[0]
         if (len(self.rsi.lines.rsi) < self.p.rsi_period or
@@ -171,18 +153,14 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
             len(self.atr.lines.atr) < self.p.atr_period):
             self.log("Indicators not ready yet.")
             return
-
         bb_lower = self.boll.lines.bot[0]
         bb_middle = self.boll.lines.mid[0]
-        # bb_upper = self.boll.lines.top[0] # Not needed for long-only
-
         if not self.position:
             rsi_is_rising = self.rsi[0] > self.rsi[-1] if len(self.rsi.lines.rsi) > 1 else False
             long_rsi_condition = rsi_is_rising if self.p.check_rsi_slope else True
             if close < bb_lower and rsi_val < self.p.rsi_oversold and long_rsi_condition:
                 self.log(f'LONG ENTRY SIGNAL: Close {close:.2f} < BB Low {bb_lower:.2f}, RSI {rsi_val:.2f} < {self.p.rsi_oversold}')
                 self.entry_bar_idx = len(self)
-                # Trade size: 10% of portfolio value
                 size = (self.broker.getvalue() * 0.1) / close
                 self.order = self.buy(size=size)
         else:

@@ -2,13 +2,13 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-
 import backtrader as bt
 import pandas as pd
 import numpy as np
 from src.notification.telegram_notifier import create_notifier
+from src.strats.base_strategy import BaseStrategy
 
-class RSIBollVolumeATRStrategy(bt.Strategy):
+class RSIBollVolumeATRStrategy(BaseStrategy):
     """
     A mean reversion strategy that combines RSI, Bollinger Bands, and Volume indicators with ATR-based position management.
     
@@ -39,6 +39,7 @@ class RSIBollVolumeATRStrategy(bt.Strategy):
         sl_atr_mult (float): ATR multiplier for Stop Loss (default: 1.5)
         rsi_oversold (float): RSI oversold threshold (default: 30)
         rsi_overbought (float): RSI overbought threshold (default: 70)
+        printlog (bool): Whether to print trade logs (default: False)
     
     Trade Tracking:
         - Records entry/exit prices, times, and PnL
@@ -63,10 +64,11 @@ class RSIBollVolumeATRStrategy(bt.Strategy):
         ('sl_atr_mult', 1.5),
         ('rsi_oversold', 30),
         ('rsi_overbought', 70),
+        ('printlog', False),
     )
 
     def __init__(self):
-        # Initialize indicators
+        super().__init__()
         self.rsi = bt.ind.RSI(period=self.p.rsi_period)
         self.boll = bt.ind.BollingerBands(
             period=self.p.boll_period,
@@ -74,23 +76,15 @@ class RSIBollVolumeATRStrategy(bt.Strategy):
         )
         self.atr = bt.ind.ATR(period=self.p.atr_period)
         self.vol_ma = bt.ind.SMA(self.data.volume, period=self.p.vol_ma_period)
-
-        # Initialize trade tracking
         self.order = None
         self.entry_price = None
         self.highest_price = None
         self.tp_price = None
         self.sl_price = None
-        self.trades = []
         self.current_trade = None
+        self.position_closed = True
+        self.last_order_type = None
         self.notifier = create_notifier()
-        self.position_closed = True
-        self.last_order_type = None
-
-    def start(self):
-        """Called once at the start of the strategy"""
-        self.position_closed = True
-        self.last_order_type = None
 
     def notify_order(self, order):
         if order.status == order.Completed:
@@ -105,15 +99,11 @@ class RSIBollVolumeATRStrategy(bt.Strategy):
             if order.isbuy():
                 self.position_closed = True
                 self.last_order_type = None
-        
         self.order = None
 
     def next(self):
-        # Skip if we have an open order
         if self.order:
             return
-
-        # Get current values
         rsi_value = self.rsi[0]
         bb_low = self.boll.lines.bot[0]
         bb_mid = self.boll.lines.mid[0]
@@ -122,19 +112,14 @@ class RSIBollVolumeATRStrategy(bt.Strategy):
         vol_ma_value = self.vol_ma[0]
         volume = self.data.volume[0]
         close = self.data.close[0]
-
-        # Entry logic - only enter if we have no position, previous position was closed, and last order was a sell
         if not self.position and self.position_closed and (self.last_order_type is None or self.last_order_type == 'sell'):
             if (rsi_value < self.p.rsi_oversold and
                 close < bb_low and
                 volume > vol_ma_value):
-
                 self.entry_price = close
                 self.tp_price = self.entry_price + self.p.tp_atr_mult * atr_value
                 self.sl_price = self.entry_price - self.p.sl_atr_mult * atr_value
                 self.highest_price = self.entry_price
-
-                # Record trade entry
                 self.current_trade = {
                     'entry_time': self.data.datetime.datetime(0),
                     'entry_price': self.entry_price,
@@ -148,25 +133,16 @@ class RSIBollVolumeATRStrategy(bt.Strategy):
                     'bb_mid': bb_mid,
                     'bb_high': bb_high
                 }
-
-                # Calculate size using Backtrader's methods
                 cash = self.broker.getcash()
                 value = self.broker.getvalue()
-                size = (value * 0.1) / close  # Use 10% of portfolio value
-                
-                # Ensure we have enough cash for the order
+                size = (value * 0.1) / close
                 if cash >= (size * close * (1 + self.broker.comminfo[None].getcommission(size=size, price=close))):
                     self.order = self.buy(size=size)
                     self.position_closed = False
-        elif self.position:  # We have an open position
-            # Update highest price
+        elif self.position:
             self.highest_price = max(self.highest_price, close)
-            # Update trailing stop
             trailing_sl = self.highest_price - self.p.sl_atr_mult * atr_value
-
-            # Exit logic
             if close >= self.tp_price:
-                # Close position
                 self.order = self.close()
                 if self.current_trade:
                     self.current_trade.update({
@@ -175,10 +151,9 @@ class RSIBollVolumeATRStrategy(bt.Strategy):
                         'exit_type': 'tp',
                         'pnl': (close - self.entry_price) / self.entry_price * 100
                     })
-                    self.trades.append(self.current_trade)
+                    self.record_trade(self.current_trade)
                     self.current_trade = None
             elif close <= trailing_sl:
-                # Close position
                 self.order = self.close()
                 if self.current_trade:
                     self.current_trade.update({
@@ -187,7 +162,7 @@ class RSIBollVolumeATRStrategy(bt.Strategy):
                         'exit_type': 'sl',
                         'pnl': (close - self.entry_price) / self.entry_price * 100
                     })
-                    self.trades.append(self.current_trade)
+                    self.record_trade(self.current_trade)
                     self.current_trade = None
 
     def on_trade_entry(self, trade):
@@ -207,17 +182,4 @@ class RSIBollVolumeATRStrategy(bt.Strategy):
             }
             self.notifier.send_trade_notification(trade_data)
 
-    def on_trade_exit(self, trade):
-        """Called when a trade is exited"""
-        if self.notifier:
-            trade_data = {
-                'symbol': self.symbol,
-                'side': 'BUY' if trade.side == 'long' else 'SELL',
-                'entry_price': trade.entry_price,
-                'exit_price': trade.exit_price,
-                'pnl': trade.pnl,
-                'exit_type': trade.exit_type,
-                'timestamp': trade.exit_time.isoformat()
-            }
-            self.notifier.send_trade_update(trade_data)
 
