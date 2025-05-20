@@ -131,7 +131,8 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
 
         self.log(f'OPERATION PROFIT, GROSS {trade.pnl:.2f}, NET {trade.pnlcomm:.2f}')
         trade_dict = {
-            'ref': trade.ref, 'symbol': trade.data._name,
+            'symbol': trade.data._name if hasattr(trade.data, '_name') else 'UNKNOWN',
+            'ref': trade.ref,
             'entry_dt': bt.num2date(trade.dtopen).isoformat() if trade.dtopen else None,
             'entry_price': trade.price, 'direction': 'long' if trade.history[0].event.size > 0 else 'short',
             'exit_dt': bt.num2date(trade.dtclose).isoformat() if trade.dtclose else None,

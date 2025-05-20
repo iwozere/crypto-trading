@@ -1197,3 +1197,217 @@ Optimizing LTCUSDT_4h_20240501_20250501.csv for MeanReversionRSBBATRStrategy...
 2025-05-20 19:37:58,049 - INFO - base_optimizer.py - log_message - 148 - Starting MeanReversionRSBBATROptimizer optimization process...
 2025-05-20 19:37:58,050 - INFO - base_optimizer.py - log_message - 148 - 
 Optimizing LTCUSDT_4h_20240501_20250501.csv for MeanReversionRSBBATRStrategy...
+2025-05-20 19:43:22,608 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 19:43:22,623 - INFO - base_optimizer.py - log_message - 148 - Starting RsiVolumeSuperTrendOptimizer optimization process...
+2025-05-20 19:43:22,624 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 19:51:10,476 - INFO - base_optimizer.py - log_message - 148 - 
+Optimization completed for LTCUSDT_4h_20240501_20250501.csv
+2025-05-20 19:51:10,477 - INFO - base_optimizer.py - log_message - 148 - Best params for LTCUSDT_4h_20240501_20250501.csv: {'rsi_period': 24, 'rsi_entry_long_level': 34.755210326035346, 'rsi_entry_short_level': 55.478499537723145, 'rsi_exit_long_level': 81.25641286858686, 'rsi_exit_short_level': 29.710510495561515, 'st_period': 6, 'st_multiplier': 3.419776851166021, 'vol_ma_period': 18, 'atr_period': 12, 'tp_atr_mult': 4.710152442976625, 'sl_atr_mult': 2.8106556635383635, 'time_based_exit_period': 5}
+2025-05-20 19:51:10,478 - INFO - base_optimizer.py - log_message - 148 - Best score: -0.00. Metrics: {'total_trades': 0, 'win_rate': 0, 'profit_factor': 0, 'max_drawdown_pct': 0.0, 'sharpe_ratio': -5.0, 'sqn': 0.0, 'sqn_pct': None, 'cagr': None, 'net_profit': 0.0, 'portfolio_growth_pct': 0.0, 'final_value': 1000.0, 'params': {'rsi_period': 28, 'rsi_entry_long_level': 50.0, 'rsi_entry_short_level': 70.0, 'rsi_exit_long_level': 65.0, 'rsi_exit_short_level': 15.0, 'st_period': 20, 'st_multiplier': 1.5, 'vol_ma_period': 30, 'atr_period': 21, 'tp_atr_mult': 1.0, 'sl_atr_mult': 0.5, 'time_based_exit_period': 15}}
+2025-05-20 19:51:35,025 - INFO - base_optimizer.py - log_message - 148 - 
+Saving results for LTCUSDT_4h_20240501_20250501.csv...
+2025-05-20 19:51:35,029 - INFO - base_optimizer.py - log_message - 148 - Saving results to: c:\dev\cursor\crypto-trading\results\LTCUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 19:51:35,031 - INFO - base_optimizer.py - log_message - 148 - Results saved to c:\dev\cursor\crypto-trading\results\LTCUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 19:51:35,167 - INFO - base_optimizer.py - log_message - 148 - 
+Combined results saved to c:\dev\cursor\crypto-trading\results\combined_optimization_results_20250520_195135.json
+2025-05-20 19:54:25,969 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 19:54:25,980 - INFO - base_optimizer.py - log_message - 148 - Starting RsiVolumeSuperTrendOptimizer optimization process...
+2025-05-20 19:54:25,981 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 19:57:54,440 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 19:57:54,453 - INFO - base_optimizer.py - log_message - 148 - Starting RsiVolumeSuperTrendOptimizer optimization process...
+2025-05-20 19:57:54,453 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 20:00:54,593 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 20:00:54,605 - INFO - base_optimizer.py - log_message - 148 - Starting RsiVolumeSuperTrendOptimizer optimization process...
+2025-05-20 20:00:54,606 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 20:09:50,204 - INFO - base_optimizer.py - log_message - 148 - 
+Optimization completed for LTCUSDT_4h_20240501_20250501.csv
+2025-05-20 20:09:50,205 - INFO - base_optimizer.py - log_message - 148 - Best params for LTCUSDT_4h_20240501_20250501.csv: {'rsi_period': 23, 'rsi_entry_long_level': 49.93785841143632, 'rsi_entry_short_level': 56.79479212342518, 'rsi_exit_long_level': 84.54567702856139, 'rsi_exit_short_level': 28.54950276208297, 'st_period': 14, 'st_multiplier': 2.260279055593754, 'vol_ma_period': 15, 'atr_period': 15, 'tp_atr_mult': 4.684997710303692, 'sl_atr_mult': 0.666080495688841, 'time_based_exit_period': 9}
+2025-05-20 20:09:50,205 - INFO - base_optimizer.py - log_message - 148 - Best score: -0.00. Metrics: {'total_trades': 0, 'win_rate': 0, 'profit_factor': 0, 'max_drawdown_pct': 0.0, 'sharpe_ratio': -5.0, 'sqn': 0.0, 'sqn_pct': None, 'cagr': None, 'net_profit': 0.0, 'portfolio_growth_pct': 0.0, 'final_value': 1000.0, 'params': {'rsi_period': 28, 'rsi_entry_long_level': 50.0, 'rsi_entry_short_level': 70.0, 'rsi_exit_long_level': 65.0, 'rsi_exit_short_level': 35.0, 'st_period': 20, 'st_multiplier': 1.5, 'vol_ma_period': 5, 'atr_period': 7, 'tp_atr_mult': 5.0, 'sl_atr_mult': 3.0, 'time_based_exit_period': 3}}
+2025-05-20 20:10:09,522 - INFO - base_optimizer.py - log_message - 148 - 
+Saving results for LTCUSDT_4h_20240501_20250501.csv...
+2025-05-20 20:10:09,529 - INFO - base_optimizer.py - log_message - 148 - Saving results to: c:\dev\cursor\crypto-trading\results\LTCUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 20:10:09,533 - INFO - base_optimizer.py - log_message - 148 - Results saved to c:\dev\cursor\crypto-trading\results\LTCUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 20:10:09,677 - INFO - base_optimizer.py - log_message - 148 - 
+Combined results saved to c:\dev\cursor\crypto-trading\results\combined_optimization_results_20250520_201009.json
+2025-05-20 20:16:36,005 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 20:16:36,018 - INFO - base_optimizer.py - log_message - 148 - Starting RsiVolumeSuperTrendOptimizer optimization process...
+2025-05-20 20:16:36,019 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 20:19:15,461 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 20:19:15,474 - INFO - base_optimizer.py - log_message - 148 - Starting RsiVolumeSuperTrendOptimizer optimization process...
+2025-05-20 20:19:15,475 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 20:47:58,140 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 20:47:58,157 - INFO - base_optimizer.py - log_message - 148 - Starting RsiVolumeSuperTrendOptimizer optimization process...
+2025-05-20 20:47:58,159 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 20:48:01,088 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 21, 'rsi_entry_long_level': 45.56936007083159, 'rsi_entry_short_level': 52.12850003798055, 'rsi_exit_long_level': 84.87531050281422, 'rsi_exit_short_level': 23.819687800090378, 'st_period': 12, 'st_multiplier': 3.5568845313579756, 'vol_ma_period': 21, 'atr_period': 17, 'tp_atr_mult': 4.221330219931438, 'sl_atr_mult': 1.6382870245327434, 'time_based_exit_period': 8}: list index out of range
+2025-05-20 20:48:01,098 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1657, in _runonce
+    strat._once()
+    ~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\lineiterator.py", line 297, in _once
+    indicator._once()
+    ~~~~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\lineiterator.py", line 317, in _once
+    self.oncestart(self._minperiod - 1, self._minperiod)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\indicator.py", line 124, in oncestart_via_nextstart
+    self.nextstart()
+    ~~~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\lineiterator.py", line 347, in nextstart
+    self.next()
+    ~~~~~~~~~^^
+  File "C:\dev\cursor\crypto-trading\src\indicator\super_trend.py", line 27, in next
+    prev_final_ub = self.final_ub_list[-1]
+                    ~~~~~~~~~~~~~~~~~~^^^^
+IndexError: list index out of range
+
+2025-05-20 20:48:01,099 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 21, 'rsi_entry_long_level': 45.56936007083159, 'rsi_entry_short_level': 52.12850003798055, 'rsi_exit_long_level': 84.87531050281422, 'rsi_exit_short_level': 23.819687800090378, 'st_period': 12, 'st_multiplier': 3.5568845313579756, 'vol_ma_period': 21, 'atr_period': 17, 'tp_atr_mult': 4.221330219931438, 'sl_atr_mult': 1.6382870245327434, 'time_based_exit_period': 8}, returning high penalty.
+2025-05-20 20:48:03,633 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 20, 'rsi_entry_long_level': 45.35507591018768, 'rsi_entry_short_level': 53.0750781501503, 'rsi_exit_long_level': 82.50324246334483, 'rsi_exit_short_level': 30.734017451741053, 'st_period': 7, 'st_multiplier': 2.965729068206274, 'vol_ma_period': 21, 'atr_period': 21, 'tp_atr_mult': 3.257284639391445, 'sl_atr_mult': 0.6456636961949929, 'time_based_exit_period': 4}: list index out of range
+2025-05-20 20:48:03,637 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1657, in _runonce
+    strat._once()
+    ~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\lineiterator.py", line 297, in _once
+    indicator._once()
+    ~~~~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\lineiterator.py", line 317, in _once
+    self.oncestart(self._minperiod - 1, self._minperiod)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\indicator.py", line 124, in oncestart_via_nextstart
+    self.nextstart()
+    ~~~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\lineiterator.py", line 347, in nextstart
+    self.next()
+    ~~~~~~~~~^^
+  File "C:\dev\cursor\crypto-trading\src\indicator\super_trend.py", line 27, in next
+    prev_final_ub = self.final_ub_list[-1]
+                    ~~~~~~~~~~~~~~~~~~^^^^
+IndexError: list index out of range
+
+2025-05-20 20:48:03,638 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 20, 'rsi_entry_long_level': 45.35507591018768, 'rsi_entry_short_level': 53.0750781501503, 'rsi_exit_long_level': 82.50324246334483, 'rsi_exit_short_level': 30.734017451741053, 'st_period': 7, 'st_multiplier': 2.965729068206274, 'vol_ma_period': 21, 'atr_period': 21, 'tp_atr_mult': 3.257284639391445, 'sl_atr_mult': 0.6456636961949929, 'time_based_exit_period': 4}, returning high penalty.
+2025-05-20 20:50:55,057 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 20:50:55,072 - INFO - base_optimizer.py - log_message - 148 - Starting RsiVolumeSuperTrendOptimizer optimization process...
+2025-05-20 20:50:55,073 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 20:51:10,700 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 15, 'rsi_entry_long_level': 38.676144917196794, 'rsi_entry_short_level': 54.996056710724126, 'rsi_exit_long_level': 81.70780331038276, 'rsi_exit_short_level': 18.338358035172092, 'st_period': 10, 'st_multiplier': 1.733101000221394, 'vol_ma_period': 30, 'atr_period': 9, 'tp_atr_mult': 4.3805031184908145, 'sl_atr_mult': 2.023154909587138, 'time_based_exit_period': 11}: 'symbol'
+2025-05-20 20:51:10,710 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 590, in _notify
+    self.notify_order(order)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_volume_supertrend_strategy.py", line 74, in notify_order
+    self.record_trade(self.current_trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 20, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 28, in on_trade_exit
+    self.notifier.send_trade_update(trade_dict)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\notification\telegram_notifier.py", line 94, in send_trade_update
+    message = self._format_trade_update_message(trade_data)
+  File "C:\dev\cursor\crypto-trading\src\notification\telegram_notifier.py", line 166, in _format_trade_update_message
+    f"Symbol: {trade_data['symbol']}",
+               ~~~~~~~~~~^^^^^^^^^^
+KeyError: 'symbol'
+
+2025-05-20 20:51:10,711 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 15, 'rsi_entry_long_level': 38.676144917196794, 'rsi_entry_short_level': 54.996056710724126, 'rsi_exit_long_level': 81.70780331038276, 'rsi_exit_short_level': 18.338358035172092, 'st_period': 10, 'st_multiplier': 1.733101000221394, 'vol_ma_period': 30, 'atr_period': 9, 'tp_atr_mult': 4.3805031184908145, 'sl_atr_mult': 2.023154909587138, 'time_based_exit_period': 11}, returning high penalty.
+2025-05-20 20:51:13,150 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 7, 'rsi_entry_long_level': 42.81631522389663, 'rsi_entry_short_level': 62.9070160175692, 'rsi_exit_long_level': 76.94339614037106, 'rsi_exit_short_level': 25.952409465540153, 'st_period': 17, 'st_multiplier': 1.567771648183116, 'vol_ma_period': 18, 'atr_period': 8, 'tp_atr_mult': 1.519271299561268, 'sl_atr_mult': 0.7498123107349451, 'time_based_exit_period': 6}: 'symbol'
+2025-05-20 20:51:13,154 - INFO - base_optimizer.py - log_message - 148 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 501, in run_backtest
+    results = cerebro.run()
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1132, in run
+    runstrat = self.runstrategies(iterstrat)
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1298, in runstrategies
+    self._runonce(runstrats)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\cerebro.py", line 1700, in _runonce
+    strat._oncepost(dt0)
+    ~~~~~~~~~~~~~~~^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 305, in _oncepost
+    self._notify()
+    ~~~~~~~~~~~~^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\strategy.py", line 590, in _notify
+    self.notify_order(order)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\rsi_volume_supertrend_strategy.py", line 74, in notify_order
+    self.record_trade(self.current_trade)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 20, in record_trade
+    self.on_trade_exit(trade_dict)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\strats\base_strategy.py", line 28, in on_trade_exit
+    self.notifier.send_trade_update(trade_dict)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\dev\cursor\crypto-trading\src\notification\telegram_notifier.py", line 94, in send_trade_update
+    message = self._format_trade_update_message(trade_data)
+  File "C:\dev\cursor\crypto-trading\src\notification\telegram_notifier.py", line 166, in _format_trade_update_message
+    f"Symbol: {trade_data['symbol']}",
+               ~~~~~~~~~~^^^^^^^^^^
+KeyError: 'symbol'
+
+2025-05-20 20:51:13,155 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 7, 'rsi_entry_long_level': 42.81631522389663, 'rsi_entry_short_level': 62.9070160175692, 'rsi_exit_long_level': 76.94339614037106, 'rsi_exit_short_level': 25.952409465540153, 'st_period': 17, 'st_multiplier': 1.567771648183116, 'vol_ma_period': 18, 'atr_period': 8, 'tp_atr_mult': 1.519271299561268, 'sl_atr_mult': 0.7498123107349451, 'time_based_exit_period': 6}, returning high penalty.
+2025-05-20 21:11:59,156 - INFO - base_optimizer.py - log_message - 148 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 21:11:59,169 - INFO - base_optimizer.py - log_message - 148 - Starting RsiVolumeSuperTrendOptimizer optimization process...
+2025-05-20 21:11:59,170 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing LTCUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 21:12:02,798 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 18, 'rsi_entry_long_level': 42.215053512580326, 'rsi_entry_short_level': 55.852311477223104, 'rsi_exit_long_level': 75.24288020286116, 'rsi_exit_short_level': 31.341288812769427, 'st_period': 8, 'st_multiplier': 2.5347786748267893, 'vol_ma_period': 11, 'atr_period': 16, 'tp_atr_mult': 3.255080468441719, 'sl_atr_mult': 1.4690861099776227, 'time_based_exit_period': 12}: 'side'
+2025-05-20 21:12:02,831 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 18, 'rsi_entry_long_level': 42.215053512580326, 'rsi_entry_short_level': 55.852311477223104, 'rsi_exit_long_level': 75.24288020286116, 'rsi_exit_short_level': 31.341288812769427, 'st_period': 8, 'st_multiplier': 2.5347786748267893, 'vol_ma_period': 11, 'atr_period': 16, 'tp_atr_mult': 3.255080468441719, 'sl_atr_mult': 1.4690861099776227, 'time_based_exit_period': 12}, returning high penalty.
+2025-05-20 21:12:05,610 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 26, 'rsi_entry_long_level': 37.67783487270401, 'rsi_entry_short_level': 63.176395959348525, 'rsi_exit_long_level': 81.72934506890643, 'rsi_exit_short_level': 27.97459669593946, 'st_period': 7, 'st_multiplier': 1.751654371821071, 'vol_ma_period': 28, 'atr_period': 15, 'tp_atr_mult': 3.8317242661477904, 'sl_atr_mult': 2.7455902816935835, 'time_based_exit_period': 4}: 'side'
+2025-05-20 21:12:05,627 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 26, 'rsi_entry_long_level': 37.67783487270401, 'rsi_entry_short_level': 63.176395959348525, 'rsi_exit_long_level': 81.72934506890643, 'rsi_exit_short_level': 27.97459669593946, 'st_period': 7, 'st_multiplier': 1.751654371821071, 'vol_ma_period': 28, 'atr_period': 15, 'tp_atr_mult': 3.8317242661477904, 'sl_atr_mult': 2.7455902816935835, 'time_based_exit_period': 4}, returning high penalty.
+2025-05-20 21:12:08,714 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 12, 'rsi_entry_long_level': 45.64937832150426, 'rsi_entry_short_level': 64.90211576251588, 'rsi_exit_long_level': 81.36019130155749, 'rsi_exit_short_level': 29.50718727462821, 'st_period': 17, 'st_multiplier': 3.4674930384908342, 'vol_ma_period': 24, 'atr_period': 8, 'tp_atr_mult': 2.100897819530733, 'sl_atr_mult': 1.6640690453327323, 'time_based_exit_period': 6}: 'side'
+2025-05-20 21:12:08,732 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 12, 'rsi_entry_long_level': 45.64937832150426, 'rsi_entry_short_level': 64.90211576251588, 'rsi_exit_long_level': 81.36019130155749, 'rsi_exit_short_level': 29.50718727462821, 'st_period': 17, 'st_multiplier': 3.4674930384908342, 'vol_ma_period': 24, 'atr_period': 8, 'tp_atr_mult': 2.100897819530733, 'sl_atr_mult': 1.6640690453327323, 'time_based_exit_period': 6}, returning high penalty.
+2025-05-20 21:12:11,395 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 22, 'rsi_entry_long_level': 49.99723020925373, 'rsi_entry_short_level': 57.59525624271763, 'rsi_exit_long_level': 68.32374973478169, 'rsi_exit_short_level': 23.98061417583449, 'st_period': 14, 'st_multiplier': 2.7670235769809333, 'vol_ma_period': 7, 'atr_period': 19, 'tp_atr_mult': 1.4590477608202272, 'sl_atr_mult': 1.575603176600067, 'time_based_exit_period': 14}: 'side'
+2025-05-20 21:12:11,421 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 22, 'rsi_entry_long_level': 49.99723020925373, 'rsi_entry_short_level': 57.59525624271763, 'rsi_exit_long_level': 68.32374973478169, 'rsi_exit_short_level': 23.98061417583449, 'st_period': 14, 'st_multiplier': 2.7670235769809333, 'vol_ma_period': 7, 'atr_period': 19, 'tp_atr_mult': 1.4590477608202272, 'sl_atr_mult': 1.575603176600067, 'time_based_exit_period': 14}, returning high penalty.
+2025-05-20 21:12:14,286 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 27, 'rsi_entry_long_level': 45.7026171625932, 'rsi_entry_short_level': 50.241750243443896, 'rsi_exit_long_level': 75.30431853933443, 'rsi_exit_short_level': 20.376067501801433, 'st_period': 19, 'st_multiplier': 3.0366665180804384, 'vol_ma_period': 29, 'atr_period': 13, 'tp_atr_mult': 1.3426680143490954, 'sl_atr_mult': 2.329465117563448, 'time_based_exit_period': 8}: 'side'
+2025-05-20 21:12:14,310 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 27, 'rsi_entry_long_level': 45.7026171625932, 'rsi_entry_short_level': 50.241750243443896, 'rsi_exit_long_level': 75.30431853933443, 'rsi_exit_short_level': 20.376067501801433, 'st_period': 19, 'st_multiplier': 3.0366665180804384, 'vol_ma_period': 29, 'atr_period': 13, 'tp_atr_mult': 1.3426680143490954, 'sl_atr_mult': 2.329465117563448, 'time_based_exit_period': 8}, returning high penalty.
+2025-05-20 21:12:17,377 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 10, 'rsi_entry_long_level': 44.61150679886031, 'rsi_entry_short_level': 55.26213984984395, 'rsi_exit_long_level': 76.39816489764952, 'rsi_exit_short_level': 15.254270280436238, 'st_period': 14, 'st_multiplier': 3.1927809732593646, 'vol_ma_period': 11, 'atr_period': 10, 'tp_atr_mult': 3.201810429066898, 'sl_atr_mult': 2.3667269823440336, 'time_based_exit_period': 15}: 'side'
+2025-05-20 21:12:17,401 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 10, 'rsi_entry_long_level': 44.61150679886031, 'rsi_entry_short_level': 55.26213984984395, 'rsi_exit_long_level': 76.39816489764952, 'rsi_exit_short_level': 15.254270280436238, 'st_period': 14, 'st_multiplier': 3.1927809732593646, 'vol_ma_period': 11, 'atr_period': 10, 'tp_atr_mult': 3.201810429066898, 'sl_atr_mult': 2.3667269823440336, 'time_based_exit_period': 15}, returning high penalty.
+2025-05-20 21:12:20,160 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 11, 'rsi_entry_long_level': 44.174070588429245, 'rsi_entry_short_level': 55.244125281835956, 'rsi_exit_long_level': 70.06345054704008, 'rsi_exit_short_level': 28.869110544777982, 'st_period': 17, 'st_multiplier': 3.8312065388380447, 'vol_ma_period': 18, 'atr_period': 18, 'tp_atr_mult': 2.853603470096247, 'sl_atr_mult': 1.0986077798554528, 'time_based_exit_period': 8}: 'side'
+2025-05-20 21:12:20,180 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 11, 'rsi_entry_long_level': 44.174070588429245, 'rsi_entry_short_level': 55.244125281835956, 'rsi_exit_long_level': 70.06345054704008, 'rsi_exit_short_level': 28.869110544777982, 'st_period': 17, 'st_multiplier': 3.8312065388380447, 'vol_ma_period': 18, 'atr_period': 18, 'tp_atr_mult': 2.853603470096247, 'sl_atr_mult': 1.0986077798554528, 'time_based_exit_period': 8}, returning high penalty.
+2025-05-20 21:12:23,555 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 25, 'rsi_entry_long_level': 40.40483268448027, 'rsi_entry_short_level': 67.98020595919235, 'rsi_exit_long_level': 73.41390953446229, 'rsi_exit_short_level': 34.65154823933378, 'st_period': 14, 'st_multiplier': 2.4987482210449157, 'vol_ma_period': 13, 'atr_period': 10, 'tp_atr_mult': 3.5523378703175723, 'sl_atr_mult': 0.9375609396207673, 'time_based_exit_period': 9}: 'side'
+2025-05-20 21:12:23,588 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 25, 'rsi_entry_long_level': 40.40483268448027, 'rsi_entry_short_level': 67.98020595919235, 'rsi_exit_long_level': 73.41390953446229, 'rsi_exit_short_level': 34.65154823933378, 'st_period': 14, 'st_multiplier': 2.4987482210449157, 'vol_ma_period': 13, 'atr_period': 10, 'tp_atr_mult': 3.5523378703175723, 'sl_atr_mult': 0.9375609396207673, 'time_based_exit_period': 9}, returning high penalty.
+2025-05-20 21:12:31,569 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 20, 'rsi_entry_long_level': 45.27435227931673, 'rsi_entry_short_level': 63.53133741145056, 'rsi_exit_long_level': 71.32135807551643, 'rsi_exit_short_level': 25.117757196376804, 'st_period': 8, 'st_multiplier': 3.458866157754162, 'vol_ma_period': 8, 'atr_period': 20, 'tp_atr_mult': 2.4021422799999783, 'sl_atr_mult': 1.420158165770352, 'time_based_exit_period': 7}: 'side'
+2025-05-20 21:12:31,590 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 20, 'rsi_entry_long_level': 45.27435227931673, 'rsi_entry_short_level': 63.53133741145056, 'rsi_exit_long_level': 71.32135807551643, 'rsi_exit_short_level': 25.117757196376804, 'st_period': 8, 'st_multiplier': 3.458866157754162, 'vol_ma_period': 8, 'atr_period': 20, 'tp_atr_mult': 2.4021422799999783, 'sl_atr_mult': 1.420158165770352, 'time_based_exit_period': 7}, returning high penalty.
+2025-05-20 21:12:34,270 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 12, 'rsi_entry_long_level': 48.027411121784446, 'rsi_entry_short_level': 51.824525371738964, 'rsi_exit_long_level': 66.62527541832222, 'rsi_exit_short_level': 25.767447440988445, 'st_period': 12, 'st_multiplier': 3.730224675756138, 'vol_ma_period': 22, 'atr_period': 20, 'tp_atr_mult': 2.0010702591159752, 'sl_atr_mult': 1.5047269908189156, 'time_based_exit_period': 4}: 'side'
+2025-05-20 21:12:34,291 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 12, 'rsi_entry_long_level': 48.027411121784446, 'rsi_entry_short_level': 51.824525371738964, 'rsi_exit_long_level': 66.62527541832222, 'rsi_exit_short_level': 25.767447440988445, 'st_period': 12, 'st_multiplier': 3.730224675756138, 'vol_ma_period': 22, 'atr_period': 20, 'tp_atr_mult': 2.0010702591159752, 'sl_atr_mult': 1.5047269908189156, 'time_based_exit_period': 4}, returning high penalty.
+2025-05-20 21:12:39,195 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 26, 'rsi_entry_long_level': 44.93734981412465, 'rsi_entry_short_level': 62.2439620609328, 'rsi_exit_long_level': 83.70974729841231, 'rsi_exit_short_level': 33.7851514032397, 'st_period': 14, 'st_multiplier': 2.082830994767625, 'vol_ma_period': 23, 'atr_period': 7, 'tp_atr_mult': 3.2656930957142647, 'sl_atr_mult': 2.660532276798228, 'time_based_exit_period': 11}: 'side'
+2025-05-20 21:12:39,231 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 26, 'rsi_entry_long_level': 44.93734981412465, 'rsi_entry_short_level': 62.2439620609328, 'rsi_exit_long_level': 83.70974729841231, 'rsi_exit_short_level': 33.7851514032397, 'st_period': 14, 'st_multiplier': 2.082830994767625, 'vol_ma_period': 23, 'atr_period': 7, 'tp_atr_mult': 3.2656930957142647, 'sl_atr_mult': 2.660532276798228, 'time_based_exit_period': 11}, returning high penalty.
+2025-05-20 21:12:44,485 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 10, 'rsi_entry_long_level': 42.11491136407261, 'rsi_entry_short_level': 57.78752088354215, 'rsi_exit_long_level': 77.78390593116328, 'rsi_exit_short_level': 34.631045093542006, 'st_period': 12, 'st_multiplier': 2.5668787525780203, 'vol_ma_period': 24, 'atr_period': 18, 'tp_atr_mult': 1.8615414670423693, 'sl_atr_mult': 1.9247519468296752, 'time_based_exit_period': 6}: 'side'
+2025-05-20 21:12:44,510 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 10, 'rsi_entry_long_level': 42.11491136407261, 'rsi_entry_short_level': 57.78752088354215, 'rsi_exit_long_level': 77.78390593116328, 'rsi_exit_short_level': 34.631045093542006, 'st_period': 12, 'st_multiplier': 2.5668787525780203, 'vol_ma_period': 24, 'atr_period': 18, 'tp_atr_mult': 1.8615414670423693, 'sl_atr_mult': 1.9247519468296752, 'time_based_exit_period': 6}, returning high penalty.
+2025-05-20 21:13:08,031 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 14, 'rsi_entry_long_level': 49.271930682071165, 'rsi_entry_short_level': 61.88658624457106, 'rsi_exit_long_level': 70.31413260574534, 'rsi_exit_short_level': 25.81523792878582, 'st_period': 17, 'st_multiplier': 3.5336554897426353, 'vol_ma_period': 22, 'atr_period': 20, 'tp_atr_mult': 4.361831389919432, 'sl_atr_mult': 2.1102478194352035, 'time_based_exit_period': 6}: 'side'
+2025-05-20 21:13:08,052 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 14, 'rsi_entry_long_level': 49.271930682071165, 'rsi_entry_short_level': 61.88658624457106, 'rsi_exit_long_level': 70.31413260574534, 'rsi_exit_short_level': 25.81523792878582, 'st_period': 17, 'st_multiplier': 3.5336554897426353, 'vol_ma_period': 22, 'atr_period': 20, 'tp_atr_mult': 4.361831389919432, 'sl_atr_mult': 2.1102478194352035, 'time_based_exit_period': 6}, returning high penalty.
+2025-05-20 21:13:10,862 - INFO - base_optimizer.py - log_message - 148 - Error during backtest run for params {'rsi_period': 25, 'rsi_entry_long_level': 49.223637714036315, 'rsi_entry_short_level': 67.02372766253062, 'rsi_exit_long_level': 72.5107466920856, 'rsi_exit_short_level': 15.317878264156768, 'st_period': 16, 'st_multiplier': 1.5940447260586705, 'vol_ma_period': 22, 'atr_period': 15, 'tp_atr_mult': 2.4891545722312918, 'sl_atr_mult': 0.6998812607734202, 'time_based_exit_period': 10}: 'side'
+2025-05-20 21:13:10,883 - INFO - base_optimizer.py - log_message - 148 - Backtest failed for params {'rsi_period': 25, 'rsi_entry_long_level': 49.223637714036315, 'rsi_entry_short_level': 67.02372766253062, 'rsi_exit_long_level': 72.5107466920856, 'rsi_exit_short_level': 15.317878264156768, 'st_period': 16, 'st_multiplier': 1.5940447260586705, 'vol_ma_period': 22, 'atr_period': 15, 'tp_atr_mult': 2.4891545722312918, 'sl_atr_mult': 0.6998812607734202, 'time_based_exit_period': 10}, returning high penalty.

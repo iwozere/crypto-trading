@@ -5,7 +5,6 @@ import warnings
 from src.strats.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
 import matplotlib.gridspec as gridspec
 from ta.momentum import RSIIndicator
-from ta.volatility import AverageTrueRange
 from src.optimizer.base_optimizer import BaseOptimizer
 
 class RsiVolumeSuperTrendOptimizer(BaseOptimizer):

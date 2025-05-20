@@ -157,21 +157,30 @@ class TelegramNotifier:
         return "\n".join(message)
     
     def _format_trade_update_message(self, trade_data: Dict[str, Any]) -> str:
-        """Format trade update message"""
-        pnl = trade_data['pnl']
+        """Format trade update message, robust to missing 'side' and 'symbol'"""
+        pnl = trade_data.get('pnl', 0)
         pnl_emoji = "🟢" if pnl > 0 else "🔴"
-        
+        # Try to get 'side', or infer from 'type' or 'direction'
+        side = trade_data.get('side')
+        if not side:
+            t = trade_data.get('type', '').lower() or trade_data.get('direction', '').lower()
+            if t == 'long':
+                side = 'BUY'
+            elif t == 'short':
+                side = 'SELL'
+            else:
+                side = 'UNKNOWN'
+        side_str = '🟢 BUY' if side == 'BUY' else ('🔴 SELL' if side == 'SELL' else '❓ UNKNOWN')
         message = [
             f"📊 <b>Trade Update</b>",
-            f"Symbol: {trade_data['symbol']}",
-            f"Side: {'🟢 BUY' if trade_data['side'] == 'BUY' else '🔴 SELL'}",
-            f"Entry Price: {trade_data['entry_price']:.8f}",
-            f"Exit Price: {trade_data['exit_price']:.8f}",
-            f"Exit Type: {trade_data['exit_type']}",
+            f"Symbol: {trade_data.get('symbol', 'UNKNOWN')}",
+            f"Side: {side_str}",
+            f"Entry Price: {trade_data.get('entry_price', 0):.8f}",
+            f"Exit Price: {trade_data.get('exit_price', 0):.8f}",
+            f"Exit Type: {trade_data.get('exit_type', 'UNKNOWN')}",
             f"PnL: {pnl_emoji} {pnl:.2f}%",
-            f"Time: {trade_data['timestamp']}"
+            f"Time: {trade_data.get('timestamp', 'UNKNOWN')}"
         ]
-        
         return "\n".join(message)
 
 def create_notifier() -> Optional[TelegramNotifier]:

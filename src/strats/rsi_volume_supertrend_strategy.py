@@ -112,6 +112,7 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                prev_rsi_val < self.p.rsi_entry_long_level and rsi_val > prev_rsi_val and \
                volume > vol_ma_val:
                 self.current_trade = {
+                    'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
                     'entry_time': self.data.datetime.datetime(0),
                     'entry_price': 'pending_long',
                     'atr_at_entry': atr_val, 'rsi_at_entry': rsi_val,

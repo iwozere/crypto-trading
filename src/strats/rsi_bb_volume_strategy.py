@@ -121,6 +121,7 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                 self.sl_price = self.entry_price - self.p.sl_atr_mult * atr_value
                 self.highest_price = self.entry_price
                 self.current_trade = {
+                    'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
                     'entry_time': self.data.datetime.datetime(0),
                     'entry_price': self.entry_price,
                     'tp_price': self.tp_price,
@@ -146,6 +147,7 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                 self.order = self.close()
                 if self.current_trade:
                     self.current_trade.update({
+                        'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
                         'exit_time': self.data.datetime.datetime(0),
                         'exit_price': close,
                         'exit_type': 'tp',
@@ -157,6 +159,7 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                 self.order = self.close()
                 if self.current_trade:
                     self.current_trade.update({
+                        'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
                         'exit_time': self.data.datetime.datetime(0),
                         'exit_price': close,
                         'exit_type': 'sl',

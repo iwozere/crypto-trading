@@ -124,7 +124,8 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
             return
         self.log(f'TRADE CLOSED, PNL GROSS {trade.pnl:.2f}, PNL NET {trade.pnlcomm:.2f}')
         trade_dict = {
-            'ref': trade.ref, 'symbol': self.data._name,
+            'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
+            'ref': trade.ref,
             'entry_dt': bt.num2date(trade.dtopen).isoformat() if trade.dtopen else None,
             'entry_price': trade.price, 
             'direction': 'long',
