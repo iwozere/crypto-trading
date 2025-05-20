@@ -4,3 +4,5 @@
 2025-05-20 08:27:31,347 - ERROR - base_optimizer.py - log_message - 63 - No optimization results generated.
 2025-05-20 08:31:07,072 - ERROR - base_optimizer.py - log_message - 63 - No optimization results generated.
 2025-05-20 11:40:02,816 - ERROR - base_optimizer.py - log_message - 67 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-20 11:58:37,855 - ERROR - base_optimizer.py - log_message - 67 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-20 12:51:02,112 - ERROR - base_optimizer.py - log_message - 146 - Error calculating sqn_pct/cagr: ['pnl_comm']

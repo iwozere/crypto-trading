@@ -190,13 +190,6 @@ class RSIBollVolumeATRStrategy(bt.Strategy):
                     self.trades.append(self.current_trade)
                     self.current_trade = None
 
-    def get_trades(self):
-        """Return trade information as a DataFrame"""
-        if not self.trades:
-            return pd.DataFrame()
-        
-        return pd.DataFrame(self.trades)
-
     def on_trade_entry(self, trade):
         """Called when a new trade is entered"""
         if self.notifier:
@@ -228,7 +221,3 @@ class RSIBollVolumeATRStrategy(bt.Strategy):
             }
             self.notifier.send_trade_update(trade_data)
 
-    def on_error(self, error):
-        """Called when an error occurs"""
-        if self.notifier:
-            self.notifier.send_error_notification(str(error))

@@ -371,3 +371,33 @@ Saving results for ETHUSDT_4h_20240501_20250501.csv...
 2025-05-20 11:40:02,830 - INFO - base_optimizer.py - log_message - 69 - Results saved to c:\dev\cursor\crypto-trading\results\ETHUSDT_4h_20240501_20250501.csv_optimization_results.json
 2025-05-20 11:40:02,959 - INFO - base_optimizer.py - log_message - 69 - 
 Combined results saved to c:\dev\cursor\crypto-trading\results\combined_optimization_results_20250520_114002.json
+2025-05-20 11:48:43,516 - INFO - base_optimizer.py - log_message - 69 - Loaded data for ETHUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 11:48:43,533 - INFO - base_optimizer.py - log_message - 69 - Starting RsiVolumeSuperTrendOptimizer optimization process...
+2025-05-20 11:48:43,534 - INFO - base_optimizer.py - log_message - 69 - 
+Optimizing ETHUSDT_4h_20240501_20250501.csv for RsiVolumeSuperTrendStrategy...
+2025-05-20 11:58:11,799 - INFO - base_optimizer.py - log_message - 69 - 
+Optimization completed for ETHUSDT_4h_20240501_20250501.csv
+2025-05-20 11:58:11,800 - INFO - base_optimizer.py - log_message - 69 - Best params for ETHUSDT_4h_20240501_20250501.csv: {'rsi_period': 7, 'rsi_entry_long_level': 43.17159256684215, 'rsi_entry_short_level': 50.0, 'rsi_exit_long_level': 80.88112209949911, 'rsi_exit_short_level': 32.753102826332096, 'st_period': 12, 'st_multiplier': 1.9009937029442994, 'vol_ma_period': 8, 'atr_period': 7, 'tp_atr_mult': 4.024168022993586, 'sl_atr_mult': 2.4040190891127637, 'time_based_exit_period': 3}
+2025-05-20 11:58:11,800 - INFO - base_optimizer.py - log_message - 69 - Best score: -31.82. Metrics: {'total_trades': 18, 'win_rate': 0.3333333333333333, 'profit_factor': 1.2819925738350404, 'max_drawdown_pct': 2.1890407410205843, 'sharpe_ratio': 0.31392476525763574, 'sqn': 0.4117756938486563, 'sqn_pct': None, 'cagr': None, 'net_profit': 8.446026112055367, 'portfolio_growth_pct': 0.844602611205562, 'final_value': 1008.4460261120556, 'params': {'rsi_period': 7, 'rsi_entry_long_level': 43.40296960253517, 'rsi_entry_short_level': 58.01278285058444, 'rsi_exit_long_level': 81.89467149076468, 'rsi_exit_short_level': 32.57175038339185, 'st_period': 13, 'st_multiplier': 1.682834105091365, 'vol_ma_period': 28, 'atr_period': 7, 'tp_atr_mult': 3.9522191194616396, 'sl_atr_mult': 2.420119939608076, 'time_based_exit_period': 4}}
+2025-05-20 11:58:37,853 - INFO - base_optimizer.py - log_message - 69 - 
+Saving results for ETHUSDT_4h_20240501_20250501.csv...
+2025-05-20 11:58:37,855 - ERROR - base_optimizer.py - log_message - 67 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-20 11:58:37,865 - INFO - base_optimizer.py - log_message - 69 - Saving results to: c:\dev\cursor\crypto-trading\results\ETHUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 11:58:37,869 - INFO - base_optimizer.py - log_message - 69 - Results saved to c:\dev\cursor\crypto-trading\results\ETHUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 11:58:38,036 - INFO - base_optimizer.py - log_message - 69 - 
+Combined results saved to c:\dev\cursor\crypto-trading\results\combined_optimization_results_20250520_115837.json
+2025-05-20 12:42:34,152 - INFO - base_optimizer.py - log_message - 148 - Loaded data for ETHUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-20 12:42:34,220 - INFO - base_optimizer.py - log_message - 148 - Starting RsiBBVolumeOptimizer optimization process...
+2025-05-20 12:42:34,235 - INFO - base_optimizer.py - log_message - 148 - 
+Optimizing ETHUSDT_4h_20240501_20250501.csv for RSIBollVolumeATRStrategy...
+2025-05-20 12:50:39,010 - INFO - base_optimizer.py - log_message - 148 - 
+Optimization completed for ETHUSDT_4h_20240501_20250501.csv
+2025-05-20 12:50:39,011 - INFO - base_optimizer.py - log_message - 148 - Best params for ETHUSDT_4h_20240501_20250501.csv: {'rsi_period': 20, 'boll_period': 35, 'boll_devfactor': 3.0242092966701852, 'atr_period': 19, 'vol_ma_period': 26, 'tp_atr_mult': 2.2023997821172667, 'sl_atr_mult': 1.9080307822220082, 'rsi_oversold': 28.04628820690683, 'rsi_overbought': 72.03468064965215}
+2025-05-20 12:50:39,012 - INFO - base_optimizer.py - log_message - 148 - Best score: -35.56. Metrics: {'total_trades': 9, 'win_rate': 0.8888888888888888, 'profit_factor': 7.4767432513320315, 'max_drawdown_pct': 0.5375748782418532, 'sharpe_ratio': 2.1028300567625178, 'sqn': 2.9378896698560704, 'sqn_pct': None, 'cagr': None, 'net_profit': 35.306028841385924, 'portfolio_growth_pct': 3.530602884138557, 'final_value': 1035.3060288413856, 'params': {'rsi_period': 18, 'boll_period': 25, 'boll_devfactor': 3.048544857265273, 'atr_period': 19, 'vol_ma_period': 32, 'tp_atr_mult': 1.5, 'sl_atr_mult': 1.3151574822323908, 'rsi_oversold': 29.683081325205464, 'rsi_overbought': 74.56515059083324}}
+2025-05-20 12:51:02,110 - INFO - base_optimizer.py - log_message - 148 - 
+Saving results for ETHUSDT_4h_20240501_20250501.csv...
+2025-05-20 12:51:02,112 - ERROR - base_optimizer.py - log_message - 146 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-20 12:51:14,925 - INFO - base_optimizer.py - log_message - 148 - Saving results to: c:\dev\cursor\crypto-trading\results\ETHUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 12:51:14,929 - INFO - base_optimizer.py - log_message - 148 - Results saved to c:\dev\cursor\crypto-trading\results\ETHUSDT_4h_20240501_20250501.csv_optimization_results.json
+2025-05-20 12:51:15,055 - INFO - base_optimizer.py - log_message - 148 - 
+Combined results saved to c:\dev\cursor\crypto-trading\results\combined_optimization_results_20250520_125114.json

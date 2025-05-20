@@ -314,16 +314,6 @@ class BBSuperTrendVolumeBreakoutStrategy(bt.Strategy):
                 self.order = self.close() # Close position
                 # self.trade_active is reset in notify_order or notify_trade
 
-    def stop(self):
-        self.log(f'(BB Period {self.p.bb_period}, BB Dev {self.p.bb_devfactor}) '
-                 f'(ST Period {self.p.st_period}, ST Mult {self.p.st_multiplier}) '
-                 f'(Vol MA {self.p.vol_ma_period}, Vol Str {self.p.vol_strength_mult}) '
-                 f'(ATR {self.p.atr_period}, TP {self.p.tp_atr_mult}, SL {self.p.sl_atr_mult}) '
-                 f'Ending Value {self.broker.getvalue():.2f}', doprint=True)
-        if self.trades:
-            log_df = pd.DataFrame(self.trades)
-            # print("Trades Log:\n", log_df.to_string()) # Optional: print df to console
-            # log_df.to_csv("bb_supertrend_volume_trades.csv") # Optional: save to CSV
 
 # Example usage (for testing, normally run via a main script)
 if __name__ == '__main__':

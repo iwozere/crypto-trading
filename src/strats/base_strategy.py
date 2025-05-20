@@ -56,15 +56,6 @@ class BaseStrategy:
         """
         return self.active_positions
 
-    def get_trade_log(self) -> pd.DataFrame:
-        """
-        Return complete trade history
-        
-        Returns:
-            pd.DataFrame: Trade log
-        """
-        return self.trade_log
-
     def check_entry_conditions(self, df: pd.DataFrame, symbol: str) -> bool:
         """
         Check if all entry conditions are met. To be implemented by child classes.
@@ -117,3 +108,18 @@ class BaseStrategy:
             pd.DataFrame: Trade log with all executed trades
         """
         raise NotImplementedError("Child classes must implement run_backtest") 
+    
+    def stop(self):
+        pass
+
+    def get_trades(self):
+        """Return trade information as a DataFrame"""
+        if not self.trades:
+            return pd.DataFrame()
+        return pd.DataFrame(self.trades)
+
+    def on_error(self, error):
+        """Called when an error occurs"""
+        if self.notifier:
+            self.notifier.send_error_notification(str(error))    
+            

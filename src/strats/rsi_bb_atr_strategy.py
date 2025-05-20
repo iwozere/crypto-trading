@@ -205,13 +205,6 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
                 self.log(f'EXIT SIGNAL: {exit_reason}. Closing position.')
                 self.order = self.close()
 
-    def stop(self):
-        #self.log(f'Strategy Parameters: BB Period {self.p.bb_period}, BB Dev {self.p.bb_devfactor}, RSI Period {self.p.rsi_period}, RSI OB/OS {self.p.rsi_overbought}/{self.p.rsi_oversold}, RSI Mid {self.p.rsi_mid_level}, ATR Period {self.p.atr_period}, TP Mult {self.p.tp_atr_mult}, SL Mult {self.p.sl_atr_mult}, RSI Slope Check {self.p.check_rsi_slope}. Ending Value {self.broker.getvalue():.2f}', doprint=True)
-        if self.trades:
-            log_df = pd.DataFrame(self.trades)
-            # print("\nTrades Log:\n", log_df.to_string()) # Optional: print to console
-            # log_df.to_csv("mean_reversion_rsi_bb_atr_trades.csv") # Optional: save to CSV
-
 # Example Usage (for testing)
 if __name__ == '__main__':
     cerebro = bt.Cerebro()

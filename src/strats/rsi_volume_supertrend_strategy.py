@@ -229,15 +229,3 @@ class RsiVolumeSuperTrendStrategy(bt.Strategy):
                 size = (self.broker.getvalue() * 0.1) / close
                 self.order = self.buy(size=size)
                 return
-
-    def stop(self):
-        pass
-
-    def get_trades(self):
-        if not self.trades:
-            return pd.DataFrame()
-        return pd.DataFrame(self.trades)
-
-    def on_error(self, error):
-        if self.notifier:
-            self.notifier.send_error_notification(str(error))

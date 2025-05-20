@@ -1,0 +1,183 @@
+import backtrader as bt
+import pandas as pd
+from src.notification.telegram_notifier import create_notifier
+
+class IchimokuRSIATRVolumeStrategy(bt.Strategy):
+    params = (
+        ('tenkan_period', 9),
+        ('kijun_period', 26),
+        ('senkou_span_b_period', 52),
+        ('rsi_period', 14),
+        ('rsi_entry', 50),
+        ('atr_period', 14),
+        ('atr_mult', 2.0),
+        ('vol_ma_period', 20),
+        ('printlog', False),
+    )
+
+    def __init__(self):
+        # Ichimoku
+        self.ichimoku = bt.ind.Ichimoku(
+            self.data,
+            tenkan=self.p.tenkan_period,
+            kijun=self.p.kijun_period,
+            senkou=self.p.senkou_span_b_period
+        )
+        self.tenkan = self.ichimoku.tenkan_sen
+        self.kijun = self.ichimoku.kijun_sen
+        self.senkou_a = self.ichimoku.senkou_span_a
+        self.senkou_b = self.ichimoku.senkou_span_b
+        self.chikou = self.ichimoku.chikou_span
+
+        # RSI
+        self.rsi = bt.ind.RSI(period=self.p.rsi_period)
+        # ATR
+        self.atr = bt.ind.ATR(period=self.p.atr_period)
+        # Volume MA
+        self.vol_ma = bt.ind.SMA(self.data.volume, period=self.p.vol_ma_period)
+        # Trade tracking
+        self.order = None
+        self.entry_price = None
+        self.trailing_stop = None
+        self.position_type = None  # 'long' or 'short'
+        self.trades = []
+        self.current_trade = None
+        self.notifier = create_notifier()
+
+    def log(self, txt, dt=None, doprint=False):
+        if self.p.printlog or doprint:
+            dt = dt or self.datas[0].datetime.date(0)
+            print(f'{dt.isoformat()} {txt}')
+
+    def next(self):
+        if self.order:
+            return
+        close = self.data.close[0]
+        volume = self.data.volume[0]
+        vol_ma = self.vol_ma[0]
+        rsi = self.rsi[0]
+        tenkan = self.tenkan[0]
+        kijun = self.kijun[0]
+        senkou_a = self.senkou_a[0]
+        senkou_b = self.senkou_b[0]
+        atr = self.atr[0]
+        cloud_top = max(senkou_a, senkou_b)
+        cloud_bot = min(senkou_a, senkou_b)
+
+        # --- Entry Logic ---
+        if not self.position:
+            # Long entry
+            if (
+                close > cloud_top and
+                tenkan > kijun and self.tenkan[-1] <= self.kijun[-1] and
+                rsi > self.p.rsi_entry and
+                volume > vol_ma
+            ):
+                self.order = self.buy()
+                self.entry_price = close
+                self.trailing_stop = close - self.p.atr_mult * atr
+                self.position_type = 'long'
+                self.current_trade = {
+                    'entry_time': self.data.datetime.datetime(0),
+                    'entry_price': close,
+                    'type': 'long',
+                    'rsi': rsi,
+                    'volume': volume,
+                    'vol_ma': vol_ma,
+                    'tenkan': tenkan,
+                    'kijun': kijun,
+                    'cloud_top': cloud_top,
+                    'cloud_bot': cloud_bot
+                }
+                self.log(f'LONG ENTRY: {close:.2f} (RSI {rsi:.2f}, Vol {volume:.0f} > MA {vol_ma:.0f})')
+            # Short entry
+            elif (
+                close < cloud_bot and
+                tenkan < kijun and self.tenkan[-1] >= self.kijun[-1] and
+                rsi < self.p.rsi_entry and
+                volume > vol_ma
+            ):
+                self.order = self.sell()
+                self.entry_price = close
+                self.trailing_stop = close + self.p.atr_mult * atr
+                self.position_type = 'short'
+                self.current_trade = {
+                    'entry_time': self.data.datetime.datetime(0),
+                    'entry_price': close,
+                    'type': 'short',
+                    'rsi': rsi,
+                    'volume': volume,
+                    'vol_ma': vol_ma,
+                    'tenkan': tenkan,
+                    'kijun': kijun,
+                    'cloud_top': cloud_top,
+                    'cloud_bot': cloud_bot
+                }
+                self.log(f'SHORT ENTRY: {close:.2f} (RSI {rsi:.2f}, Vol {volume:.0f} > MA {vol_ma:.0f})')
+        else:
+            # --- Trailing Stop Update ---
+            if self.position_type == 'long':
+                new_stop = close - self.p.atr_mult * atr
+                if new_stop > self.trailing_stop:
+                    self.trailing_stop = new_stop
+                # --- Exit Logic ---
+                exit_signal = False
+                exit_reason = ''
+                # Opposite cross or price below cloud
+                if tenkan < kijun and self.tenkan[-1] >= self.kijun[-1]:
+                    exit_signal = True
+                    exit_reason = 'Tenkan cross down'
+                elif close < cloud_bot:
+                    exit_signal = True
+                    exit_reason = 'Price below cloud'
+                elif close < self.trailing_stop:
+                    exit_signal = True
+                    exit_reason = 'Trailing stop hit'
+                if exit_signal:
+                    self.order = self.close()
+                    if self.current_trade:
+                        self.current_trade.update({
+                            'exit_time': self.data.datetime.datetime(0),
+                            'exit_price': close,
+                            'exit_reason': exit_reason,
+                            'pnl': (close - self.entry_price) / self.entry_price * 100
+                        })
+                        self.trades.append(self.current_trade)
+                        self.current_trade = None
+                    self.log(f'LONG EXIT: {close:.2f} ({exit_reason})')
+            elif self.position_type == 'short':
+                new_stop = close + self.p.atr_mult * atr
+                if new_stop < self.trailing_stop:
+                    self.trailing_stop = new_stop
+                exit_signal = False
+                exit_reason = ''
+                if tenkan > kijun and self.tenkan[-1] <= self.kijun[-1]:
+                    exit_signal = True
+                    exit_reason = 'Tenkan cross up'
+                elif close > cloud_top:
+                    exit_signal = True
+                    exit_reason = 'Price above cloud'
+                elif close > self.trailing_stop:
+                    exit_signal = True
+                    exit_reason = 'Trailing stop hit'
+                if exit_signal:
+                    self.order = self.close()
+                    if self.current_trade:
+                        self.current_trade.update({
+                            'exit_time': self.data.datetime.datetime(0),
+                            'exit_price': close,
+                            'exit_reason': exit_reason,
+                            'pnl': (self.entry_price - close) / self.entry_price * 100
+                        })
+                        self.trades.append(self.current_trade)
+                        self.current_trade = None
+                    self.log(f'SHORT EXIT: {close:.2f} ({exit_reason})')
+
+    def notify_order(self, order):
+        if order.status in [order.Completed, order.Canceled, order.Margin, order.Rejected]:
+            self.order = None
+            if not self.position:
+                self.entry_price = None
+                self.trailing_stop = None
+                self.position_type = None
+

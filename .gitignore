@@ -44,3 +44,13 @@ data/
 !src/data/
 config/donotshare/
 results/
+
+#logs
+*.log
+*.csv
+*.json
+*.jsonl
+*.jsonl.gz
+*.jsonl.gz.part
+*.jsonl.gz.part.tmp
+*.jsonl.gz.part.tmp.tmp
