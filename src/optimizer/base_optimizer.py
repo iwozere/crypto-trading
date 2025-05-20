@@ -2,13 +2,20 @@ import os
 import json
 import numpy as np
 import pandas as pd
+import traceback
 from datetime import datetime
+from ta.volatility import AverageTrueRange
 from src.notification.logger import _logger
 
 class BaseOptimizer:
     def __init__(self, initial_capital=1000.0, commission=0.001):
         self.initial_capital = initial_capital
         self.commission = commission
+        self.current_metrics = {}
+        self.current_data = None
+        self.current_symbol = None
+        self.raw_data = {}
+        self.load_all_data()
 
     class DateTimeEncoder(json.JSONEncoder):
         def default(self, obj):
@@ -52,6 +59,83 @@ class BaseOptimizer:
         except Exception:
             pass
         return None
+
+    def _calculate_supertrend_for_plot(self, data_df: pd.DataFrame, period: int, multiplier: float) -> pd.Series:
+        """Helper to calculate SuperTrend for plotting, using ta library for ATR."""
+        if not all(col in data_df.columns for col in ['high', 'low', 'close']):
+            self.log_message("Warning: Dataframe for SuperTrend calculation must contain 'high', 'low', 'close' columns.")
+            return pd.Series(index=data_df.index, dtype='float64')
+
+        atr_calculator = AverageTrueRange(high=data_df['high'], low=data_df['low'], close=data_df['close'], window=period, fillna=False)
+        atr = atr_calculator.average_true_range()
+
+        if atr is None or atr.empty or atr.isnull().all():
+            self.log_message(f"ATR calculation failed or all NaN for ST plot. Period: {period}")
+            return pd.Series(index=data_df.index, dtype='float64')
+        atr = atr.reindex(data_df.index)
+
+        hl2 = (data_df['high'] + data_df['low']) / 2
+        basic_upperband = hl2 + multiplier * atr
+        basic_lowerband = hl2 - multiplier * atr
+
+        final_upperband = pd.Series(index=data_df.index, dtype='float64')
+        final_lowerband = pd.Series(index=data_df.index, dtype='float64')
+        supertrend = pd.Series(index=data_df.index, dtype='float64')
+
+        final_upperband.iloc[0] = basic_upperband.iloc[0] if not pd.isna(basic_upperband.iloc[0]) else np.nan
+        final_lowerband.iloc[0] = basic_lowerband.iloc[0] if not pd.isna(basic_lowerband.iloc[0]) else np.nan
+        trend = 0
+
+        first_valid_idx = atr.first_valid_index()
+        if first_valid_idx is None:
+            self.log_message("No valid ATR values to start SuperTrend calculation for plot.")
+            return supertrend
+        start_loc = data_df.index.get_loc(first_valid_idx)
+
+        if data_df['close'].iloc[start_loc] > basic_upperband.iloc[start_loc]:
+            trend = 1
+            supertrend.iloc[start_loc] = basic_lowerband.iloc[start_loc]
+        elif data_df['close'].iloc[start_loc] < basic_lowerband.iloc[start_loc]:
+            trend = -1
+            supertrend.iloc[start_loc] = basic_upperband.iloc[start_loc]
+        else:
+            supertrend.iloc[start_loc] = np.nan
+            trend = 0 
+        final_upperband.iloc[start_loc] = basic_upperband.iloc[start_loc]
+        final_lowerband.iloc[start_loc] = basic_lowerband.iloc[start_loc]
+
+        for i in range(start_loc + 1, len(data_df)):
+            if pd.isna(atr.iloc[i]):
+                final_upperband.iloc[i] = final_upperband.iloc[i-1]
+                final_lowerband.iloc[i] = final_lowerband.iloc[i-1]
+                supertrend.iloc[i] = supertrend.iloc[i-1]
+                continue
+            close = data_df['close'].iloc[i]
+            prev_close = data_df['close'].iloc[i-1]
+            if basic_upperband.iloc[i] < final_upperband.iloc[i-1] or prev_close > final_upperband.iloc[i-1]:
+                final_upperband.iloc[i] = basic_upperband.iloc[i]
+            else:
+                final_upperband.iloc[i] = final_upperband.iloc[i-1]
+            if basic_lowerband.iloc[i] > final_lowerband.iloc[i-1] or prev_close < final_lowerband.iloc[i-1]:
+                final_lowerband.iloc[i] = basic_lowerband.iloc[i]
+            else:
+                final_lowerband.iloc[i] = final_lowerband.iloc[i-1]
+            if trend == 1 and close < final_lowerband.iloc[i]:
+                trend = -1
+            elif trend == -1 and close > final_upperband.iloc[i]:
+                trend = 1
+            elif trend == 0:
+                if close > basic_upperband.iloc[i]:
+                    trend = 1
+                elif close < basic_lowerband.iloc[i]:
+                    trend = -1
+            if trend == 1:
+                supertrend.iloc[i] = final_lowerband.iloc[i]
+            elif trend == -1:
+                supertrend.iloc[i] = final_upperband.iloc[i]
+            else:
+                supertrend.iloc[i] = np.nan
+        return supertrend
 
     def log_message(self, message, level="info"):
         """
@@ -181,7 +265,7 @@ class BaseOptimizer:
                 'metrics': metrics,
                 'sqn_pct': sqn_pct,
                 'cagr': cagr,
-                'trades_log': trades_records,
+                'trades': trades_records,
                 'optimization_history': optimization_history,
                 'plot_path': plot_path
             }
@@ -193,7 +277,7 @@ class BaseOptimizer:
                 with open(results_path, 'w') as f: f.write(json_str)
             except Exception as e:
                 self.log_message(f"Error during JSON serialization: {e}. Trying to save simplified.", level='error')
-                simplified_dict = {k: v for k, v in results_dict.items() if k not in ['trades_log', 'optimization_history']}
+                simplified_dict = {k: v for k, v in results_dict.items() if k not in ['trades', 'optimization_history']}
                 simplified_dict['error_in_serialization'] = str(e)
                 json_str = json.dumps(simplified_dict, indent=4, cls=BaseOptimizer.DateTimeEncoder)
                 with open(results_path, 'w') as f: f.write(json_str)
@@ -202,7 +286,6 @@ class BaseOptimizer:
             return results_dict
         except Exception as e:
             self.log_message(f"Error in save_results: {str(e)}", level='error')
-            import traceback
             self.log_message(f"Full traceback: {traceback.format_exc()}", level='error')
             return None 
 
@@ -241,10 +324,10 @@ class BaseOptimizer:
             self.log_message(f"Best score: {result.fun:.2f}. Metrics: {self.current_metrics}", level='info')
             final_backtest_run = self.run_backtest(self.current_data.copy(), best_params)
             trades_df = pd.DataFrame()
-            if final_backtest_run and hasattr(final_backtest_run.get('strategy', None), 'trades_log'):
-                trades_log_list = final_backtest_run['strategy'].trades_log
-                if trades_log_list:
-                    trades_df = pd.DataFrame(trades_log_list)
+            if final_backtest_run and hasattr(final_backtest_run.get('strategy', None), 'trades'):
+                trades_list = final_backtest_run['strategy'].trades
+                if trades_list:
+                    trades_df = pd.DataFrame(trades_list)
 
             plot_path = None
 
@@ -342,11 +425,11 @@ class BaseOptimizer:
         sqn_pct = None
         cagr = None
         try:
-            trades_log = None
+            trades = None
             if 'strategy' in backtest_results and hasattr(backtest_results['strategy'], 'get_trades'):
-                trades_log = backtest_results['strategy'].get_trades()
-            if trades_log and len(trades_log) > 1:
-                trades_df = pd.DataFrame(trades_log)
+                trades = backtest_results['strategy'].get_trades()
+            if trades and len(trades) > 1:
+                trades_df = pd.DataFrame(trades)
                 sqn_pct = BaseOptimizer.calculate_sqn_pct(trades_df)
                 if 'entry_dt' in trades_df.columns and 'exit_dt' in trades_df.columns:
                     trades_df = trades_df.dropna(subset=['entry_dt', 'exit_dt'])

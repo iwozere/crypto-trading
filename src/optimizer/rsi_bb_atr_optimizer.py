@@ -29,11 +29,11 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         - Finds optimal parameters for the strategy to maximize risk-adjusted returns
     """
     def __init__(self, initial_capital=1000.0, commission=0.001):
+        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
+        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
         self.strategy_name = 'MeanReversionRSBBATRStrategy'
         self.strategy_class = MeanReversionRSBBATRStrategy
         super().__init__(initial_capital, commission)
-        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
-        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
         os.makedirs(self.results_dir, exist_ok=True)
         
         plt.style.use('default')
@@ -54,11 +54,6 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
             Integer(0, 1, name='check_rsi_slope')
         ]
         
-        self.current_metrics = {}
-        self.current_data = None
-        self.current_symbol = None
-        self.raw_data = {}
-        self.load_all_data()
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
         warnings.filterwarnings('ignore', category=RuntimeWarning)
     

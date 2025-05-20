@@ -69,7 +69,7 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
             self.entry_bar_idx = None
             self.active_tp_price = None
             self.active_sl_price = None
-            self.trades_log = []
+            self.trades = []
             self.last_exit_price = None
             self.last_exit_dt = None
             # Trailing stop state
@@ -141,7 +141,7 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
             return
 
         self.log(f'TRADE CLOSED, PNL GROSS {trade.pnl:.2f}, PNL NET {trade.pnlcomm:.2f}')
-        self.trades_log.append({
+        self.trades.append({
             'ref': trade.ref, 'symbol': self.data._name,
             'entry_dt': bt.num2date(trade.dtopen).isoformat() if trade.dtopen else None,
             'entry_price': trade.price, 
@@ -207,8 +207,8 @@ class MeanReversionRSBBATRStrategy(bt.Strategy):
 
     def stop(self):
         #self.log(f'Strategy Parameters: BB Period {self.p.bb_period}, BB Dev {self.p.bb_devfactor}, RSI Period {self.p.rsi_period}, RSI OB/OS {self.p.rsi_overbought}/{self.p.rsi_oversold}, RSI Mid {self.p.rsi_mid_level}, ATR Period {self.p.atr_period}, TP Mult {self.p.tp_atr_mult}, SL Mult {self.p.sl_atr_mult}, RSI Slope Check {self.p.check_rsi_slope}. Ending Value {self.broker.getvalue():.2f}', doprint=True)
-        if self.trades_log:
-            log_df = pd.DataFrame(self.trades_log)
+        if self.trades:
+            log_df = pd.DataFrame(self.trades)
             # print("\nTrades Log:\n", log_df.to_string()) # Optional: print to console
             # log_df.to_csv("mean_reversion_rsi_bb_atr_trades.csv") # Optional: save to CSV
 
@@ -243,10 +243,10 @@ if __name__ == '__main__':
     cerebro.run()
     print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
-    # Access trades_log from the strategy instance if needed for analysis after run
+    # Access trades from the strategy instance if needed for analysis after run
     # if cerebro.runstrats and cerebro.runstrats[0]:
     #     strategy_instance = cerebro.runstrats[0][0]
-    #     final_trades_df = pd.DataFrame(strategy_instance.trades_log)
+    #     final_trades_df = pd.DataFrame(strategy_instance.trades)
     #     if not final_trades_df.empty:
     #         print("\nFinal Trades Log:\n", final_trades_df.to_string())
     #     else:

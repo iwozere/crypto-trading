@@ -29,11 +29,11 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         - Finds optimal parameters for maximizing profit and minimizing drawdown
     """
     def __init__(self, initial_capital=1000.0, commission=0.001):
+        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
+        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
         self.strategy_name = 'RSIBollVolumeATRStrategy'
         self.strategy_class = RSIBollVolumeATRStrategy
         super().__init__(initial_capital, commission)
-        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
-        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
         os.makedirs(self.results_dir, exist_ok=True)
         
         # Set up plotting style
@@ -54,15 +54,6 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
             Real(25, 35, name='rsi_oversold'),
             Real(65, 75, name='rsi_overbought')
         ]
-        
-        # Store current metrics and data
-        self.current_metrics = {}
-        self.current_data = None
-        self.current_symbol = None
-        
-        # Initialize data storage
-        self.raw_data = {}
-        self.load_all_data()
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
     
     def plot_results(self, data, trades_df, params, data_file):

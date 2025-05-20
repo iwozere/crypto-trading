@@ -29,11 +29,11 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         - Finds optimal parameters for maximizing trend capture and minimizing whipsaws
     """
     def __init__(self, initial_capital=1000.0, commission=0.001):
+        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
+        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
         self.strategy_name = 'RsiVolumeSuperTrendStrategy'
         self.strategy_class = RsiVolumeSuperTrendStrategy
         super().__init__(initial_capital, commission)
-        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
-        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
         os.makedirs(self.results_dir, exist_ok=True)
         
         self.space = [
@@ -50,98 +50,8 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
             Real(0.5, 3.0, name='sl_atr_mult'),
             Integer(3, 15, name='time_based_exit_period')
         ]
-        
-        self.current_metrics = {}
-        self.current_data = None
-        self.current_symbol = None
-        self.raw_data = {}
-        self.load_all_data()
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
     
-    def _calculate_supertrend_for_plot(self, data_df: pd.DataFrame, period: int, multiplier: float) -> pd.Series:
-        """Helper to calculate SuperTrend for plotting, using ta library for ATR."""
-        if not all(col in data_df.columns for col in ['high', 'low', 'close']):
-            raise ValueError("Dataframe for SuperTrend calculation must contain 'high', 'low', 'close' columns.")
-
-        atr_calculator = AverageTrueRange(high=data_df['high'], low=data_df['low'], close=data_df['close'], window=period)
-        atr = atr_calculator.average_true_range()
-
-        if atr is None or atr.empty:
-            return pd.Series(index=data_df.index, dtype='float64') # Return empty if ATR fails
-        
-        # Ensure atr series has the same index as data_df for alignment
-        atr = atr.reindex(data_df.index)
-
-        hl2 = (data_df['high'] + data_df['low']) / 2
-        basic_upperband = hl2 + multiplier * atr
-        basic_lowerband = hl2 - multiplier * atr
-
-        final_upperband = pd.Series(index=data_df.index, dtype='float64')
-        final_lowerband = pd.Series(index=data_df.index, dtype='float64')
-        supertrend = pd.Series(index=data_df.index, dtype='float64')
-        direction = pd.Series(index=data_df.index, dtype='int')
-
-        # Initialization: Set first valid direction based on close vs hl2 if ATR is valid
-        first_valid_atr_index = atr.first_valid_index()
-        if first_valid_atr_index is None:
-            return supertrend # Empty series if no valid ATR
-            
-        # Initialize direction up to the first valid ATR point (carry forward or make NaN)
-        direction.loc[:first_valid_atr_index] = 0 # Undefined until first valid calc
-        
-        if data_df['close'].loc[first_valid_atr_index] > hl2.loc[first_valid_atr_index]:
-            direction.loc[first_valid_atr_index] = 1
-            supertrend.loc[first_valid_atr_index] = basic_lowerband.loc[first_valid_atr_index]
-            final_lowerband.loc[first_valid_atr_index] = basic_lowerband.loc[first_valid_atr_index]
-            final_upperband.loc[first_valid_atr_index] = basic_upperband.loc[first_valid_atr_index] # Store initial basic for next step comparison
-        else:
-            direction.loc[first_valid_atr_index] = -1
-            supertrend.loc[first_valid_atr_index] = basic_upperband.loc[first_valid_atr_index]
-            final_upperband.loc[first_valid_atr_index] = basic_upperband.loc[first_valid_atr_index]
-            final_lowerband.loc[first_valid_atr_index] = basic_lowerband.loc[first_valid_atr_index]
-
-        for i in range(data_df.index.get_loc(first_valid_atr_index) + 1, len(data_df)):
-            idx = data_df.index[i]
-            prev_idx = data_df.index[i-1]
-
-            if pd.isna(atr.loc[idx]): # If ATR is NaN, carry forward previous supertrend and direction
-                supertrend.loc[idx] = supertrend.loc[prev_idx]
-                direction.loc[idx] = direction.loc[prev_idx]
-                final_upperband.loc[idx] = final_upperband.loc[prev_idx]
-                final_lowerband.loc[idx] = final_lowerband.loc[prev_idx]
-                continue
-
-            close = data_df['close'].loc[idx]
-            
-            # Update final bands based on basic bands and previous close relative to *previous* final bands
-            current_fub = basic_upperband.loc[idx]
-            if basic_upperband.loc[idx] < final_upperband.loc[prev_idx] or data_df['close'].loc[prev_idx] > final_upperband.loc[prev_idx]:
-                final_upperband.loc[idx] = basic_upperband.loc[idx]
-            else:
-                final_upperband.loc[idx] = final_upperband.loc[prev_idx]
-            
-            current_flb = basic_lowerband.loc[idx]
-            if basic_lowerband.loc[idx] > final_lowerband.loc[prev_idx] or data_df['close'].loc[prev_idx] < final_lowerband.loc[prev_idx]:
-                final_lowerband.loc[idx] = basic_lowerband.loc[idx]
-            else:
-                final_lowerband.loc[idx] = final_lowerband.loc[prev_idx]
-
-            # Determine current direction
-            if direction.loc[prev_idx] == 1 and close < final_lowerband.loc[idx]: # Check against current updated final_lowerband
-                direction.loc[idx] = -1
-            elif direction.loc[prev_idx] == -1 and close > final_upperband.loc[idx]: # Check against current updated final_upperband
-                direction.loc[idx] = 1
-            else:
-                direction.loc[idx] = direction.loc[prev_idx]
-            
-            # Set SuperTrend line value
-            if direction.loc[idx] == 1:
-                supertrend.loc[idx] = final_lowerband.loc[idx]
-            else: # direction is -1
-                supertrend.loc[idx] = final_upperband.loc[idx]
-                
-        return supertrend
-
     def plot_results(self, data, trades_df, params, data_file):
         plt.style.use('dark_background')
         fig = plt.figure(figsize=(60, 30))

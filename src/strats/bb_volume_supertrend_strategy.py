@@ -143,7 +143,7 @@ class BBSuperTrendVolumeBreakoutStrategy(bt.Strategy):
         self.entry_bar = None # To track bar of entry for TP/SL calculation
         self.active_tp_price = None
         self.active_sl_price = None
-        self.trades_log = [] # Simple list to log trades
+        self.trades = [] # Simple list to log trades
         # self.notifier = create_notifier() # Temporarily commented out
 
     def log(self, txt, dt=None, doprint=False):
@@ -206,7 +206,7 @@ class BBSuperTrendVolumeBreakoutStrategy(bt.Strategy):
             return
 
         self.log(f'OPERATION PROFIT, GROSS {trade.pnl:.2f}, NET {trade.pnlcomm:.2f}')
-        self.trades_log.append({
+        self.trades.append({
             'ref': trade.ref, 'symbol': trade.data._name,
             'entry_dt': bt.num2date(trade.dtopen).isoformat() if trade.dtopen else None,
             'entry_price': trade.price, 'direction': 'long' if trade.history[0].event.size > 0 else 'short',
@@ -320,8 +320,8 @@ class BBSuperTrendVolumeBreakoutStrategy(bt.Strategy):
                  f'(Vol MA {self.p.vol_ma_period}, Vol Str {self.p.vol_strength_mult}) '
                  f'(ATR {self.p.atr_period}, TP {self.p.tp_atr_mult}, SL {self.p.sl_atr_mult}) '
                  f'Ending Value {self.broker.getvalue():.2f}', doprint=True)
-        if self.trades_log:
-            log_df = pd.DataFrame(self.trades_log)
+        if self.trades:
+            log_df = pd.DataFrame(self.trades)
             # print("Trades Log:\n", log_df.to_string()) # Optional: print df to console
             # log_df.to_csv("bb_supertrend_volume_trades.csv") # Optional: save to CSV
 
@@ -364,9 +364,9 @@ if __name__ == '__main__':
     cerebro.run()
     print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
     
-    # Access trades_log from the strategy instance if needed
+    # Access trades from the strategy instance if needed
     # strategy_instance = cerebro.runstrats[0][0] 
-    # print(pd.DataFrame(strategy_instance.trades_log))
+    # print(pd.DataFrame(strategy_instance.trades))
 
 # Removed old BollVolumeSupertrendStrategy class and its remnants
 # Kept the custom SuperTrend indicator
