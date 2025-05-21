@@ -66,3 +66,5 @@ AttributeError: 'Lines_LineSeries_LineSeriesStub' object has no attribute 'high'
 
 2025-05-21 08:08:38,961 - ERROR - base_optimizer.py - log_message - 146 - No optimization results generated.
 2025-05-21 08:27:42,374 - ERROR - base_optimizer.py - log_message - 146 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-21 10:04:17,832 - ERROR - base_optimizer.py - log_message - 149 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-21 11:15:57,008 - ERROR - base_optimizer.py - log_message - 149 - Error calculating sqn_pct/cagr: ['pnl_comm']

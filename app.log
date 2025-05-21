@@ -9359,3 +9359,91 @@ Saving results for LTCUSDT_4h_20240501_20250501.csv...
 2025-05-21 08:27:42,392 - INFO - base_optimizer.py - log_message - 148 - Results saved to c:\dev\cursor\crypto-trading\results\LTCUSDT_4h_20240501_20250501.csv_optimization_results.json
 2025-05-21 08:27:42,537 - INFO - base_optimizer.py - log_message - 148 - 
 Combined results saved to c:\dev\cursor\crypto-trading\results\combined_optimization_results_20250521_082742.json
+2025-05-21 08:52:11,815 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_15m_20220101_20221231.csv, shape: (34945, 11), date range: 2021-12-31 23:00:00 to 2022-12-30 23:00:00
+2025-05-21 08:52:11,921 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_15m_20220501_20230501.csv, shape: (35036, 11), date range: 2022-04-30 22:00:00 to 2023-04-30 22:00:00
+2025-05-21 08:52:12,028 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_15m_20230101_20231231.csv, shape: (34940, 11), date range: 2022-12-31 23:00:00 to 2023-12-30 23:00:00
+2025-05-21 08:52:12,249 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_15m_20230101_20250501.csv, shape: (81688, 11), date range: 2022-12-31 23:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:12,355 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_15m_20230501_20240501.csv, shape: (35137, 11), date range: 2023-04-30 22:00:00 to 2024-04-30 22:00:00
+2025-05-21 08:52:12,458 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_15m_20240101_20241231.csv, shape: (35041, 11), date range: 2023-12-31 23:00:00 to 2024-12-30 23:00:00
+2025-05-21 08:52:12,563 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_15m_20240501_20250501.csv, shape: (35041, 11), date range: 2024-04-30 22:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:12,607 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_1h_20220101_20221231.csv, shape: (8737, 11), date range: 2021-12-31 23:00:00 to 2022-12-30 23:00:00
+2025-05-21 08:52:12,650 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_1h_20220501_20230501.csv, shape: (8760, 11), date range: 2022-04-30 22:00:00 to 2023-04-30 22:00:00
+2025-05-21 08:52:12,694 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_1h_20230101_20231231.csv, shape: (8736, 11), date range: 2022-12-31 23:00:00 to 2023-12-30 23:00:00
+2025-05-21 08:52:12,772 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_1h_20230101_20250501.csv, shape: (20423, 11), date range: 2022-12-31 23:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:12,835 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_1h_20230501_20240501.csv, shape: (8785, 11), date range: 2023-04-30 22:00:00 to 2024-04-30 22:00:00
+2025-05-21 08:52:12,904 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_1h_20240101_20241231.csv, shape: (8761, 11), date range: 2023-12-31 23:00:00 to 2024-12-30 23:00:00
+2025-05-21 08:52:12,964 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_1h_20240501_20250501.csv, shape: (8761, 11), date range: 2024-04-30 22:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:12,993 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_4h_20220101_20221231.csv, shape: (2184, 11), date range: 2022-01-01 00:00:00 to 2022-12-30 20:00:00
+2025-05-21 08:52:13,067 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_4h_20220501_20230501.csv, shape: (2190, 11), date range: 2022-05-01 00:00:00 to 2023-04-30 20:00:00
+2025-05-21 08:52:13,104 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_4h_20230101_20231231.csv, shape: (2184, 11), date range: 2023-01-01 00:00:00 to 2023-12-30 20:00:00
+2025-05-21 08:52:13,144 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_4h_20230101_20250501.csv, shape: (5106, 11), date range: 2023-01-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-21 08:52:13,189 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_4h_20230501_20240501.csv, shape: (2196, 11), date range: 2023-05-01 00:00:00 to 2024-04-30 20:00:00
+2025-05-21 08:52:13,239 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_4h_20240101_20241231.csv, shape: (2190, 11), date range: 2024-01-01 00:00:00 to 2024-12-30 20:00:00
+2025-05-21 08:52:13,276 - INFO - base_optimizer.py - log_message - 151 - Loaded data for BTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-21 08:52:13,398 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_15m_20220101_20221231.csv, shape: (34945, 11), date range: 2021-12-31 23:00:00 to 2022-12-30 23:00:00
+2025-05-21 08:52:13,517 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_15m_20220501_20230501.csv, shape: (35036, 11), date range: 2022-04-30 22:00:00 to 2023-04-30 22:00:00
+2025-05-21 08:52:13,636 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_15m_20230101_20231231.csv, shape: (34940, 11), date range: 2022-12-31 23:00:00 to 2023-12-30 23:00:00
+2025-05-21 08:52:13,892 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_15m_20230101_20250501.csv, shape: (81688, 11), date range: 2022-12-31 23:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:14,009 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_15m_20230501_20240501.csv, shape: (35137, 11), date range: 2023-04-30 22:00:00 to 2024-04-30 22:00:00
+2025-05-21 08:52:14,123 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_15m_20240101_20241231.csv, shape: (35041, 11), date range: 2023-12-31 23:00:00 to 2024-12-30 23:00:00
+2025-05-21 08:52:14,239 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_15m_20240501_20250501.csv, shape: (35041, 11), date range: 2024-04-30 22:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:14,287 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_1h_20220101_20221231.csv, shape: (8737, 11), date range: 2021-12-31 23:00:00 to 2022-12-30 23:00:00
+2025-05-21 08:52:14,338 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_1h_20220501_20230501.csv, shape: (8760, 11), date range: 2022-04-30 22:00:00 to 2023-04-30 22:00:00
+2025-05-21 08:52:14,388 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_1h_20230101_20231231.csv, shape: (8736, 11), date range: 2022-12-31 23:00:00 to 2023-12-30 23:00:00
+2025-05-21 08:52:14,469 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_1h_20230101_20250501.csv, shape: (20423, 11), date range: 2022-12-31 23:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:14,517 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_1h_20230501_20240501.csv, shape: (8785, 11), date range: 2023-04-30 22:00:00 to 2024-04-30 22:00:00
+2025-05-21 08:52:14,567 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_1h_20240101_20241231.csv, shape: (8761, 11), date range: 2023-12-31 23:00:00 to 2024-12-30 23:00:00
+2025-05-21 08:52:14,618 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_1h_20240501_20250501.csv, shape: (8761, 11), date range: 2024-04-30 22:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:14,655 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_4h_20220101_20221231.csv, shape: (2184, 11), date range: 2022-01-01 00:00:00 to 2022-12-30 20:00:00
+2025-05-21 08:52:14,689 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_4h_20220501_20230501.csv, shape: (2190, 11), date range: 2022-05-01 00:00:00 to 2023-04-30 20:00:00
+2025-05-21 08:52:14,724 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_4h_20230101_20231231.csv, shape: (2184, 11), date range: 2023-01-01 00:00:00 to 2023-12-30 20:00:00
+2025-05-21 08:52:14,764 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_4h_20230101_20250501.csv, shape: (5106, 11), date range: 2023-01-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-21 08:52:14,802 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_4h_20230501_20240501.csv, shape: (2196, 11), date range: 2023-05-01 00:00:00 to 2024-04-30 20:00:00
+2025-05-21 08:52:14,838 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_4h_20240101_20241231.csv, shape: (2190, 11), date range: 2024-01-01 00:00:00 to 2024-12-30 20:00:00
+2025-05-21 08:52:14,880 - INFO - base_optimizer.py - log_message - 151 - Loaded data for ETHUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-21 08:52:14,995 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_15m_20220101_20221231.csv, shape: (34945, 11), date range: 2021-12-31 23:00:00 to 2022-12-30 23:00:00
+2025-05-21 08:52:15,112 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_15m_20220501_20230501.csv, shape: (35036, 11), date range: 2022-04-30 22:00:00 to 2023-04-30 22:00:00
+2025-05-21 08:52:15,224 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_15m_20230101_20231231.csv, shape: (34940, 11), date range: 2022-12-31 23:00:00 to 2023-12-30 23:00:00
+2025-05-21 08:52:15,451 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_15m_20230101_20250501.csv, shape: (81688, 11), date range: 2022-12-31 23:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:15,576 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_15m_20230501_20240501.csv, shape: (35137, 11), date range: 2023-04-30 22:00:00 to 2024-04-30 22:00:00
+2025-05-21 08:52:15,696 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_15m_20240101_20241231.csv, shape: (35041, 11), date range: 2023-12-31 23:00:00 to 2024-12-30 23:00:00
+2025-05-21 08:52:15,810 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_15m_20240501_20250501.csv, shape: (35041, 11), date range: 2024-04-30 22:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:15,857 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_1h_20220101_20221231.csv, shape: (8737, 11), date range: 2021-12-31 23:00:00 to 2022-12-30 23:00:00
+2025-05-21 08:52:15,907 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_1h_20220501_20230501.csv, shape: (8760, 11), date range: 2022-04-30 22:00:00 to 2023-04-30 22:00:00
+2025-05-21 08:52:15,954 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_1h_20230101_20231231.csv, shape: (8736, 11), date range: 2022-12-31 23:00:00 to 2023-12-30 23:00:00
+2025-05-21 08:52:16,038 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_1h_20230101_20250501.csv, shape: (20423, 11), date range: 2022-12-31 23:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:16,091 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_1h_20230501_20240501.csv, shape: (8785, 11), date range: 2023-04-30 22:00:00 to 2024-04-30 22:00:00
+2025-05-21 08:52:16,136 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_1h_20240101_20241231.csv, shape: (8761, 11), date range: 2023-12-31 23:00:00 to 2024-12-30 23:00:00
+2025-05-21 08:52:16,186 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_1h_20240501_20250501.csv, shape: (8761, 11), date range: 2024-04-30 22:00:00 to 2025-04-30 22:00:00
+2025-05-21 08:52:16,220 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_4h_20220101_20221231.csv, shape: (2184, 11), date range: 2022-01-01 00:00:00 to 2022-12-30 20:00:00
+2025-05-21 08:52:16,277 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_4h_20220501_20230501.csv, shape: (2190, 11), date range: 2022-05-01 00:00:00 to 2023-04-30 20:00:00
+2025-05-21 08:52:16,311 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_4h_20230101_20231231.csv, shape: (2184, 11), date range: 2023-01-01 00:00:00 to 2023-12-30 20:00:00
+2025-05-21 08:52:16,353 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_4h_20230101_20250501.csv, shape: (5106, 11), date range: 2023-01-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-21 08:52:16,397 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_4h_20230501_20240501.csv, shape: (2196, 11), date range: 2023-05-01 00:00:00 to 2024-04-30 20:00:00
+2025-05-21 08:52:16,431 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_4h_20240101_20241231.csv, shape: (2190, 11), date range: 2024-01-01 00:00:00 to 2024-12-30 20:00:00
+2025-05-21 08:52:16,466 - INFO - base_optimizer.py - log_message - 151 - Loaded data for LTCUSDT_4h_20240501_20250501.csv, shape: (2190, 11), date range: 2024-05-01 00:00:00 to 2025-04-30 20:00:00
+2025-05-21 08:52:16,475 - INFO - base_optimizer.py - log_message - 151 - Starting IchimokuRSIATRVolumeOptimizer optimization process...
+2025-05-21 08:52:16,477 - INFO - base_optimizer.py - log_message - 151 - 
+Optimizing BTCUSDT_15m_20220101_20221231.csv for IchimokuRSIATRVolumeStrategy...
+2025-05-21 10:02:00,205 - INFO - base_optimizer.py - log_message - 151 - 
+Optimization completed for BTCUSDT_15m_20220101_20221231.csv
+2025-05-21 10:02:00,206 - INFO - base_optimizer.py - log_message - 151 - Best params for BTCUSDT_15m_20220101_20221231.csv: {'tenkan_period': 15, 'kijun_period': 32, 'senkou_span_b_period': 56, 'rsi_period': 7, 'rsi_entry': 46.89535144730272, 'atr_period': 8, 'atr_mult': 2.9665736383406367, 'vol_ma_period': 22}
+2025-05-21 10:02:00,206 - INFO - base_optimizer.py - log_message - 151 - Best score: -6982.36. Metrics: {'total_trades': 161, 'win_rate': 0.3105590062111801, 'profit_factor': 1.1144257348584818, 'max_drawdown_pct': 119.9526264943338, 'sharpe_ratio': 1.0768529556859656, 'sqn': 0.39361154779303725, 'sqn_pct': None, 'cagr': None, 'net_profit': 3608.1587900000227, 'portfolio_growth_pct': 360.81587900000085, 'final_value': 4608.158790000009, 'params': {'tenkan_period': 15, 'kijun_period': 32, 'senkou_span_b_period': 65, 'rsi_period': 7, 'rsi_entry': 48.488582240235274, 'atr_period': 7, 'atr_mult': 4.0, 'vol_ma_period': 37}}
+2025-05-21 10:04:17,830 - INFO - base_optimizer.py - log_message - 151 - 
+Saving results for BTCUSDT_15m_20220101_20221231.csv...
+2025-05-21 10:04:17,832 - ERROR - base_optimizer.py - log_message - 149 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-21 10:04:17,907 - INFO - base_optimizer.py - log_message - 151 - Saving results to: c:\dev\cursor\crypto-trading\results\BTCUSDT_15m_20220101_20221231.csv_optimization_results.json
+2025-05-21 10:04:17,912 - INFO - base_optimizer.py - log_message - 151 - Results saved to c:\dev\cursor\crypto-trading\results\BTCUSDT_15m_20220101_20221231.csv_optimization_results.json
+2025-05-21 10:04:17,914 - INFO - base_optimizer.py - log_message - 151 - 
+Optimizing BTCUSDT_15m_20220501_20230501.csv for IchimokuRSIATRVolumeStrategy...
+2025-05-21 11:13:40,631 - INFO - base_optimizer.py - log_message - 151 - 
+Optimization completed for BTCUSDT_15m_20220501_20230501.csv
+2025-05-21 11:13:40,633 - INFO - base_optimizer.py - log_message - 151 - Best params for BTCUSDT_15m_20220501_20230501.csv: {'tenkan_period': 9, 'kijun_period': 29, 'senkou_span_b_period': 65, 'rsi_period': 20, 'rsi_entry': 49.27933781104394, 'atr_period': 18, 'atr_mult': 4.0, 'vol_ma_period': 39}
+2025-05-21 11:13:40,634 - INFO - base_optimizer.py - log_message - 151 - Best score: -1172.18. Metrics: {'total_trades': 207, 'win_rate': 0.28019323671497587, 'profit_factor': 1.0383328335275102, 'max_drawdown_pct': 82.14719364448395, 'sharpe_ratio': 1.0563970137115437, 'sqn': 0.1629679742945039, 'sqn_pct': None, 'cagr': None, 'net_profit': 961.4720800000323, 'portfolio_growth_pct': 96.14720800000266, 'final_value': 1961.4720800000266, 'params': {'tenkan_period': 9, 'kijun_period': 29, 'senkou_span_b_period': 65, 'rsi_period': 10, 'rsi_entry': 50.33923205902461, 'atr_period': 11, 'atr_mult': 4.0, 'vol_ma_period': 40}}
+2025-05-21 11:15:57,006 - INFO - base_optimizer.py - log_message - 151 - 
+Saving results for BTCUSDT_15m_20220501_20230501.csv...
+2025-05-21 11:15:57,008 - ERROR - base_optimizer.py - log_message - 149 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-21 11:15:57,099 - INFO - base_optimizer.py - log_message - 151 - Saving results to: c:\dev\cursor\crypto-trading\results\BTCUSDT_15m_20220501_20230501.csv_optimization_results.json
+2025-05-21 11:15:57,103 - INFO - base_optimizer.py - log_message - 151 - Results saved to c:\dev\cursor\crypto-trading\results\BTCUSDT_15m_20220501_20230501.csv_optimization_results.json
+2025-05-21 11:15:57,105 - INFO - base_optimizer.py - log_message - 151 - 
+Optimizing BTCUSDT_15m_20230101_20231231.csv for IchimokuRSIATRVolumeStrategy...
