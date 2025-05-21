@@ -4,6 +4,7 @@ from src.notification.telegram_notifier import create_notifier
 class BaseStrategy(bt.Strategy):
     params = (
         ('printlog', False),
+        ('notify', True),
     )
 
     def __init__(self):
@@ -20,14 +21,14 @@ class BaseStrategy(bt.Strategy):
         self.on_trade_exit(trade_dict)
 
     def on_trade_entry(self, trade_dict):
-        if self.notifier:
-            self.notifier.send_trade_update(trade_dict)
+        if self.p.notify and self.notifier:
+            self.notifier.send_trade_notification(trade_dict)
 
     def on_trade_exit(self, trade_dict):
-        if self.notifier:
+        if self.p.notify and self.notifier:
             self.notifier.send_trade_update(trade_dict)
 
     def on_error(self, error):
-        if self.notifier:
+        if self.p.notify and self.notifier:
             self.notifier.send_error_notification(str(error))
             

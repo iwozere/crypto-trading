@@ -3,12 +3,14 @@ import json
 import numpy as np
 import pandas as pd
 import traceback
+import backtrader as bt
 from datetime import datetime
 from ta.volatility import AverageTrueRange
 from src.notification.logger import _logger
+from skopt import gp_minimize
 
 class BaseOptimizer:
-    def __init__(self, initial_capital=1000.0, commission=0.001):
+    def __init__(self, initial_capital=1000.0, commission=0.001, notify=False):
         self.initial_capital = initial_capital
         self.commission = commission
         self.current_metrics = {}
@@ -16,6 +18,7 @@ class BaseOptimizer:
         self.current_symbol = None
         self.raw_data = {}
         self.load_all_data()
+        self.notify = notify
 
     class DateTimeEncoder(json.JSONEncoder):
         def default(self, obj):
@@ -308,7 +311,6 @@ class BaseOptimizer:
             self.current_data = self.current_data.fillna(method='ffill').fillna(method='bfill')
         self.current_metrics = {}
         try:
-            from skopt import gp_minimize
             result = gp_minimize(
                 func=self.objective, 
                 dimensions=self.space,
@@ -345,7 +347,6 @@ class BaseOptimizer:
             )
         except Exception as e:
             self.log_message(f"Error during optimization for {data_file}: {str(e)}", level='error')
-            import traceback
             self.log_message(traceback.format_exc(), level='error')
             return None 
 
@@ -372,7 +373,6 @@ class BaseOptimizer:
                     all_results.append(result)
             except Exception as e:
                 self.log_message(f"Error processing {data_file}: {str(e)}", level='error')
-                import traceback
                 self.log_message(traceback.format_exc(), level='error')
 
         if not all_results:
@@ -469,7 +469,6 @@ class BaseOptimizer:
         Generic Backtrader backtest runner. Uses self.strategy_class for the strategy.
         Subclasses can override customize_cerebro(self, cerebro) for custom analyzers or broker setup.
         """
-        import backtrader as bt
         cerebro = bt.Cerebro()
         if not isinstance(data.index, pd.DatetimeIndex):
             self.log_message("Error: Data for backtest must have a DatetimeIndex.")
@@ -488,7 +487,7 @@ class BaseOptimizer:
         cerebro.broker.setcash(self.initial_capital)
         cerebro.broker.setcommission(commission=self.commission)
         cerebro.broker.set_checksubmit(False)
-        cerebro.addstrategy(self.strategy_class, **params)
+        cerebro.addstrategy(self.strategy_class, notify=self.notify, **params)
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.0, timeframe=bt.TimeFrame.Days, compression=1, annualize=True)
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
@@ -518,6 +517,5 @@ class BaseOptimizer:
             }
         except Exception as e:
             self.log_message(f"Error during backtest run for params {params}: {str(e)}")
-            import traceback
             self.log_message(traceback.format_exc())
             return None 

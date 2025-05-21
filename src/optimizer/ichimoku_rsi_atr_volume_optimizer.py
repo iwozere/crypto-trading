@@ -48,12 +48,6 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         # Price and Ichimoku Cloud
         ax1.plot(data.index, data['close'], label='Price', color='white', linewidth=2)
         # Ichimoku lines
-        ichimoku = bt.ind.Ichimoku(
-            pd.Series(data['close']),
-            tenkan=params['tenkan_period'],
-            kijun=params['kijun_period'],
-            senkou=params['senkou_span_b_period']
-        )
         # For plotting, recalc Ichimoku lines manually for pandas
         def ichimoku_lines(df, tenkan, kijun, senkou):
             high = df['high']

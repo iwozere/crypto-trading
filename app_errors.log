@@ -36,3 +36,33 @@ AttributeError: 'Lines_LineSeries_LineSeriesStub' object has no attribute 'high'
 
 2025-05-20 17:45:55,315 - ERROR - base_optimizer.py - log_message - 146 - No optimization results generated.
 2025-05-20 19:17:59,869 - ERROR - base_optimizer.py - log_message - 146 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-20 21:32:17,889 - ERROR - base_optimizer.py - log_message - 146 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-21 07:50:34,619 - ERROR - base_optimizer.py - log_message - 146 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-21 08:08:38,890 - ERROR - base_optimizer.py - log_message - 146 - Error during optimization for LTCUSDT_4h_20240501_20250501.csv: 'Lines_LineSeries_LineSeriesStub' object has no attribute 'high'
+2025-05-21 08:08:38,958 - ERROR - base_optimizer.py - log_message - 146 - Traceback (most recent call last):
+  File "C:\dev\cursor\crypto-trading\src\optimizer\base_optimizer.py", line 335, in optimize_single_file
+    plot_path = self.plot_results(self.current_data.copy(), trades_df, best_params, data_file)
+  File "c:\dev\cursor\crypto-trading\src\optimizer\ichimoku_rsi_atr_volume_optimizer.py", line 51, in plot_results
+    ichimoku = bt.ind.Ichimoku(
+        pd.Series(data['close']),
+    ...<2 lines>...
+        senkou=params['senkou_span_b_period']
+    )
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\indicator.py", line 53, in __call__
+    return super(MetaIndicator, cls).__call__(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\metabase.py", line 88, in __call__
+    _obj, args, kwargs = cls.doinit(_obj, *args, **kwargs)
+                         ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\metabase.py", line 78, in doinit
+    _obj.__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\indicators\ichimoku.py", line 68, in __init__
+    hi_tenkan = Highest(self.data.high, period=self.p.tenkan)
+                        ^^^^^^^^^^^^^^
+  File "c:\dev\cursor\crypto-trading\.venv\Lib\site-packages\backtrader\lineseries.py", line 461, in __getattr__
+    return getattr(self.lines, name)
+AttributeError: 'Lines_LineSeries_LineSeriesStub' object has no attribute 'high'
+
+2025-05-21 08:08:38,961 - ERROR - base_optimizer.py - log_message - 146 - No optimization results generated.
+2025-05-21 08:27:42,374 - ERROR - base_optimizer.py - log_message - 146 - Error calculating sqn_pct/cagr: ['pnl_comm']
