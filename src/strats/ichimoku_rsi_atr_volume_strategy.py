@@ -2,6 +2,21 @@ import backtrader as bt
 from src.notification.telegram_notifier import create_notifier
 from src.strats.base_strategy import BaseStrategy
 
+"""
+Ichimoku RSI ATR Volume Strategy Module
+--------------------------------------
+
+This module implements a trading strategy that combines Ichimoku Cloud, RSI, ATR-based trailing stops, and volume confirmation. The strategy is designed for use with Backtrader and can be used for both backtesting and live trading. It provides entry and exit logic, position management, and trade recording.
+
+Main Features:
+- Entry and exit signals based on Ichimoku, RSI, ATR, and volume
+- Trailing stop management using ATR
+- Designed for use with Backtrader and compatible with other trading frameworks
+
+Classes:
+- IchimokuRSIATRVolumeStrategy: Main strategy class implementing the logic
+"""
+
 class IchimokuRSIATRVolumeStrategy(BaseStrategy):
     """
     Backtrader-native strategy using Ichimoku, RSI, ATR (for trailing stop), and a volume confirmation.

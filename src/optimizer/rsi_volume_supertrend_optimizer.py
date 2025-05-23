@@ -1,3 +1,18 @@
+"""
+RSI Volume SuperTrend Optimizer Module
+-------------------------------------
+
+This module implements the optimizer for the RsiVolumeSuperTrendStrategy. It uses Bayesian optimization to tune strategy parameters for trend-following systems that combine SuperTrend, RSI, and Volume. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
+
+Main Features:
+- Bayesian optimization of strategy parameters
+- Backtesting and performance evaluation
+- Result visualization and reporting
+- Designed for use with RsiVolumeSuperTrendStrategy
+
+Classes:
+- RsiVolumeSuperTrendOptimizer: Optimizer for the RsiVolumeSuperTrendStrategy
+"""
 import os
 from skopt.space import Real, Integer
 import matplotlib.pyplot as plt

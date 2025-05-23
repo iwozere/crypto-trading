@@ -1,3 +1,18 @@
+"""
+BB Volume SuperTrend Optimizer Module
+------------------------------------
+
+This module implements the optimizer for the BBSuperTrendVolumeBreakoutStrategy. It uses Bayesian optimization to tune parameters for breakout strategies that combine Bollinger Bands, SuperTrend, and Volume. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
+
+Main Features:
+- Bayesian optimization of strategy parameters
+- Backtesting and performance evaluation
+- Result visualization and reporting
+- Designed for use with BBSuperTrendVolumeBreakoutStrategy
+
+Classes:
+- BBSuperTrendVolumeBreakoutOptimizer: Optimizer for the BBSuperTrendVolumeBreakoutStrategy
+"""
 import os
 import json
 import pandas as pd

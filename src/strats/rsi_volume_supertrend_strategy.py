@@ -8,6 +8,21 @@ import numpy as np
 from src.indicator.super_trend import SuperTrend
 from src.strats.base_strategy import BaseStrategy
 
+"""
+RSI Volume SuperTrend Strategy Module
+------------------------------------
+
+This module implements a trend-following trading strategy using SuperTrend for trend direction, RSI for pullback entries, and Volume for confirmation. ATR is used for calculating take profit and stop loss levels. The strategy supports both long and short trades and is designed for use with Backtrader for backtesting and live trading.
+
+Main Features:
+- Entry and exit signals based on SuperTrend, RSI, Volume, and ATR
+- Position and risk management using ATR-based take profit and stop loss
+- Designed for use with Backtrader and compatible with other trading frameworks
+
+Classes:
+- RsiVolumeSuperTrendStrategy: Main strategy class implementing the logic
+"""
+
 class RsiVolumeSuperTrendStrategy(BaseStrategy):
     """
     Backtrader-native trend-following strategy using SuperTrend for trend direction,

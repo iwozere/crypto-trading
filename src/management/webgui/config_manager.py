@@ -1,3 +1,19 @@
+"""
+Config Manager Module
+--------------------
+
+This module provides the ConfigManager class for managing trading bot configurations. It supports saving, loading, archiving, and retrieving parameter templates for different bot types. Used by the web GUI and other management interfaces to persist and organize bot settings.
+
+Main Features:
+- Save and load bot configurations as JSON files
+- Archive previous configurations with timestamps
+- Retrieve available bots and their parameter templates
+- List archived configurations for audit and rollback
+
+Classes:
+- ConfigManager: Main class for configuration management
+"""
+
 import json
 import os
 import shutil

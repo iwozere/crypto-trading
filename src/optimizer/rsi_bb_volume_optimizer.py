@@ -1,3 +1,18 @@
+"""
+RSI BB Volume Optimizer Module
+-----------------------------
+
+This module implements the optimizer for the RSIBollVolumeATRStrategy. It uses Bayesian optimization to tune parameters for mean-reversion strategies that combine RSI, Bollinger Bands, and Volume with ATR-based position management. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
+
+Main Features:
+- Bayesian optimization of strategy parameters
+- Backtesting and performance evaluation
+- Result visualization and reporting
+- Designed for use with RSIBollVolumeATRStrategy
+
+Classes:
+- RsiBBVolumeOptimizer: Optimizer for the RSIBollVolumeATRStrategy
+"""
 import os
 from skopt.space import Real, Integer
 import matplotlib.pyplot as plt

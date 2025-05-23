@@ -1,3 +1,19 @@
+"""
+Base Optimizer Module
+--------------------
+
+This module defines the BaseOptimizer class, which provides a flexible and extensible foundation for implementing trading strategy optimizers. It is designed to work with Backtrader strategies and supports Bayesian optimization, backtesting, metrics calculation, and result management. Subclasses can define parameter spaces, plotting, and custom scoring logic for specific strategies.
+
+Main Features:
+- Unified interface for optimizing Backtrader strategies
+- Bayesian optimization using scikit-optimize (skopt)
+- Backtest runner with metrics extraction (Sharpe, Drawdown, SQN, etc.)
+- Result saving, plotting, and reporting utilities
+- Extensible for custom strategies and parameter spaces
+
+Classes:
+- BaseOptimizer: Abstract base class for trading strategy optimizers
+"""
 import os
 import json
 import numpy as np

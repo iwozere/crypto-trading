@@ -9,6 +9,21 @@ from src.indicator.super_trend import SuperTrend
 from src.strats.base_strategy import BaseStrategy
 # from src.notification.telegram import create_notifier # Temporarily commented out
 
+"""
+BB Volume SuperTrend Strategy Module
+-----------------------------------
+
+This module implements a breakout trading strategy using Bollinger Bands, SuperTrend, and Volume indicators. The strategy is designed for volatile breakout markets and can be used for both backtesting and live trading. It provides entry and exit logic, position management, and trade recording.
+
+Main Features:
+- Entry and exit signals based on Bollinger Bands, SuperTrend, and Volume
+- Position and risk management using ATR-based take profit and stop loss
+- Designed for use with Backtrader and compatible with other trading frameworks
+
+Classes:
+- BBSuperTrendVolumeBreakoutStrategy: Main strategy class implementing the logic
+"""
+
 class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
     """
     A breakout strategy using Bollinger Bands, SuperTrend, and Volume.

@@ -5,6 +5,27 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
 
+"""
+Telegram Bot Management Module
+-----------------------------
+
+This module implements a Telegram bot for managing trading bots via chat commands. It allows users to start, stop, monitor, and backtest trading strategies directly from Telegram. The bot dynamically loads strategy classes and manages running bots in memory.
+
+Main Features:
+- Start and stop trading bots with /start_bot and /stop_bot
+- Check status of all running bots with /status
+- View recent logs for a strategy with /log
+- Run backtests with /backtest
+- Integrates with the trading bot infrastructure for real-time control
+
+Commands:
+- /start_bot <strategy>
+- /stop_bot <strategy>
+- /status
+- /log <strategy>
+- /backtest <strategy> <ticker> <tf>
+"""
+
 # In-memory registry of running bots
 running_bots = {}
 

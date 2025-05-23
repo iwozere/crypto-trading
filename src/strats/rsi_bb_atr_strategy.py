@@ -7,6 +7,21 @@ import pandas as pd
 import numpy as np
 from src.strats.base_strategy import BaseStrategy
 
+"""
+RSI Bollinger Bands ATR Strategy Module
+--------------------------------------
+
+This module implements a mean-reversion trading strategy using Bollinger Bands, RSI, and ATR. The strategy is designed for ranging or sideways markets and can be used for both backtesting and live trading. It provides entry and exit logic, position management, and trade recording.
+
+Main Features:
+- Entry and exit signals based on Bollinger Bands, RSI, and ATR
+- Position and risk management using ATR-based stop loss and take profit
+- Designed for use with Backtrader and compatible with other trading frameworks
+
+Classes:
+- MeanReversionRSBBATRStrategy: Main strategy class implementing the logic
+"""
+
 class MeanReversionRSBBATRStrategy(BaseStrategy):
     """
     A mean-reversion strategy using Bollinger Bands, RSI, and ATR.

@@ -1,3 +1,18 @@
+"""
+RSI BB ATR Optimizer Module
+--------------------------
+
+This module implements the optimizer for the MeanReversionRSBBATRStrategy. It uses Bayesian optimization to tune parameters for mean-reversion strategies that combine Bollinger Bands, RSI, and ATR. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
+
+Main Features:
+- Bayesian optimization of strategy parameters
+- Backtesting and performance evaluation
+- Result visualization and reporting
+- Designed for use with MeanReversionRSBBATRStrategy
+
+Classes:
+- MeanReversionRSBBATROptimizer: Optimizer for the MeanReversionRSBBATRStrategy
+"""
 import os
 import json
 import pandas as pd

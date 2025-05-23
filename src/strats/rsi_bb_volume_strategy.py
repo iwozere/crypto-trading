@@ -8,6 +8,21 @@ import numpy as np
 from src.notification.telegram_notifier import create_notifier
 from src.strats.base_strategy import BaseStrategy
 
+"""
+RSI Bollinger Bands Volume Strategy Module
+-----------------------------------------
+
+This module implements a mean reversion trading strategy that combines RSI, Bollinger Bands, and Volume indicators with ATR-based position management. The strategy is designed for use with Backtrader and can be used for both backtesting and live trading. It provides entry and exit logic, position management, and trade recording.
+
+Main Features:
+- Entry and exit signals based on RSI, Bollinger Bands, Volume, and ATR
+- Position and risk management using ATR-based take profit and trailing stop loss
+- Designed for use with Backtrader and compatible with other trading frameworks
+
+Classes:
+- RSIBollVolumeATRStrategy: Main strategy class implementing the logic
+"""
+
 class RSIBollVolumeATRStrategy(BaseStrategy):
     """
     A mean reversion strategy that combines RSI, Bollinger Bands, and Volume indicators with ATR-based position management.

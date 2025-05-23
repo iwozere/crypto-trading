@@ -1,3 +1,18 @@
+"""
+Ichimoku RSI ATR Volume Optimizer Module
+---------------------------------------
+
+This module implements the optimizer for the IchimokuRSIATRVolumeStrategy. It uses Bayesian optimization to tune parameters for strategies that combine Ichimoku Cloud, RSI, ATR, and Volume. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
+
+Main Features:
+- Bayesian optimization of strategy parameters
+- Backtesting and performance evaluation
+- Result visualization and reporting
+- Designed for use with IchimokuRSIATRVolumeStrategy
+
+Classes:
+- IchimokuRSIATRVolumeOptimizer: Optimizer for the IchimokuRSIATRVolumeStrategy
+"""
 import os
 from skopt.space import Real, Integer
 import matplotlib.pyplot as plt

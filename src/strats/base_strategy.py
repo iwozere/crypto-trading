@@ -1,3 +1,18 @@
+"""
+Base Strategy Module
+-------------------
+
+This module defines the BaseStrategy class, which provides a foundation for implementing trading strategies in Backtrader. It includes trade logging, notification integration, and utility methods for recording and notifying about trades and errors.
+
+Main Features:
+- Trade logging and recording
+- Integration with notification systems (Telegram)
+- Utility hooks for trade entry, exit, and error handling
+- Designed for extension by concrete strategy classes
+
+Classes:
+- BaseStrategy: Abstract base class for trading strategies
+"""
 import backtrader as bt
 from src.notification.telegram_notifier import create_notifier
 
