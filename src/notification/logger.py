@@ -48,12 +48,18 @@ LOG_CONFIG = {
             "level": "DEBUG",
             "formatter": "detailed",
         },
+        "trade_file": {
+            "class": "logging.FileHandler",
+            "filename": "logs/log/trades.log",
+            "level": "DEBUG",
+            "formatter": "detailed",
+        },
         "error_file": {
             "class": "logging.FileHandler",
             "filename": "logs/log/app_errors.log",
             "level": "ERROR",
             "formatter": "detailed",
-        },
+        }
     },
     'loggers': {
         'matplotlib': {
@@ -61,19 +67,32 @@ LOG_CONFIG = {
             'handlers': ['console'],
             'propagate': False,  # Switch off the log propagation to the root logger
         },
-        'PIL': {
-            'level': 'WARNING',  # Logging level for Pillow (PIL) to WARNING
-            'handlers': ['console'],
-            'propagate': False,
+        "live_trader": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG",
+            "propagate": False
         },
-        'root': {
-            'level': 'DEBUG',  # Logging level for the root logger
-            'handlers': ['console', 'file', 'error_file'],
+        "telegram_bot": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False
         },
-    },    
+        "default": {
+            "handlers": ["console"],
+            "level": "WARNING"
+        },
+        "root": {
+            "handlers": ["console"],
+            "level": "WARNING"
+        }
+    }
 }
 
 logging.config.dictConfig(LOG_CONFIG)
 _logger = logging.getLogger()
 
-
+#
+# Set up the logger for the application
+# Usage: setup_logger('live_trader')
+def setup_logger(name: str) -> logging.Logger:
+    return logging.getLogger(name)
