@@ -1,3 +1,17 @@
+"""
+Unit and integration tests for BaseDataDownloader, BinanceDataDownloader, and YahooDataDownloader.
+
+- Tests saving and loading data to CSV.
+- Tests downloading data for multiple symbols.
+- Mocks Binance and Yahoo downloaders to avoid real API calls.
+- Uses temporary directories for file operations.
+
+How to run:
+    pytest tests/test_base_data_downloader.py
+
+Or to run all tests in the project:
+    pytest
+"""
 import os
 import shutil
 import tempfile

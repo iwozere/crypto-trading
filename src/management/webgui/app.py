@@ -1,15 +1,33 @@
+"""
+Web GUI Flask Application for Trading Bot Management
+---------------------------------------------------
+
+This module implements a Flask web application for managing trading bots via a browser-based interface. It provides user authentication, bot lifecycle management, configuration management, and data visualization features. The app uses the shared bot_manager for bot operations and supports both REST API and HTML endpoints.
+
+Main Features:
+- User login/logout and session management
+- Start, stop, and monitor trading bots via REST API endpoints
+- Manage and archive bot configurations
+- Visualize ticker data and technical indicators
+- Integrates with the bot_manager for unified bot lifecycle control
+
+Routes:
+- /login, /logout: User authentication
+- /api/bots: Start, stop, and list bots
+- /api/config/bots: Manage bot configurations
+- /ticker-analyze: Visualize ticker data
+"""
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-import threading
 import json
 import os
 from datetime import datetime
-from src.bot.rsi_bb_volume_bot import RsiBbVolumeBot
-from src.webgui.config_manager import ConfigManager
+from src.management.webgui.config_manager import ConfigManager
 from config.donotshare.donotshare import WEBGUI_LOGIN, WEBGUI_PASSWORD
 from src.analyzer.ticker_analyzer import TickerAnalyzer
 import matplotlib.pyplot as plt
 import uuid
+from src.management.bot_manager import start_bot, stop_bot, get_status, get_trades, get_running_bots
 
 app = Flask(__name__, 
             static_folder='static',
@@ -23,10 +41,6 @@ login_manager.login_view = 'login'
 
 # Initialize config manager
 config_manager = ConfigManager()
-
-# Global dictionaries to store running bots and their threads
-running_bots = {}
-bot_threads = {}
 
 class User(UserMixin):
     def __init__(self, id):
@@ -63,55 +77,43 @@ def index():
 @login_required
 def get_bots():
     bots_status = []
-    for bot_id, bot in running_bots.items():
+    for bot_id in get_running_bots():
         bots_status.append({
             'id': bot_id,
-            'status': 'running' if bot.is_running else 'stopped',
-            'pairs': bot.trading_pairs,
-            'portfolio_value': bot.portfolio_value,
-            'active_positions': len(bot.active_positions)
+            'status': 'running',
+            'active_positions': len(getattr(get_trades(bot_id), 'active_positions', [])),
+            'portfolio_value': getattr(get_trades(bot_id), 'portfolio_value', None)
         })
     return jsonify(bots_status)
 
 @app.route('/api/bots', methods=['POST'])
 @login_required
-def start_bot():
+def start_bot_api():
     config = request.json
-    bot_id = config.get('id', f"bot_{len(running_bots) + 1}")
-    
-    # Save bot configuration
-    config_manager.save_bot_config(bot_id, config)
-    
-    # Create and start the bot
-    bot = RsiBbVolumeBot(config)
-    bot_thread = threading.Thread(target=bot.run)
-    bot_thread.daemon = True
-    
-    running_bots[bot_id] = bot
-    bot_threads[bot_id] = bot_thread
-    
-    bot_thread.start()
-    
-    return jsonify({'status': 'success', 'bot_id': bot_id})
+    bot_id = config.get('id', f"bot_{len(get_running_bots()) + 1}")
+    strategy_name = config.get('strategy')
+    if not strategy_name:
+        return jsonify({'status': 'error', 'message': 'Missing strategy'}), 400
+    try:
+        started_bot_id = start_bot(strategy_name, config, bot_id)
+        config_manager.save_bot_config(started_bot_id, config)
+        return jsonify({'status': 'success', 'bot_id': started_bot_id})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/bots/<bot_id>', methods=['DELETE'])
 @login_required
-def stop_bot(bot_id):
-    if bot_id in running_bots:
-        bot = running_bots[bot_id]
-        bot.stop()
-        del running_bots[bot_id]
-        del bot_threads[bot_id]
+def stop_bot_api(bot_id):
+    try:
+        stop_bot(bot_id)
         return jsonify({'status': 'success'})
-    return jsonify({'status': 'error', 'message': 'Bot not found'}), 404
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 404
 
 @app.route('/api/bots/<bot_id>/trades', methods=['GET'])
 @login_required
-def get_trades(bot_id):
-    if bot_id in running_bots:
-        bot = running_bots[bot_id]
-        return jsonify(bot.trade_history)
-    return jsonify([])
+def get_trades_api(bot_id):
+    return jsonify(get_trades(bot_id))
 
 @app.route('/api/config/bots', methods=['GET'])
 @login_required

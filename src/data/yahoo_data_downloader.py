@@ -5,6 +5,23 @@ from typing import Optional, List, Dict
 import logging
 from .base_data_downloader import BaseDataDownloader
 
+"""
+Yahoo Data Downloader Module
+---------------------------
+
+This module provides the YahooDataDownloader class for downloading historical OHLCV (Open, High, Low, Close, Volume) data from Yahoo Finance. It supports fetching, saving, loading, and updating data for single or multiple symbols, and is suitable for both research and production trading workflows.
+
+Main Features:
+- Download historical data for any stock or ticker from Yahoo Finance
+- Save and load data as CSV files
+- Update existing data files with new data
+- Download data for multiple symbols in batch
+- Inherits common logic from BaseDataDownloader for file management
+
+Classes:
+- YahooDataDownloader: Main class for interacting with Yahoo Finance and managing data downloads
+"""
+
 class YahooDataDownloader(BaseDataDownloader):
     """
     A class to download historical data from Yahoo Finance.

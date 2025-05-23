@@ -1,3 +1,19 @@
+"""
+RSI Bollinger Bands Volume Trading Bot Module
+--------------------------------------------
+
+This module implements a trading bot based on the RSI, Bollinger Bands, and volume indicators. The bot is designed for use with the Binance exchange and can be run in both backtesting and live trading modes. It inherits from BaseTradingBot and integrates a specific strategy implementation.
+
+Main Features:
+- Automated trading using RSI, Bollinger Bands, and volume signals
+- Position management and trade execution
+- Trade history and performance tracking
+- Designed for extension and integration with other trading infrastructure
+
+Classes:
+- RsiBbVolumeBot: Main bot class for this strategy
+"""
+
 import os
 import time
 import json

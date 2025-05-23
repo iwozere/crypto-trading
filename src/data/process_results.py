@@ -1,8 +1,18 @@
 """
-Summarizes and extracts key metrics from optimization result JSON files in the 'results' directory.
+Process Results Module
+---------------------
 
-This script processes each *_optimization_results.json file, extracts relevant trading metrics and parameters,
-and outputs a summary CSV for further analysis and reporting.
+This script processes optimization result JSON files in the 'results' directory, extracts relevant trading metrics and parameters, and outputs a summary CSV for further analysis and reporting. It is used to aggregate and summarize the results of strategy optimization runs for easier comparison and visualization.
+
+Main Features:
+- Parse and extract key metrics from optimization result files
+- Summarize results into a single CSV file for analysis
+- Support for multiple strategies, symbols, and intervals
+
+Functions:
+- extract_symbol_interval_dates(filename): Extract metadata from result filenames
+- process_json_file(file_path): Parse and extract metrics from a single result file
+- main(): Process all result files and generate a summary CSV
 """
 import os
 import json

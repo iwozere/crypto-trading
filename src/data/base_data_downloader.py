@@ -2,6 +2,21 @@ import os
 import pandas as pd
 from typing import List, Optional, Dict
 
+"""
+Base Data Downloader Module
+--------------------------
+
+This module provides the BaseDataDownloader class, which implements common logic for saving, loading, and managing historical market data files. It is designed to be inherited by specific data downloader classes (e.g., BinanceDataDownloader, YahooDataDownloader) to ensure consistent file handling and batch operations.
+
+Main Features:
+- Save pandas DataFrames to CSV files with standardized naming
+- Load data from CSV files and parse timestamps
+- Download and save data for multiple symbols using a provided download function
+
+Classes:
+- BaseDataDownloader: Abstract base class for data downloaders
+"""
+
 class BaseDataDownloader:
     def __init__(self, data_dir: Optional[str] = None, interval: Optional[str] = None):
         self.data_dir = data_dir or os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'dataset')

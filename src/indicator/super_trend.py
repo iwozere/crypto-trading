@@ -1,3 +1,18 @@
+"""
+Super Trend Indicator Module
+---------------------------
+
+This module implements the Super Trend technical indicator for use in trading strategies. The Super Trend indicator is used to identify the prevailing market trend and generate buy/sell signals based on price and volatility.
+
+Main Features:
+- Calculate Super Trend values for a given price series
+- Generate trend direction and signal outputs
+- Suitable for integration with trading and backtesting frameworks
+
+Functions/Classes:
+- super_trend: Main function to compute the Super Trend indicator
+"""
+
 import backtrader as bt
 import numpy as np
 import math

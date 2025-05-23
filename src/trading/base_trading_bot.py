@@ -1,3 +1,19 @@
+"""
+Base Trading Bot Module
+----------------------
+
+This module defines the BaseTradingBot class, which provides a framework for implementing trading bots with signal processing, trade execution, position management, and notification capabilities. It is designed to be subclassed by specific strategy bots and supports integration with notification systems (Telegram, email).
+
+Main Features:
+- Signal processing and trade execution logic
+- Position and balance management
+- Trade history tracking
+- Notification via Telegram and email
+- Designed for extension by concrete strategy bots
+
+Classes:
+- BaseTradingBot: Abstract base class for trading bots
+"""
 import time
 from datetime import datetime
 from src.notification.logger import _logger

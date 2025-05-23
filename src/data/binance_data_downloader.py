@@ -1,7 +1,17 @@
 """
-Downloads historical OHLCV data from Binance and saves it as CSV for backtesting and analysis.
+Binance Data Downloader Module
+-----------------------------
 
-This module provides BinanceDataDownloader, a utility for fetching and storing historical market data for multiple symbols and intervals.
+This module provides the BinanceDataDownloader class for downloading historical OHLCV (Open, High, Low, Close, Volume) data from the Binance exchange. It supports fetching data for single or multiple symbols and saving the results as CSV files for use in backtesting and analysis workflows.
+
+Main Features:
+- Download historical candlestick data for any Binance trading pair and interval
+- Save data to CSV files in a structured format
+- Download data for multiple symbols in batch
+- Inherits common logic from BaseDataDownloader for file management
+
+Classes:
+- BinanceDataDownloader: Main class for interacting with the Binance API and managing data downloads
 """
 import os
 from datetime import datetime, timedelta

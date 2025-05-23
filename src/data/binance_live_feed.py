@@ -1,7 +1,16 @@
 """
-Provides a Backtrader-compatible live data feed using Binance API and Pandas.
+Binance Live Feed Module
+-----------------------
 
-This module defines BinanceLiveFeed, a custom Backtrader data feed that fetches and updates live market data from Binance for algorithmic trading.
+This module provides a Backtrader-compatible live data feed using the Binance API and Pandas. It enables real-time market data streaming for algorithmic trading strategies by integrating Binance's websocket or REST endpoints with the Backtrader framework.
+
+Main Features:
+- Fetch and update live OHLCV data from Binance
+- Integrate with Backtrader as a custom data feed
+- Support for periodic data refresh and event-driven updates
+
+Classes:
+- BinanceLiveFeed: Custom Backtrader data feed for live Binance market data
 """
 import pandas as pd
 import time
