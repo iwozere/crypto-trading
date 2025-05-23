@@ -38,9 +38,8 @@ def get_sp_midcap_wikipedia():
 # S&P400 midcap with yfinance
 def get_sp_midcap_yfinance():
     """
-    Получает список тикеров S&P MidCap 400 с использованием yfinance
+    Get theS&P MidCap 400 tickers using yfinance
     """
-    # Загружаем информацию об индексе S&P MidCap 400
     ticker = "^SP400"
     sp_midcap = yf.Ticker(ticker)
     
@@ -49,7 +48,7 @@ def get_sp_midcap_yfinance():
         components = sp_midcap.components
         return list(components.index)
     except:
-        print("Не удалось получить компоненты через yfinance.")
+        print("Could not get components from yfinance.")
         return []
 
 def get_all_us_tickers():

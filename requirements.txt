@@ -22,4 +22,6 @@ sendgrid==6.12.0
 flask>=3.0.0  # For web GUI
 flask-login>=0.6.3  # For user authentication
 yfinance>=0.2.61  # For Yahoo Finance data
-lxml 
+lxml>=4.9.3  # For parsing HTML
+beautifulsoup4>=4.12.2  # For parsing HTML
+matplotlib>=3.7.0  # For plotting
