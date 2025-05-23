@@ -25,7 +25,7 @@ class BaseStrategy(bt.Strategy):
 
     def __init__(self):
         self.trades = []
-        self.notifier = create_notifier()
+        self.notifier = create_notifier() if self.p.notify else None
 
     def log(self, txt, dt=None, doprint=False, level="info"):
         """
