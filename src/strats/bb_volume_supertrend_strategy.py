@@ -149,7 +149,12 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
             'symbol': trade.data._name if hasattr(trade.data, '_name') else 'UNKNOWN',
             'ref': trade.ref,
             'entry_dt': bt.num2date(trade.dtopen).isoformat() if trade.dtopen else None,
-            'entry_price': trade.price, 'direction': 'long' if trade.history[0].event.size > 0 else 'short',
+            'entry_price': trade.price,
+            'direction': (
+                'long' if trade.history and trade.history[0].event.size > 0 else (
+                    'short' if trade.history and trade.history[0].event.size <= 0 else 'unknown'
+                )
+            ),
             'exit_dt': bt.num2date(trade.dtclose).isoformat() if trade.dtclose else None,
             'exit_price': trade.history[-1].event.price if trade.history and trade.history[-1].event else None, # last event price
             'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
