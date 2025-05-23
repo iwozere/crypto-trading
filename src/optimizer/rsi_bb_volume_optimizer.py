@@ -14,6 +14,9 @@ Classes:
 - RsiBBVolumeOptimizer: Optimizer for the RSIBollVolumeATRStrategy
 """
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
 from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
 import seaborn as sns

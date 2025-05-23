@@ -25,3 +25,6 @@ yfinance>=0.2.61  # For Yahoo Finance data
 lxml>=4.9.3  # For parsing HTML
 beautifulsoup4>=4.12.2  # For parsing HTML
 matplotlib>=3.7.0  # For plotting
+seaborn>=0.12.2  # For advanced plotting
+plotly>=5.15.0  # For interactive plotting
+python-telegram-bot>=20.0  # For Telegram bot

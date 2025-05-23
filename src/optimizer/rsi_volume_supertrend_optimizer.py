@@ -14,6 +14,9 @@ Classes:
 - RsiVolumeSuperTrendOptimizer: Optimizer for the RsiVolumeSuperTrendStrategy
 """
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
 from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
 import warnings
@@ -36,11 +39,11 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         
         self.space = [
             Integer(7, 28, name='rsi_period'),
-            Real(30.0, 50.0, name='rsi_entry_long_level'),
-            Real(50.0, 70.0, name='rsi_entry_short_level'),
+            Real(20.0, 40.0, name='rsi_entry_long_level'),
+            Real(60.0, 80.0, name='rsi_entry_short_level'),
             Real(65.0, 85.0, name='rsi_exit_long_level'),
             Real(15.0, 35.0, name='rsi_exit_short_level'),
-            Integer(5, 20, name='st_period'),
+            Integer(5, 100, name='st_period'),
             Real(1.5, 4.0, name='st_multiplier'),
             Integer(5, 30, name='vol_ma_period'),
             Integer(7, 21, name='atr_period'),

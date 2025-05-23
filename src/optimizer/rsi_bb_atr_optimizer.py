@@ -14,9 +14,10 @@ Classes:
 - MeanReversionRSBBATROptimizer: Optimizer for the MeanReversionRSBBATRStrategy
 """
 import os
-import json
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
 import pandas as pd
-import numpy as np
 from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
 import seaborn as sns

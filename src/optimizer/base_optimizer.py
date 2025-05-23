@@ -330,7 +330,7 @@ class BaseOptimizer:
             result = gp_minimize(
                 func=self.objective, 
                 dimensions=self.space,
-                n_calls=100, 
+                n_calls=200, 
                 n_random_starts=20, 
                 noise=0.01, 
                 n_jobs=-1, 
