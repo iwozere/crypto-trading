@@ -183,6 +183,69 @@ class TelegramNotifier:
         ]
         return "\n".join(message)
 
+    async def send_trade_notification_async(self, trade_data: Dict[str, Any]) -> bool:
+        """
+        Asynchronously send a trade notification to Telegram.
+        Args:
+            trade_data (Dict[str, Any]): Dictionary containing trade information
+        Returns:
+            bool: True if notification was sent successfully, False otherwise
+        """
+        try:
+            message = self._format_trade_message(trade_data)
+            await self.bot.send_message(
+                chat_id=self.chat_id,
+                text=message,
+                parse_mode='HTML'
+            )
+            self.logger.info(f"Trade notification sent successfully for {trade_data['symbol']}")
+            return True
+        except TelegramError as e:
+            self.logger.error(f"Failed to send trade notification (async): {e}")
+            return False
+
+    async def send_trade_update_async(self, trade_data: Dict[str, Any]) -> bool:
+        """
+        Asynchronously send a trade update notification to Telegram.
+        Args:
+            trade_data (Dict[str, Any]): Dictionary containing trade update information
+        Returns:
+            bool: True if notification was sent successfully, False otherwise
+        """
+        try:
+            message = self._format_trade_update_message(trade_data)
+            await self.bot.send_message(
+                chat_id=self.chat_id,
+                text=message,
+                parse_mode='HTML'
+            )
+            self.logger.info(f"Trade update notification sent successfully for {trade_data.get('symbol', 'UNKNOWN')}")
+            return True
+        except TelegramError as e:
+            self.logger.error(f"Failed to send trade update notification (async): {e}")
+            return False
+
+    async def send_error_notification_async(self, error_message: str) -> bool:
+        """
+        Asynchronously send an error notification to Telegram.
+        Args:
+            error_message (str): Error message to send
+        Returns:
+            bool: True if notification was sent successfully, False otherwise
+        """
+        try:
+            message = f"⚠️ <b>Error Alert</b>\n\n{error_message}"
+            await self.bot.send_message(
+                chat_id=self.chat_id,
+                text=message,
+                parse_mode='HTML'
+            )
+            self.logger.info("Error notification sent successfully (async)")
+            return True
+        except TelegramError as e:
+            self.logger.error(f"Failed to send error notification (async): {e}")
+            return False
+
 def create_notifier() -> Optional[TelegramNotifier]:
     """
     Create a TelegramNotifier instance using environment variables.
@@ -210,5 +273,5 @@ def create_notifier() -> Optional[TelegramNotifier]:
     
 if __name__ == "__main__":
     n = create_notifier()
-    asyncio.run(n.send_trade_notification({'rsi': 50, 'symbol': 'BTCUSDT', 'side': 'BUY', 'entry_price': 1000, 'tp_price': 2000, 'sl_price': 500, 'quantity': 1, 'timestamp': datetime.now()}))    
+    asyncio.run(n.send_trade_notification_async({'rsi': 50, 'symbol': 'BTCUSDT', 'side': 'BUY', 'entry_price': 1000, 'tp_price': 2000, 'sl_price': 500, 'quantity': 1, 'timestamp': datetime.now()}))    
     
