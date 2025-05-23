@@ -49,7 +49,7 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         self.space = [
             Integer(10, 50, name='bb_period'),
             Real(1.5, 3.5, name='bb_devfactor'),
-            Integer(7, 21, name='st_period'),
+            Integer(7, 100, name='st_period'),
             Real(1.0, 4.0, name='st_multiplier'),
             Integer(10, 50, name='vol_ma_period'),
             Real(1.2, 3.0, name='vol_strength_mult'),
