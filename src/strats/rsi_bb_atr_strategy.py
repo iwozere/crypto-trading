@@ -98,8 +98,10 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
                     self.log(f'Trailing Stop set at {self.trailing_stop:.2f} (ATR x {self.p.trail_atr_mult})')
                 else:
                     self.log('BUY: ATR invalid, TP/SL not set.')
-                    self.active_tp_price = None; self.active_sl_price = None;
-                    self.highest_close = None; self.trailing_stop = None;
+                    self.active_tp_price = None
+                    self.active_sl_price = None
+                    self.highest_close = None
+                    self.trailing_stop = None
             elif order.issell():
                 if self.position.size == 0:
                     self.entry_price = None

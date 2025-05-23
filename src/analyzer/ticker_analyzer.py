@@ -18,7 +18,6 @@ class TickerAnalyzer:
             if not info or 'longName' not in info:
                 print(f"\n❌ No fundamental data found for '{ticker_symbol}'. The ticker may be delisted or invalid.")
                 return
-            print("\n📊 Fundamental Data:")
             fundamentals = {
                 "Company": info.get("longName"),
                 "Sector": info.get("sector"),
@@ -34,8 +33,6 @@ class TickerAnalyzer:
                 "Gross Profits": info.get("grossProfits"),
                 "Net Income": info.get("netIncomeToCommon")
             }
-            for key, val in fundamentals.items():
-                print(f"{key}: {val}")
 
             # --- TECHNICAL ANALYSIS ---
             print("\n📈 Technical Indicators:")

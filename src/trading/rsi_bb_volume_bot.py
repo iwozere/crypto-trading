@@ -9,7 +9,7 @@ from binance.client import Client
 from binance.exceptions import BinanceAPIException
 from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
 from config.donotshare.donotshare import BINANCE_KEY, BINANCE_SECRET
-from src.bot.base_trading_bot import BaseTradingBot
+from src.trading.base_trading_bot import BaseTradingBot
 
 class RsiBbVolumeBot(BaseTradingBot):
     def __init__(self, config):

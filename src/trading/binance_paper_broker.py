@@ -1,7 +1,6 @@
 from binance.client import Client
 from binance.enums import *
 import backtrader as bt
-import os
 
 
 class BinancePaperBroker(bt.brokers.BackBroker):

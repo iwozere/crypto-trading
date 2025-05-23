@@ -60,6 +60,7 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
         cloud_top = max(senkou_a, senkou_b)
         cloud_bot = min(senkou_a, senkou_b)
         if not self.position:
+            #print(f"close={close}, cloud_top={cloud_top}, tenkan={tenkan}, kijun={kijun}, rsi={rsi}, volume={volume}, vol_ma={vol_ma}")
             if (
                 close > cloud_top and
                 tenkan > kijun and self.tenkan[-1] <= self.kijun[-1] and

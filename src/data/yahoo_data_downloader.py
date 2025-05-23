@@ -1,11 +1,11 @@
 import os
 import pandas as pd
 import yfinance as yf
-from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 import logging
+from .base_data_downloader import BaseDataDownloader
 
-class YahooDataDownloader:
+class YahooDataDownloader(BaseDataDownloader):
     """
     A class to download historical data from Yahoo Finance.
     
@@ -19,28 +19,10 @@ class YahooDataDownloader:
     -----------
     data_dir : str
         Directory to store downloaded data files
-    interval : str
-        Data interval (e.g., '1m', '5m', '15m', '1h', '1d')
-    start_date : Optional[datetime]
-        Start date for historical data
-    end_date : Optional[datetime]
-        End date for historical data
     """
     
-    def __init__(
-        self,
-        data_dir: str = 'data',
-        interval: str = '1d',
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
-    ):
-        self.data_dir = data_dir
-        self.interval = interval
-        self.start_date = start_date or (datetime.now() - timedelta(days=365))
-        self.end_date = end_date or datetime.now()
-        
-        # Create data directory if it doesn't exist
-        os.makedirs(self.data_dir, exist_ok=True)
+    def __init__(self, data_dir: str = 'data'):
+        super().__init__(data_dir=data_dir)
         
         # Set up logging
         logging.basicConfig(
@@ -52,33 +34,27 @@ class YahooDataDownloader:
     def download_data(
         self,
         symbol: str,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        interval: Optional[str] = None
+        interval: str,
+        start_date: str,
+        end_date: str
     ) -> pd.DataFrame:
         """
         Download historical data for a given symbol.
         
         Args:
             symbol: Stock symbol (e.g., 'AAPL')
+            interval: Data interval
             start_date: Start date for historical data
             end_date: End date for historical data
-            interval: Data interval
             
         Returns:
             pd.DataFrame: Historical OHLCV data
         """
         try:
-            # Use provided dates or default to instance dates
-            start = start_date or self.start_date
-            end = end_date or self.end_date
-            interval = interval or self.interval
-            
-            # Download data using yfinance
             ticker = yf.Ticker(symbol)
             df = ticker.history(
-                start=start,
-                end=end,
+                start=start_date,
+                end=end_date,
                 interval=interval
             )
             
@@ -109,29 +85,26 @@ class YahooDataDownloader:
             self.logger.error(f"Error downloading data for {symbol}: {str(e)}")
             raise
     
-    def save_data(self, df: pd.DataFrame, symbol: str) -> str:
+    def save_data(self, df: pd.DataFrame, symbol: str, start_date: str = None, end_date: str = None) -> str:
         """
         Save downloaded data to a CSV file.
         
         Args:
             df: DataFrame containing historical data
             symbol: Stock symbol
+            start_date: Start date for historical data
+            end_date: End date for historical data
             
         Returns:
             str: Path to the saved file
         """
         try:
-            # Create filename with symbol and date range
-            start_date = df['timestamp'].min().strftime('%Y%m%d')
-            end_date = df['timestamp'].max().strftime('%Y%m%d')
-            filename = f"{symbol}_{self.interval}_{start_date}_{end_date}.csv"
-            filepath = os.path.join(self.data_dir, filename)
-            
-            # Save to CSV
-            df.to_csv(filepath, index=False)
-            self.logger.info(f"Saved data to {filepath}")
-            
-            return filepath
+            # If start_date or end_date are not provided, extract from df
+            if start_date is None:
+                start_date = df['timestamp'].min().strftime('%Y-%m-%d')
+            if end_date is None:
+                end_date = df['timestamp'].max().strftime('%Y-%m-%d')
+            return super().save_data(df, symbol, start_date, end_date)
             
         except Exception as e:
             self.logger.error(f"Error saving data for {symbol}: {str(e)}")
@@ -148,30 +121,29 @@ class YahooDataDownloader:
             pd.DataFrame: Loaded data
         """
         try:
-            df = pd.read_csv(filepath)
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            return df
+            return super().load_data(filepath)
             
         except Exception as e:
             self.logger.error(f"Error loading data from {filepath}: {str(e)}")
             raise
     
-    def update_data(self, symbol: str) -> str:
+    def update_data(self, symbol: str, interval: str) -> str:
         """
         Update existing data file with new data.
         
         Args:
             symbol: Stock symbol
+            interval: Data interval
             
         Returns:
             str: Path to the updated file
         """
         try:
             # Find existing data file
-            existing_files = [f for f in os.listdir(self.data_dir) if f.startswith(f"{symbol}_{self.interval}_")]
+            existing_files = [f for f in os.listdir(self.data_dir) if f.startswith(f"{symbol}_{interval}_")]
             if not existing_files:
                 # If no existing file, download new data
-                df = self.download_data(symbol)
+                df = self.download_data(symbol, interval, '2000-01-01', pd.Timestamp.today().strftime('%Y-%m-%d'))
                 return self.save_data(df, symbol)
             
             # Load existing data
@@ -183,10 +155,9 @@ class YahooDataDownloader:
             last_date = existing_df['timestamp'].max()
             
             # Download new data from last date
-            new_df = self.download_data(
-                symbol,
-                start_date=last_date + timedelta(days=1)
-            )
+            new_start = (last_date + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+            new_end = pd.Timestamp.today().strftime('%Y-%m-%d')
+            new_df = self.download_data(symbol, interval, new_start, new_end)
             
             if new_df.empty:
                 self.logger.info(f"No new data available for {symbol}")
@@ -207,47 +178,45 @@ class YahooDataDownloader:
     def download_multiple_symbols(
         self,
         symbols: List[str],
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        interval: str,
+        start_date: str,
+        end_date: str
     ) -> Dict[str, str]:
         """
         Download data for multiple symbols.
         
         Args:
             symbols: List of stock symbols
+            interval: Data interval
             start_date: Start date for historical data
             end_date: End date for historical data
             
         Returns:
             Dict[str, str]: Dictionary mapping symbols to file paths
         """
-        results = {}
-        for symbol in symbols:
-            try:
-                df = self.download_data(symbol, start_date, end_date)
-                filepath = self.save_data(df, symbol)
-                results[symbol] = filepath
-            except Exception as e:
-                self.logger.error(f"Error processing {symbol}: {str(e)}")
-                continue
-        return results
+        def download_func(symbol, interval, start_date, end_date):
+            return self.download_data(symbol, interval, start_date, end_date)
+        return super().download_multiple_symbols(symbols, download_func, interval, start_date, end_date)
 
 if __name__ == "__main__":
     # Example usage
     downloader = YahooDataDownloader(
-        data_dir='data',
-        interval='1d',
-        start_date=datetime(2020, 1, 1),
-        end_date=datetime.now()
+        data_dir='data'
     )
     
     # Download data for a single symbol
     symbol = 'AAPL'
-    df = downloader.download_data(symbol)
+    interval = '1d'
+    start_date = '2020-01-01'
+    end_date = pd.Timestamp.today().strftime('%Y-%m-%d')
+    df = downloader.download_data(symbol, interval, start_date, end_date)
     filepath = downloader.save_data(df, symbol)
     print(f"Data saved to {filepath}")
     
     # Download data for multiple symbols
     symbols = ['AAPL', 'MSFT', 'GOOGL']
-    results = downloader.download_multiple_symbols(symbols)
+    interval = '1d'
+    start_date = '2020-01-01'
+    end_date = pd.Timestamp.today().strftime('%Y-%m-%d')
+    results = downloader.download_multiple_symbols(symbols, interval, start_date, end_date)
     print("Downloaded files:", results) 
