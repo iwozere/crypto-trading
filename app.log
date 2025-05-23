@@ -10346,3 +10346,14 @@ Saving results for LTCUSDT_15m_20240101_20241231.csv...
 2025-05-23 19:24:20,177 - INFO - base_optimizer.py - log_message - 151 - Results saved to c:\dev\cursor\crypto-trading\results\LTCUSDT_15m_20240101_20241231.csv_optimization_results.json
 2025-05-23 19:24:20,179 - INFO - base_optimizer.py - log_message - 151 - 
 Optimizing LTCUSDT_15m_20240501_20250501.csv for IchimokuRSIATRVolumeStrategy...
+2025-05-23 20:34:57,867 - INFO - base_optimizer.py - log_message - 151 - 
+Optimization completed for LTCUSDT_15m_20240501_20250501.csv
+2025-05-23 20:34:57,869 - INFO - base_optimizer.py - log_message - 151 - Best params for LTCUSDT_15m_20240501_20250501.csv: {'tenkan_period': 13, 'kijun_period': 22, 'senkou_span_b_period': 65, 'rsi_period': 7, 'rsi_entry': 52.20725525146085, 'atr_period': 9, 'atr_mult': 4.0, 'vol_ma_period': 24}
+2025-05-23 20:34:57,871 - INFO - base_optimizer.py - log_message - 151 - Best score: -25.99. Metrics: {'total_trades': 169, 'win_rate': 0.3668639053254438, 'profit_factor': 1.2366809997675585, 'max_drawdown_pct': 2.575919793215415, 'sharpe_ratio': 0.6318207164142442, 'sqn': 0.7284996369933316, 'sqn_pct': None, 'cagr': None, 'net_profit': 25.405089999999955, 'portfolio_growth_pct': 2.540508999999838, 'final_value': 1025.4050899999984, 'params': {'tenkan_period': 13, 'kijun_period': 22, 'senkou_span_b_period': 65, 'rsi_period': 7, 'rsi_entry': 51.178980667315365, 'atr_period': 7, 'atr_mult': 4.0, 'vol_ma_period': 24}}
+2025-05-23 20:37:09,534 - INFO - base_optimizer.py - log_message - 151 - 
+Saving results for LTCUSDT_15m_20240501_20250501.csv...
+2025-05-23 20:37:09,536 - ERROR - base_optimizer.py - log_message - 149 - Error calculating sqn_pct/cagr: ['pnl_comm']
+2025-05-23 20:37:09,607 - INFO - base_optimizer.py - log_message - 151 - Saving results to: c:\dev\cursor\crypto-trading\results\LTCUSDT_15m_20240501_20250501.csv_optimization_results.json
+2025-05-23 20:37:09,611 - INFO - base_optimizer.py - log_message - 151 - Results saved to c:\dev\cursor\crypto-trading\results\LTCUSDT_15m_20240501_20250501.csv_optimization_results.json
+2025-05-23 20:37:11,535 - INFO - base_optimizer.py - log_message - 151 - 
+Combined results saved to c:\dev\cursor\crypto-trading\results\combined_optimization_results_20250523_203709.json

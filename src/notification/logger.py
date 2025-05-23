@@ -44,13 +44,13 @@ LOG_CONFIG = {
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": "app.log",
+            "filename": "/logs/log/app.log",
             "level": "DEBUG",
             "formatter": "detailed",
         },
         "error_file": {
             "class": "logging.FileHandler",
-            "filename": "app_errors.log",
+            "filename": "/logs/log/app_errors.log",
             "level": "ERROR",
             "formatter": "detailed",
         },

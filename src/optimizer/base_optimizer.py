@@ -533,5 +533,5 @@ class BaseOptimizer:
             }
         except Exception as e:
             self.log_message(f"Error during backtest run for params {params}: {str(e)}")
-            self.log_message(traceback.format_exc())
+            self.log_message(traceback.format_exc(), level='error')
             return None 

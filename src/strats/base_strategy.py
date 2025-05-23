@@ -14,6 +14,7 @@ Classes:
 - BaseStrategy: Abstract base class for trading strategies
 """
 import backtrader as bt
+from src.notification.logger import _logger
 from src.notification.telegram_notifier import create_notifier
 
 class BaseStrategy(bt.Strategy):
@@ -26,10 +27,17 @@ class BaseStrategy(bt.Strategy):
         self.trades = []
         self.notifier = create_notifier()
 
-    def log(self, txt, dt=None, doprint=False):
+    def log(self, txt, dt=None, doprint=False, level="info"):
+        """
+        Log a message using the configured logger.
+        - level: "info" (default) for normal messages, "error" for errors.
+        """
         if self.p.printlog or doprint:
-            dt = dt or self.datas[0].datetime.date(0)
-            print(f'{dt.isoformat()} {txt}')
+            if level == "error":
+                _logger.error(txt)
+            else:
+                _logger.info(txt)
+
 
     def record_trade(self, trade_dict):
         self.trades.append(trade_dict)
