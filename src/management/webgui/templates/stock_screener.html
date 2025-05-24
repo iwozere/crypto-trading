@@ -1,0 +1,106 @@
+{% extends 'index.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Stock Screener</h2>
+  <form method="post" class="mb-4">
+    <div class="row">
+      <div class="col-md-3">
+        <label for="universe">Ticker Universe</label>
+        <select class="form-control" name="universe" id="universe">
+          {% for u in universes %}
+            <option value="{{ u }}">{{ u }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label for="min_price">Min Price</label>
+        <input type="number" step="0.01" class="form-control" name="min_price" id="min_price" value="{{ params.min_price }}">
+      </div>
+      <div class="col-md-2">
+        <label for="max_price">Max Price</label>
+        <input type="number" step="0.01" class="form-control" name="max_price" id="max_price" value="{{ params.max_price }}">
+      </div>
+      <div class="col-md-2">
+        <label for="min_volume">Min Volume</label>
+        <input type="number" class="form-control" name="min_volume" id="min_volume" value="{{ params.min_volume }}">
+      </div>
+      <div class="col-md-3">
+        <label for="min_market_cap">Min Market Cap</label>
+        <input type="number" class="form-control" name="min_market_cap" id="min_market_cap" value="{{ params.min_market_cap }}">
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-md-2">
+        <label for="max_pe">Max P/E</label>
+        <input type="number" step="0.01" class="form-control" name="max_pe" id="max_pe" value="{{ params.max_pe }}">
+      </div>
+      <div class="col-md-2">
+        <label for="min_roe">Min ROE</label>
+        <input type="number" step="0.01" class="form-control" name="min_roe" id="min_roe" value="{{ params.min_roe }}">
+      </div>
+      <div class="col-md-2">
+        <label for="max_de">Max D/E</label>
+        <input type="number" step="0.01" class="form-control" name="max_de" id="max_de" value="{{ params.max_de }}">
+      </div>
+      <div class="col-md-2 d-flex align-items-center">
+        <div class="form-check mt-4">
+          <input class="form-check-input" type="checkbox" name="fcf_positive" id="fcf_positive" {% if params.fcf_positive %}checked{% endif %}>
+          <label class="form-check-label" for="fcf_positive">FCF Positive</label>
+        </div>
+      </div>
+      <div class="col-md-3 d-flex align-items-center">
+        <div class="form-check mt-4">
+          <input class="form-check-input" type="checkbox" name="price_above_50d_200d" id="price_above_50d_200d" {% if params.price_above_50d_200d %}checked{% endif %}>
+          <label class="form-check-label" for="price_above_50d_200d">Price &gt; 50D &gt; 200D</label>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-md-12">
+        <button type="submit" class="btn btn-primary">Screen</button>
+        <button type="submit" name="export" value="1" class="btn btn-secondary">Export CSV</button>
+      </div>
+    </div>
+  </form>
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+  {% if results %}
+    <h4>Screened Stocks ({{ results|length }})</h4>
+    <div class="table-responsive">
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Price</th>
+            <th>Volume</th>
+            <th>Market Cap</th>
+            <th>P/E</th>
+            <th>ROE</th>
+            <th>D/E</th>
+            <th>50D Avg</th>
+            <th>200D Avg</th>
+            <th>FCF</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stock in results %}
+            <tr>
+              <td><a href="{{ url_for('ticker_analyze') }}?symbol={{ stock.ticker }}" target="_blank">{{ stock.ticker }}</a></td>
+              <td>{{ stock.price }}</td>
+              <td>{{ stock.volume }}</td>
+              <td>{{ stock.market_cap }}</td>
+              <td>{{ stock.pe }}</td>
+              <td>{{ stock.roe }}</td>
+              <td>{{ stock.de }}</td>
+              <td>{{ stock.fifty_day }}</td>
+              <td>{{ stock.two_hundred_day }}</td>
+              <td>{{ stock.fcf }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %} 

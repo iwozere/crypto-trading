@@ -17,13 +17,13 @@ Routes:
 - /api/config/bots: Manage bot configurations
 - /ticker-analyze: Visualize ticker data
 """
-from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, Markup, send_file
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-import json
 import os
-from datetime import datetime
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+print("Current working directory:", os.getcwd())
+
 from src.management.webgui.config_manager import ConfigManager
-from config.donotshare.donotshare import WEBGUI_LOGIN, WEBGUI_PASSWORD
+from config.donotshare.donotshare import WEBGUI_LOGIN, WEBGUI_PASSWORD, WEBGUI_PORT
 from src.analyzer.ticker_analyzer import TickerAnalyzer
 import matplotlib.pyplot as plt
 import uuid
@@ -45,7 +45,8 @@ from binance.client import Client as BinanceClient
 from ib_insync import IB, Stock
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
-from flask import session
+from flask import session, Flask, render_template, jsonify, request, redirect, url_for, flash, send_file
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from itsdangerous import URLSafeTimedSerializer
 import pyotp
 import qrcode
@@ -53,6 +54,11 @@ import io
 from werkzeug.security import generate_password_hash, check_password_hash
 from src.management.webgui.models import db, User
 import base64
+from src.analyzer.stock_screener import StockScreener
+from src.analyzer.tickers_list import (
+    get_six_tickers, get_sp500_tickers_wikipedia, get_sp_midcap_wikipedia, get_all_us_tickers
+)
+import csv
 
 
 app = Flask(__name__, 
@@ -69,7 +75,9 @@ login_manager.login_view = 'login'
 config_manager = ConfigManager()
 
 # --- DB and Mail Setup ---
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/webgui_users.db'
+db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', '..', 'db', 'webgui_users.db')
+db_path = os.path.abspath(db_path)
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
@@ -528,5 +536,115 @@ def admin_delete_user(user_id):
         flash('User deleted')
     return redirect(url_for('admin_users'))
 
+@app.route('/stock-screener', methods=['GET', 'POST'])
+@login_required
+def stock_screener():
+    universes = {
+        'SIX': get_six_tickers,
+        'S&P 500': get_sp500_tickers_wikipedia,
+        'S&P 400 Midcap': get_sp_midcap_wikipedia,
+        'All US': get_all_us_tickers,
+    }
+    results = None
+    error = None
+    params = {
+        'min_price': 0,
+        'max_price': 10000,
+        'min_volume': 0,
+        'min_market_cap': 0,
+        'max_pe': 25,
+        'min_roe': 0.15,
+        'max_de': 100,
+        'fcf_positive': True,
+        'price_above_50d_200d': True
+    }
+    if request.method == 'POST':
+        universe = request.form.get('universe', 'SIX')
+        min_price = float(request.form.get('min_price', 0))
+        max_price = float(request.form.get('max_price', 10000))
+        min_volume = float(request.form.get('min_volume', 0))
+        min_market_cap = float(request.form.get('min_market_cap', 0))
+        max_pe = float(request.form.get('max_pe', 25))
+        min_roe = float(request.form.get('min_roe', 0.15))
+        max_de = float(request.form.get('max_de', 100))
+        fcf_positive = request.form.get('fcf_positive', 'on') == 'on'
+        price_above_50d_200d = request.form.get('price_above_50d_200d', 'on') == 'on'
+        params = {
+            'min_price': min_price,
+            'max_price': max_price,
+            'min_volume': min_volume,
+            'min_market_cap': min_market_cap,
+            'max_pe': max_pe,
+            'min_roe': min_roe,
+            'max_de': max_de,
+            'fcf_positive': fcf_positive,
+            'price_above_50d_200d': price_above_50d_200d
+        }
+        try:
+            tickers = universes[universe]()
+            screener = StockScreener(stock_data=[])
+            stocks = []
+            import yfinance as yf
+            for ticker in tickers:
+                try:
+                    info = yf.Ticker(ticker).info
+                    pe = info.get('trailingPE', None)
+                    roe = info.get('returnOnEquity', None)
+                    de = info.get('debtToEquity', None)
+                    price = info.get('currentPrice', 0)
+                    fifty_day = info.get('fiftyDayAverage', 0)
+                    two_hundred_day = info.get('twoHundredDayAverage', 0)
+                    fcf = None
+                    try:
+                        fcf_info = screener.get_fcf_growth(ticker)
+                        if fcf_info and isinstance(fcf_info, dict) and 'FCF (oldest → newest)' in fcf_info:
+                            fcf_list = fcf_info['FCF (oldest → newest)']
+                            if fcf_list:
+                                fcf = fcf_list[-1]
+                    except Exception:
+                        pass
+                    stocks.append({
+                        'ticker': ticker,
+                        'price': price,
+                        'volume': info.get('volume', 0),
+                        'market_cap': info.get('marketCap', 0),
+                        'pe': pe,
+                        'roe': roe,
+                        'de': de,
+                        'fifty_day': fifty_day,
+                        'two_hundred_day': two_hundred_day,
+                        'fcf': fcf
+                    })
+                except Exception:
+                    continue
+            screener.stock_data = stocks
+            filtered = [s for s in stocks if
+                s['price'] is not None and params['min_price'] <= s['price'] <= params['max_price'] and
+                s['volume'] is not None and s['volume'] >= params['min_volume'] and
+                s['market_cap'] is not None and s['market_cap'] >= params['min_market_cap'] and
+                (s['pe'] is None or s['pe'] <= params['max_pe']) and
+                (s['roe'] is None or s['roe'] >= params['min_roe']) and
+                (s['de'] is None or s['de'] <= params['max_de']) and
+                (not params['fcf_positive'] or (s['fcf'] is not None and s['fcf'] > 0)) and
+                (not params['price_above_50d_200d'] or (s['price'] > (s['fifty_day'] or 0) > (s['two_hundred_day'] or 0)))
+            ]
+            results = filtered
+            # Handle export
+            if 'export' in request.form:
+                output = io.StringIO()
+                writer = csv.DictWriter(output, fieldnames=['ticker','price','volume','market_cap','pe','roe','de','fifty_day','two_hundred_day','fcf'])
+                writer.writeheader()
+                for row in results:
+                    writer.writerow(row)
+                output.seek(0)
+                return app.response_class(
+                    output.getvalue(),
+                    mimetype='text/csv',
+                    headers={'Content-Disposition': 'attachment;filename=screened_stocks.csv'}
+                )
+        except Exception as e:
+            error = str(e)
+    return render_template('stock_screener.html', universes=list(universes.keys()), params=params, results=results, error=error)
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=WEBGUI_PORT) 

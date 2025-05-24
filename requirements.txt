@@ -38,3 +38,4 @@ pyotp
 qrcode[pil]
 itsdangerous
 Werkzeug
+markupsafe
