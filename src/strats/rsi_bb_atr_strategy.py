@@ -124,7 +124,7 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
                     self.active_sl_price = None
                     self.entry_bar_idx = None
                     self.last_exit_price = order.executed.price
-                    self.last_exit_dt = bt.num2date(order.executed.dt).isoformat() if hasattr(order.executed, 'dt') else None
+                    self.last_exit_dt = bt.num2date(order.executed.dt) if hasattr(order.executed, 'dt') else None
                     self.highest_close = None
                     self.trailing_stop = None
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
@@ -143,10 +143,10 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
         trade_dict = {
             'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
             'ref': trade.ref,
-            'entry_dt': bt.num2date(trade.dtopen).isoformat() if trade.dtopen else None,
+            'entry_time': bt.num2date(trade.dtopen) if trade.dtopen else None,
             'entry_price': trade.price, 
             'direction': 'long',
-            'exit_dt': getattr(self, 'last_exit_dt', bt.num2date(trade.dtclose).isoformat() if trade.dtclose else None),
+            'exit_time': getattr(self, 'last_exit_dt', bt.num2date(trade.dtclose) if trade.dtclose else None),
             'exit_price': getattr(self, 'last_exit_price', None),
             'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
             'size': trade.size

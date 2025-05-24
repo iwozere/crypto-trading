@@ -91,14 +91,14 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         # Plot only long trades
         if not trades_df.empty:
             trades_df_plot = trades_df.copy()
-            if 'entry_dt' in trades_df_plot.columns: trades_df_plot['entry_dt'] = pd.to_datetime(trades_df_plot['entry_dt'])
-            if 'exit_dt' in trades_df_plot.columns: trades_df_plot['exit_dt'] = pd.to_datetime(trades_df_plot['exit_dt'])
+            if 'entry_time' in trades_df_plot.columns: trades_df_plot['entry_time'] = pd.to_datetime(trades_df_plot['entry_time'])
+            if 'exit_time' in trades_df_plot.columns: trades_df_plot['exit_time'] = pd.to_datetime(trades_df_plot['exit_time'])
             long_trades = trades_df_plot[trades_df_plot['direction'] == 'long']
             if not long_trades.empty:
-                ax1.scatter(long_trades['entry_dt'], long_trades['entry_price'], color='lime', marker='^', s=200, label='Long Entry', zorder=5)
-                valid_exits = long_trades.dropna(subset=['exit_dt', 'exit_price'])
+                ax1.scatter(long_trades['entry_time'], long_trades['entry_price'], color='lime', marker='^', s=200, label='Long Entry', zorder=5)
+                valid_exits = long_trades.dropna(subset=['exit_time', 'exit_price'])
                 if not valid_exits.empty:
-                    ax1.scatter(valid_exits['exit_dt'], valid_exits['exit_price'], color='red', marker='v', s=200, label='Long Exit', zorder=5)
+                    ax1.scatter(valid_exits['exit_time'], valid_exits['exit_price'], color='red', marker='v', s=200, label='Long Exit', zorder=5)
         ax1.set_ylabel('Price / BB', fontsize=12)
 
         # RSI
@@ -122,14 +122,14 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         ax3.set_ylabel('Volume', fontsize=12)
 
         # Equity Curve
-        if not trades_df.empty and 'pnl_comm' in trades_df.columns and 'exit_dt' in trades_df.columns:
-            trades_df_sorted = trades_df_plot.dropna(subset=['exit_dt']).sort_values(by='exit_dt').copy()
+        if not trades_df.empty and 'pnl_comm' in trades_df.columns and 'exit_time' in trades_df.columns:
+            trades_df_sorted = trades_df_plot.dropna(subset=['exit_time']).sort_values(by='exit_time').copy()
             if not trades_df_sorted.empty:
                 trades_df_sorted['cumulative_pnl'] = trades_df_sorted['pnl_comm'].cumsum()
                 equity_curve = self.initial_capital + trades_df_sorted['cumulative_pnl']
-                ax4.plot(trades_df_sorted['exit_dt'], equity_curve, label='Equity Curve', color='green', linewidth=2)
+                ax4.plot(trades_df_sorted['exit_time'], equity_curve, label='Equity Curve', color='green', linewidth=2)
                 rolling_max_equity = equity_curve.expanding().max()
-                ax4.fill_between(trades_df_sorted['exit_dt'], equity_curve, rolling_max_equity, where=equity_curve < rolling_max_equity, color='red', alpha=0.3, label='Drawdown')
+                ax4.fill_between(trades_df_sorted['exit_time'], equity_curve, rolling_max_equity, where=equity_curve < rolling_max_equity, color='red', alpha=0.3, label='Drawdown')
         ax4.axhline(y=self.initial_capital, color='white', linestyle='--', alpha=0.7, label='Initial Capital')
         ax4.set_ylabel('Equity', fontsize=12)
         ax4.set_xlabel('Date', fontsize=12)

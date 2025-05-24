@@ -120,9 +120,8 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         if not trades_df.empty:
             trades_df = trades_df.sort_values(by='exit_time').copy()
             trades_df['returns'] = trades_df['pnl'] / 100
-            cumulative_returns = (1 + trades_df['returns']).cumprod()
             initial_equity = self.initial_capital
-            equity_curve = initial_equity * cumulative_returns
+            equity_curve = initial_equity * (1 + trades_df['returns']).cumprod()
             ax5.plot(trades_df['exit_time'], equity_curve, label='Equity Curve', color='green', linewidth=2)
             rolling_max = equity_curve.expanding().max()
             drawdown = (equity_curve - rolling_max) / rolling_max * 100

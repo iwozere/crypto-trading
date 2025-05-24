@@ -71,10 +71,8 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         ax1.plot(data.index, supertrend_plot_values, label=f'SuperTrend ({st_period},{st_multiplier})', color='orange', linestyle='--', alpha=0.8)
         
         if not trades_df.empty:
-            # Separate long and short trades for plotting if necessary
             long_trades = trades_df[trades_df['type'] == 'long']
             short_trades = trades_df[trades_df['type'] == 'short']
-
             if not long_trades.empty:
                 ax1.scatter(long_trades['entry_time'], long_trades['entry_price'], color='lime', marker='^', s=200, label='Long Entry', zorder=5)
                 ax1.scatter(long_trades['exit_time'], long_trades['exit_price'], color='red', marker='v', s=200, label='Long Exit', zorder=5)
@@ -105,8 +103,6 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
             ax4.plot(trades_df['exit_time'], equity_curve, label='Equity Curve', color='green', linewidth=2)
             rolling_max = equity_curve.expanding().max()
             drawdown_pct = (equity_curve - rolling_max) / rolling_max * 100 # Percentage drawdown
-            # Plotting actual drawdown value, not percentage on equity axis if preferred
-            # For percentage on a separate axis, one would use ax4.twinx()
             ax4.fill_between(trades_df['exit_time'], equity_curve, equity_curve + (drawdown_pct/100 * equity_curve) , color='red', alpha=0.3, label='Drawdown From Peak Equity')
             ax4.axhline(y=initial_equity, color='white', linestyle='--', alpha=0.5, label='Initial Capital')
         

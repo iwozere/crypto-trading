@@ -90,11 +90,11 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
             long_trades = trades_df[trades_df['direction'] == 'long']
             short_trades = trades_df[trades_df['direction'] == 'short']
             if not long_trades.empty:
-                ax1.scatter(long_trades['entry_dt'], long_trades['entry_price'], color='lime', marker='^', s=100, label='Long Entry', zorder=5, edgecolors='black')
-                ax1.scatter(long_trades['exit_dt'], long_trades['exit_price'], color='red', marker='v', s=100, label='Long Exit', zorder=5, edgecolors='black')
+                ax1.scatter(long_trades['entry_time'], long_trades['entry_price'], color='lime', marker='^', s=100, label='Long Entry', zorder=5, edgecolors='black')
+                ax1.scatter(long_trades['exit_time'], long_trades['exit_price'], color='red', marker='v', s=100, label='Long Exit', zorder=5, edgecolors='black')
             if not short_trades.empty:
-                ax1.scatter(short_trades['entry_dt'], short_trades['entry_price'], color='fuchsia', marker='v', s=100, label='Short Entry', zorder=5, edgecolors='black')
-                ax1.scatter(short_trades['exit_dt'], short_trades['exit_price'], color='aqua', marker='^', s=100, label='Short Exit', zorder=5, edgecolors='black')
+                ax1.scatter(short_trades['entry_time'], short_trades['entry_price'], color='fuchsia', marker='v', s=100, label='Short Entry', zorder=5, edgecolors='black')
+                ax1.scatter(short_trades['exit_time'], short_trades['exit_price'], color='aqua', marker='^', s=100, label='Short Exit', zorder=5, edgecolors='black')
         
         vol_ma_period = params.get('vol_ma_period', 20)
         ax2.bar(data_df.index, data_df['volume'], label='Volume', color='lightblue', alpha=0.7)
@@ -102,14 +102,14 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         ax2.plot(data_df.index, vol_ma, label=f'Volume MA ({vol_ma_period})', color='yellow', linewidth=1.5)
         
         if not trades_df.empty and 'pnl_comm' in trades_df.columns:
-            trades_df_sorted = trades_df.sort_values(by='exit_dt').copy()
+            trades_df_sorted = trades_df.sort_values(by='exit_time').copy()
             trades_df_sorted['cumulative_pnl'] = trades_df_sorted['pnl_comm'].cumsum()
             equity_curve = self.initial_capital + trades_df_sorted['cumulative_pnl']
-            ax3.plot(trades_df_sorted['exit_dt'], equity_curve, label='Equity Curve (PnL based)', color='lightgreen', linewidth=2)
+            ax3.plot(trades_df_sorted['exit_time'], equity_curve, label='Equity Curve (PnL based)', color='lightgreen', linewidth=2)
             
             rolling_max_equity = equity_curve.expanding().max()
             drawdown_values = equity_curve - rolling_max_equity
-            ax3.fill_between(trades_df_sorted['exit_dt'], equity_curve, rolling_max_equity, where=equity_curve < rolling_max_equity, color='red', alpha=0.3, label='Drawdown from Peak')
+            ax3.fill_between(trades_df_sorted['exit_time'], equity_curve, rolling_max_equity, where=equity_curve < rolling_max_equity, color='red', alpha=0.3, label='Drawdown from Peak')
         ax3.axhline(y=self.initial_capital, color='white', linestyle='--', alpha=0.7, label='Initial Capital')
         
         ax1.set_title(f'Trading Results - {data_file_name} - Params: {json.dumps(params,indent=1)}', fontsize=14)

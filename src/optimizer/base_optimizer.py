@@ -247,10 +247,10 @@ class BaseOptimizer:
             if trades_df is not None and not trades_df.empty and final_value is not None:
                 try:
                     sqn_pct = self.calculate_sqn_pct(trades_df)
-                    if 'entry_dt' in trades_df.columns and 'exit_dt' in trades_df.columns:
-                        trades_df = trades_df.dropna(subset=['entry_dt', 'exit_dt'])
+                    if 'entry_time' in trades_df.columns and 'exit_time' in trades_df.columns:
+                        trades_df = trades_df.dropna(subset=['entry_time', 'exit_time'])
                         if not trades_df.empty:
-                            cagr = self.calculate_cagr(self.initial_capital, final_value, trades_df['entry_dt'].iloc[0], trades_df['exit_dt'].iloc[-1])
+                            cagr = self.calculate_cagr(self.initial_capital, final_value, trades_df['entry_time'].iloc[0], trades_df['exit_time'].iloc[-1])
                 except Exception as e:
                     self.log_message(f"Error calculating sqn_pct/cagr: {e}", level='error')
             # Prepare trades log
@@ -447,11 +447,7 @@ class BaseOptimizer:
             if trades and len(trades) > 1:
                 trades_df = pd.DataFrame(trades)
                 sqn_pct = BaseOptimizer.calculate_sqn_pct(trades_df)
-                if 'entry_dt' in trades_df.columns and 'exit_dt' in trades_df.columns:
-                    trades_df = trades_df.dropna(subset=['entry_dt', 'exit_dt'])
-                    if not trades_df.empty:
-                        cagr = BaseOptimizer.calculate_cagr(self.initial_capital, final_value, trades_df['entry_dt'].iloc[0], trades_df['exit_dt'].iloc[-1])
-                elif 'entry_time' in trades_df.columns and 'exit_time' in trades_df.columns:
+                if 'entry_time' in trades_df.columns and 'exit_time' in trades_df.columns:
                     trades_df = trades_df.dropna(subset=['entry_time', 'exit_time'])
                     if not trades_df.empty:
                         cagr = BaseOptimizer.calculate_cagr(self.initial_capital, final_value, trades_df['entry_time'].iloc[0], trades_df['exit_time'].iloc[-1])
