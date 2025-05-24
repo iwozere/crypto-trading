@@ -1,0 +1,40 @@
+{% extends 'index.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>System Status</h2>
+    <div id="status-alert" class="alert alert-danger d-none"></div>
+    <table class="table table-bordered mt-3">
+        <tbody>
+            <tr><th>Hostname</th><td id="hostname"></td></tr>
+            <tr><th>CPU Usage (%)</th><td id="cpu"></td></tr>
+            <tr><th>Memory Usage (%)</th><td id="memory"></td></tr>
+            <tr><th>Disk Free (GB)</th><td id="disk"></td></tr>
+            <tr><th>Binance Status</th><td id="binance"></td></tr>
+        </tbody>
+    </table>
+</div>
+<script>
+function bytesToGB(bytes) {
+    return (bytes / (1024 ** 3)).toFixed(2);
+}
+function updateStatus() {
+    fetch('/api/health').then(r => r.json()).then(data => {
+        document.getElementById('hostname').textContent = data.hostname;
+        document.getElementById('cpu').textContent = data.cpu.percent;
+        document.getElementById('memory').textContent = data.memory.percent;
+        document.getElementById('disk').textContent = bytesToGB(data.disk.free);
+        document.getElementById('binance').textContent = data.binance;
+        let alertBox = document.getElementById('status-alert');
+        if (data.cpu.percent > 90 || data.memory.percent > 90) {
+            alertBox.classList.remove('d-none');
+            alertBox.textContent = 'Warning: High resource usage!';
+        } else {
+            alertBox.classList.add('d-none');
+            alertBox.textContent = '';
+        }
+    });
+}
+setInterval(updateStatus, 5000);
+updateStatus();
+</script>
+{% endblock %} 

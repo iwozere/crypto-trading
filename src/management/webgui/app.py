@@ -32,6 +32,28 @@ import plotly.graph_objs as go
 import plotly.io as pio
 from src.optimizer import bb_volume_supertrend_optimizer, rsi_bb_volume_optimizer, ichimoku_rsi_atr_volume_optimizer
 import threading
+from werkzeug.utils import secure_filename
+import yfinance as yf
+import psutil
+import shutil
+import socket
+import time
+from src.notification.logger import _logger
+from src.notification.emailer import send_email_alert
+from src.notification.telegram_notifier import send_telegram_alert
+from binance.client import Client as BinanceClient
+from ib_insync import IB, Stock
+from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail, Message
+from flask import session
+from itsdangerous import URLSafeTimedSerializer
+import pyotp
+import qrcode
+import io
+from werkzeug.security import generate_password_hash, check_password_hash
+from src.management.webgui.models import db, User
+import base64
+
 
 app = Flask(__name__, 
             static_folder='static',
@@ -46,21 +68,40 @@ login_manager.login_view = 'login'
 # Initialize config manager
 config_manager = ConfigManager()
 
+# --- DB and Mail Setup ---
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/webgui_users.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'akossyrev@gmail.com'  # Set your email
+app.config['MAIL_PASSWORD'] = '....'  # Set your app password
+mail = Mail(app)
+db.init_app(app)
+with app.app_context():
+    db.create_all()
+
+# --- Password Reset Token Serializer ---
+serializer = URLSafeTimedSerializer(app.secret_key)
+
 class User(UserMixin):
     def __init__(self, id):
         self.id = id
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id)
+    return User.query.get(int(user_id))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        if username == WEBGUI_LOGIN and password == WEBGUI_PASSWORD:
-            user = User(username)
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            if user.twofa_secret:
+                session['pre_2fa_user'] = user.id
+                return redirect(url_for('twofa_verify'))
             login_user(user)
             return redirect(url_for('index'))
         flash('Invalid credentials')
@@ -247,6 +288,245 @@ def optimizer_results_download(job_id):
         if os.path.exists(path):
             return send_file(path, as_attachment=True)
     return jsonify({'status': 'not found'}), 404
+
+@app.route('/data-download', methods=['GET', 'POST'])
+@login_required
+def data_download():
+    message = None
+    if request.method == 'POST':
+        symbol = request.form.get('symbol')
+        timeframe = request.form.get('timeframe')
+        start_date = request.form.get('start_date')
+        end_date = request.form.get('end_date')
+        source = request.form.get('source')
+        filename = secure_filename(f"{symbol}_{timeframe}_{start_date}_{end_date}.csv")
+        save_path = os.path.join('data', filename)
+        try:
+            if source == 'yfinance':
+                df = yf.download(symbol, start=start_date, end=end_date, interval=timeframe)
+                if df.empty:
+                    raise Exception('No data returned from yfinance')
+                df.to_csv(save_path)
+                message = f"Downloaded {len(df)} rows from yfinance to {save_path}"
+            elif source == 'binance' and BinanceClient is not None:
+                # You must set your API keys in environment or config for real use
+                client = BinanceClient()
+                klines = client.get_historical_klines(symbol, timeframe, start_str=start_date, end_str=end_date)
+                import pandas as pd
+                df = pd.DataFrame(klines, columns=[
+                    'timestamp', 'open', 'high', 'low', 'close', 'volume',
+                    'close_time', 'quote_asset_volume', 'number_of_trades',
+                    'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'])
+                df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+                df.set_index('timestamp', inplace=True)
+                df = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
+                df.to_csv(save_path)
+                message = f"Downloaded {len(df)} rows from Binance to {save_path}"
+            elif source == 'ibkr' and IB is not None:
+                ib = IB()
+                ib.connect('127.0.0.1', 7497, clientId=1)
+                contract = Stock(symbol, 'SMART', 'USD')
+                bars = ib.reqHistoricalData(
+                    contract,
+                    endDateTime=end_date,
+                    durationStr=f"{(pd.to_datetime(end_date)-pd.to_datetime(start_date)).days} D",
+                    barSizeSetting=timeframe,
+                    whatToShow='TRADES',
+                    useRTH=True,
+                    formatDate=1
+                )
+                import pandas as pd
+                df = pd.DataFrame([b.__dict__ for b in bars])
+                if not df.empty:
+                    df.set_index('date', inplace=True)
+                    df = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
+                    df.to_csv(save_path)
+                    message = f"Downloaded {len(df)} rows from IBKR to {save_path}"
+                else:
+                    raise Exception('No data returned from IBKR')
+                ib.disconnect()
+            else:
+                message = 'Invalid source or required package not installed.'
+        except Exception as e:
+            message = f"Error: {e}"
+    return render_template('data_download.html', message=message)
+
+@app.route('/api/health', methods=['GET'])
+@login_required
+def health_check():
+    status = {'flask': 'ok'}
+    total, used, free = shutil.disk_usage('.')
+    status['disk'] = {'total': total, 'used': used, 'free': free}
+    mem = psutil.virtual_memory()
+    status['memory'] = {'total': mem.total, 'used': mem.used, 'percent': mem.percent}
+    status['cpu'] = {'percent': psutil.cpu_percent(interval=0.5)}
+    status['hostname'] = socket.gethostname()
+    # Broker connectivity (example: Binance)
+    try:
+        if BinanceClient is not None:
+            client = BinanceClient()
+            client.ping()
+            status['binance'] = 'ok'
+        else:
+            status['binance'] = 'not_installed'
+    except Exception as e:
+        status['binance'] = f'error: {e}'
+    # Add similar checks for Coinbase, IBKR if needed
+    return jsonify(status)
+
+@app.route('/system-status')
+@login_required
+def system_status():
+    return render_template('system_status.html')
+
+# --- Resource Monitoring and Alerting ---
+RESOURCE_ALERT_CPU = 90  # percent
+RESOURCE_ALERT_MEM = 90  # percent
+RESOURCE_ALERT_INTERVAL = 60  # seconds
+
+alerted = {'cpu': False, 'mem': False}
+
+def monitor_resources():
+    while True:
+        mem = psutil.virtual_memory()
+        cpu = psutil.cpu_percent(interval=1)
+        alert_msgs = []
+        if mem.percent > RESOURCE_ALERT_MEM and not alerted['mem']:
+            msg = f"High memory usage! Memory: {mem.percent}%"
+            alert_msgs.append(msg)
+            alerted['mem'] = True
+        elif mem.percent <= RESOURCE_ALERT_MEM:
+            alerted['mem'] = False
+        if cpu > RESOURCE_ALERT_CPU and not alerted['cpu']:
+            msg = f"High CPU usage! CPU: {cpu}%"
+            alert_msgs.append(msg)
+            alerted['cpu'] = True
+        elif cpu <= RESOURCE_ALERT_CPU:
+            alerted['cpu'] = False
+        for msg in alert_msgs:
+            _logger.error(msg)
+            if send_email_alert:
+                send_email_alert(subject="System Alert", message=msg)
+            if send_telegram_alert:
+                send_telegram_alert(msg)
+        time.sleep(RESOURCE_ALERT_INTERVAL)
+
+monitor_thread = threading.Thread(target=monitor_resources, daemon=True)
+monitor_thread.start()
+
+# --- Registration Route (admin only or open) ---
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists')
+            return redirect(url_for('register'))
+        user = User(username=username, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        flash('Registration successful!')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+# --- 2FA Verification Route ---
+@app.route('/2fa-verify', methods=['GET', 'POST'])
+def twofa_verify():
+    user_id = session.get('pre_2fa_user')
+    if not user_id:
+        return redirect(url_for('login'))
+    user = User.query.get(user_id)
+    if request.method == 'POST':
+        code = request.form['code']
+        if pyotp.TOTP(user.twofa_secret).verify(code):
+            login_user(user)
+            session.pop('pre_2fa_user', None)
+            return redirect(url_for('index'))
+        flash('Invalid 2FA code')
+    return render_template('2fa_verify.html')
+
+# --- 2FA Setup Route ---
+@app.route('/2fa-setup', methods=['GET', 'POST'])
+@login_required
+def twofa_setup():
+    user = User.query.get(current_user.id)
+    if request.method == 'POST':
+        if not user.twofa_secret:
+            secret = pyotp.random_base32()
+            user.twofa_secret = secret
+            db.session.commit()
+        flash('2FA enabled!')
+        return redirect(url_for('index'))
+    if not user.twofa_secret:
+        secret = pyotp.random_base32()
+        user.twofa_secret = secret
+        db.session.commit()
+    otp_uri = pyotp.totp.TOTP(user.twofa_secret).provisioning_uri(name=user.email, issuer_name="CryptoTradingWebGUI")
+    img = qrcode.make(otp_uri)
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    qr_b64 = 'data:image/png;base64,' + base64.b64encode(buf.read()).decode('utf-8')
+    return render_template('2fa_setup.html', qr_b64=qr_b64, secret=user.twofa_secret)
+
+# --- Password Reset Request ---
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password_request():
+    if request.method == 'POST':
+        email = request.form['email']
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = serializer.dumps(user.email, salt='reset-password')
+            link = url_for('reset_password', token=token, _external=True)
+            msg = Message('Password Reset', recipients=[user.email], body=f'Reset your password: {link}')
+            mail.send(msg)
+            flash('Password reset email sent!')
+        else:
+            flash('Email not found')
+    return render_template('reset_password_request.html')
+
+# --- Password Reset Form ---
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    try:
+        email = serializer.loads(token, salt='reset-password', max_age=3600)
+    except Exception:
+        flash('Invalid or expired token')
+        return redirect(url_for('login'))
+    user = User.query.filter_by(email=email).first()
+    if request.method == 'POST':
+        password = request.form['password']
+        user.set_password(password)
+        db.session.commit()
+        flash('Password reset successful!')
+        return redirect(url_for('login'))
+    return render_template('reset_password.html')
+
+# --- Admin User Management Page ---
+@app.route('/admin/users')
+@login_required
+def admin_users():
+    if not current_user.is_admin:
+        flash('Admin access required')
+        return redirect(url_for('index'))
+    users = User.query.all()
+    return render_template('admin_users.html', users=users)
+
+@app.route('/admin/users/delete/<int:user_id>', methods=['POST'])
+@login_required
+def admin_delete_user(user_id):
+    if not current_user.is_admin:
+        flash('Admin access required')
+        return redirect(url_for('index'))
+    user = User.query.get(user_id)
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+        flash('User deleted')
+    return redirect(url_for('admin_users'))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 

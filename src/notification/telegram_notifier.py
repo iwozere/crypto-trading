@@ -268,9 +268,14 @@ def create_notifier() -> Optional[TelegramNotifier]:
         logger.error(f"Failed to create TelegramNotifier: {e}")
         return None 
 
+def send_telegram_alert(message: str):
+    try:
+        notifier = TelegramNotifier(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
+        notifier.send_error_notification(message)
+        _logger.info(f"System alert sent to Telegram: {message}")
+    except Exception as e:
+        _logger.error(f"Failed to send system alert to Telegram: {e}")
 
-
-    
 if __name__ == "__main__":
     n = create_notifier()
     asyncio.run(n.send_trade_notification_async({'rsi': 50, 'symbol': 'BTCUSDT', 'side': 'BUY', 'entry_price': 1000, 'tp_price': 2000, 'sl_price': 500, 'quantity': 1, 'timestamp': datetime.now()}))    

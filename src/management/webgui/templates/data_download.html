@@ -1,0 +1,36 @@
+{% extends 'index.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Download Data for Backtesting</h2>
+    <form method="post" class="mb-4">
+        <div class="form-group">
+            <label for="symbol">Symbol:</label>
+            <input type="text" class="form-control" id="symbol" name="symbol" placeholder="e.g. AAPL or BTCUSDT" required>
+        </div>
+        <div class="form-group">
+            <label for="timeframe">Timeframe:</label>
+            <input type="text" class="form-control" id="timeframe" name="timeframe" placeholder="e.g. 1d, 1h, 5m" required>
+        </div>
+        <div class="form-group">
+            <label for="start_date">Start Date:</label>
+            <input type="date" class="form-control" id="start_date" name="start_date" required>
+        </div>
+        <div class="form-group">
+            <label for="end_date">End Date:</label>
+            <input type="date" class="form-control" id="end_date" name="end_date" required>
+        </div>
+        <div class="form-group">
+            <label for="source">Source:</label>
+            <select class="form-control" id="source" name="source" required>
+                <option value="yfinance">Yahoo Finance</option>
+                <option value="binance">Binance</option>
+                <option value="ibkr">IBKR</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Download</button>
+    </form>
+    {% if message %}
+        <div class="alert alert-info">{{ message }}</div>
+    {% endif %}
+</div>
+{% endblock %} 

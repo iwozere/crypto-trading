@@ -41,6 +41,7 @@ wheels/
 htmlcov/
 .pytest_cache/ 
 
+db/
 data/
 !src/data/
 config/donotshare/

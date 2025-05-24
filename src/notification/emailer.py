@@ -61,6 +61,15 @@ class EmailNotifier:
         self.logger.debug (f"Email sent successfully: {subject}")
 
 
+def send_email_alert(subject: str, message: str):
+    try:
+        notifier = EmailNotifier(sgkey)
+        notifier.send_email(_receiver_email, _sender_email, subject, message)
+        _logger.info(f"System alert email sent: {subject}")
+    except Exception as e:
+        _logger.error(f"Failed to send system alert email: {e}")
+
+
 #######################################
 # Quick test. Keep commented out.
 #######################################

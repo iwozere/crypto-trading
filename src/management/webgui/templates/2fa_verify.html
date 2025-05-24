@@ -1,0 +1,13 @@
+{% extends 'index.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Two-Factor Authentication</h2>
+    <form method="post">
+        <div class="form-group">
+            <label for="code">2FA Code:</label>
+            <input type="text" class="form-control" id="code" name="code" required>
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Verify</button>
+    </form>
+</div>
+{% endblock %} 

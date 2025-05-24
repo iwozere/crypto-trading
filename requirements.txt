@@ -30,3 +30,11 @@ plotly>=5.15.0  # For interactive plotting
 python-telegram-bot>=20.0  # For Telegram bot
 cbpro>=4.0.0  # For Coinbase Pro API
 ib_insync>=2.2.0  # For IBKR API
+plotly-express>=0.10.0  # For plotting
+psutil>=6.0.0  # For system monitoring
+Flask-SQLAlchemy
+Flask-Mail
+pyotp
+qrcode[pil]
+itsdangerous
+Werkzeug
