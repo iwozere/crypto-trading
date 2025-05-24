@@ -20,61 +20,36 @@ Routes:
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-print("Current working directory:", os.getcwd())
 
-from src.management.webgui.config_manager import ConfigManager
-from config.donotshare.donotshare import WEBGUI_LOGIN, WEBGUI_PASSWORD, WEBGUI_PORT
-from src.analyzer.ticker_analyzer import TickerAnalyzer
-import matplotlib.pyplot as plt
-import uuid
-from src.management.bot_manager import start_bot, stop_bot, get_status, get_trades, get_running_bots
-import plotly.graph_objs as go
-import plotly.io as pio
-from src.optimizer import bb_volume_supertrend_optimizer, rsi_bb_volume_optimizer, ichimoku_rsi_atr_volume_optimizer
-import threading
-from werkzeug.utils import secure_filename
-import yfinance as yf
-import psutil
-import shutil
-import socket
-import time
-from src.notification.logger import _logger
-from src.notification.emailer import send_email_alert
-from src.notification.telegram_notifier import send_telegram_alert
-from binance.client import Client as BinanceClient
-from ib_insync import IB, Stock
+from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, send_file, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
-from flask import session, Flask, render_template, jsonify, request, redirect, url_for, flash, send_file
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from itsdangerous import URLSafeTimedSerializer
 import pyotp
 import qrcode
 import io
 from werkzeug.security import generate_password_hash, check_password_hash
-from src.management.webgui.models import db, User
 import base64
-from src.analyzer.stock_screener import StockScreener
-from src.analyzer.tickers_list import (
-    get_six_tickers, get_sp500_tickers_wikipedia, get_sp_midcap_wikipedia, get_all_us_tickers
-)
 import csv
+import matplotlib.pyplot as plt
+import uuid
+import plotly.graph_objs as go
+import plotly.io as pio
+import threading
+import yfinance as yf
+import psutil
+import shutil
+import socket
+import time
+from werkzeug.utils import secure_filename
+from binance.client import Client as BinanceClient
+from ib_insync import IB, Stock
 
+# --- App and DB Initialization (MUST BE FIRST) ---
+app = Flask(__name__, static_folder='static', template_folder='templates')
+app.secret_key = os.urandom(24)
 
-app = Flask(__name__, 
-            static_folder='static',
-            template_folder='templates')
-app.secret_key = os.urandom(24)  # Required for session management
-
-# Initialize login manager
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-
-# Initialize config manager
-config_manager = ConfigManager()
-
-# --- DB and Mail Setup ---
 db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', '..', 'db', 'webgui_users.db')
 db_path = os.path.abspath(db_path)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
@@ -82,24 +57,49 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'akossyrev@gmail.com'  # Set your email
-app.config['MAIL_PASSWORD'] = '....'  # Set your app password
-mail = Mail(app)
+app.config['MAIL_USERNAME'] = 'akossyrev@gmail.com'
+app.config['MAIL_PASSWORD'] = '....'
+
+from src.management.webgui.models import db, User
+
 db.init_app(app)
+mail = Mail(app)
+
+# Ensure DB tables exist before any queries
 with app.app_context():
     db.create_all()
+
+# --- Login Manager ---
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# --- Other Imports (after app/db setup) ---
+from src.management.webgui.config_manager import ConfigManager
+from config.donotshare.donotshare import WEBGUI_LOGIN, WEBGUI_PASSWORD, WEBGUI_PORT
+from src.analyzer.ticker_analyzer import TickerAnalyzer
+from src.management.bot_manager import start_bot, stop_bot, get_status, get_trades, get_running_bots
+from src.optimizer import bb_volume_supertrend_optimizer, rsi_bb_volume_optimizer, ichimoku_rsi_atr_volume_optimizer
+from src.notification.logger import _logger
+from src.notification.emailer import send_email_alert
+from src.notification.telegram_notifier import send_telegram_alert
+from src.analyzer.stock_screener import StockScreener
+from src.analyzer.tickers_list import (
+    get_six_tickers, get_sp500_tickers_wikipedia, get_sp_midcap_wikipedia, get_all_us_tickers
+)
+
+# --- Config Manager ---
+config_manager = ConfigManager()
 
 # --- Password Reset Token Serializer ---
 serializer = URLSafeTimedSerializer(app.secret_key)
 
-class User(UserMixin):
-    def __init__(self, id):
-        self.id = id
-
+# --- User Loader (after db/app setup) ---
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
+# --- Routes and Views (all after db/app setup) ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -202,13 +202,19 @@ def get_archived_configs(bot_id):
 @app.route('/ticker-analyze', methods=['GET', 'POST'])
 @login_required
 def ticker_analyze():
+    print(">>> /ticker-analyze route hit")
     plotly_json = None
+    fundamentals = None
+    df = None
+    symbol = None
+    error = None
     if request.method == 'POST':
         symbol = request.form.get('symbol', '').upper()
         fundamentals, df = TickerAnalyzer.analyze_ticker(symbol)
-        error = None
         if fundamentals and df is not None and not df.empty:
             try:
+                # Sort df by index (datetime) descending
+                df = df.sort_index(ascending=False)
                 # Prepare Plotly figure
                 fig = go.Figure()
                 fig.add_trace(go.Candlestick(
@@ -229,8 +235,14 @@ def ticker_analyze():
                 error = f"Plotly plotting error: {e}"
         else:
             error = "No data found for this symbol."
-        return render_template('ticker_analyze.html', symbol=symbol, fundamentals=fundamentals, df=df[-1000:] if df is not None else None, plotly_json=plotly_json, error=error)
-    return render_template('ticker_analyze.html')
+    return render_template(
+        'ticker_analyze.html',
+        symbol=symbol,
+        fundamentals=fundamentals,
+        df=df,
+        plotly_json=plotly_json,
+        error=error
+    )
 
 # --- Optimizer Management ---
 optimizers = {
@@ -645,6 +657,16 @@ def stock_screener():
         except Exception as e:
             error = str(e)
     return render_template('stock_screener.html', universes=list(universes.keys()), params=params, results=results, error=error)
+
+@app.route('/api/bot-types', methods=['GET'])
+@login_required
+def get_bot_types():
+    bot_types = list(optimizers.keys())
+    return jsonify({'bot_types': bot_types})
+ 
+print(app.url_map)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=WEBGUI_PORT) 

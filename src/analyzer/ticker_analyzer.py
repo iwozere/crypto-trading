@@ -17,7 +17,7 @@ class TickerAnalyzer:
             info = ticker.info
             if not info or 'longName' not in info:
                 print(f"\n❌ No fundamental data found for '{ticker_symbol}'. The ticker may be delisted or invalid.")
-                return
+                return None, None
             fundamentals = {
                 "Company": info.get("longName"),
                 "Sector": info.get("sector"),
@@ -39,7 +39,7 @@ class TickerAnalyzer:
             df = ticker.history(period="1y", interval="1d")
             if df is None or df.empty:
                 print(f"❌ No price data found for '{ticker_symbol}'. The ticker may be delisted or has no recent trading history.")
-                return
+                return None, None
 
             # Clean and add indicators
             df = df.dropna()

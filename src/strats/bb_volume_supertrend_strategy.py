@@ -145,18 +145,38 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
             return
 
         self.log(f'OPERATION PROFIT, GROSS {trade.pnl:.2f}, NET {trade.pnlcomm:.2f}')
+        # Debug: print trade history and size
+        self.log(f'Trade history: {getattr(trade, "history", None)}')
+        self.log(f'Trade size: {getattr(trade, "size", None)}')
+        # Determine direction based on trade size or history
+        direction = 'unknown'
+        if hasattr(trade, 'size') and trade.size > 0:
+            direction = 'long'
+        elif hasattr(trade, 'size') and trade.size < 0:
+            direction = 'short'
+        elif hasattr(trade, 'history') and trade.history:
+            first_event = getattr(trade.history[0], 'event', None)
+            if first_event and hasattr(first_event, 'size'):
+                if first_event.size > 0:
+                    direction = 'long'
+                elif first_event.size < 0:
+                    direction = 'short'
+
+        # Get exit price robustly
+        exit_price = None
+        if hasattr(trade, 'history') and trade.history and hasattr(trade.history[-1], 'event'):
+            exit_price = trade.history[-1].event.price
+        elif hasattr(trade, 'price'):
+            exit_price = trade.price
+
         trade_dict = {
             'symbol': trade.data._name if hasattr(trade.data, '_name') else 'UNKNOWN',
             'ref': trade.ref,
             'entry_time': bt.num2date(trade.dtopen) if trade.dtopen else None,
             'entry_price': trade.price,
-            'direction': (
-                'long' if trade.history and trade.history[0].event.size > 0 else (
-                    'short' if trade.history and trade.history[0].event.size <= 0 else 'unknown'
-                )
-            ),
+            'direction': direction,
             'exit_time': bt.num2date(trade.dtclose) if trade.dtclose else None,
-            'exit_price': trade.history[-1].event.price if trade.history and trade.history[-1].event else None, # last event price
+            'exit_price': exit_price,
             'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
             'size': trade.size, 'value': trade.value,
             'commission': trade.commission

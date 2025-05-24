@@ -14,10 +14,25 @@
     {% endif %}
     {% if fundamentals %}
         <h4>Fundamental Data</h4>
+        {% set descriptions = {
+            'Company': 'The name of the company.',
+            'Sector': 'The industry sector the company operates in.',
+            'Market Cap': 'Total market value of the company. Higher is generally better for stability.',
+            'P/E Ratio': 'Price/Earnings ratio. Lower can mean undervalued, but too low may indicate problems. Typical: 10-25.',
+            'EPS': 'Earnings per share. Higher is better.',
+            'Dividend Yield': 'Annual dividend as a percentage of price. 2-6% is typical for dividend stocks.',
+            '52 Week High': 'Highest price in the last year.',
+            '52 Week Low': 'Lowest price in the last year.',
+            'Return on Equity': 'Net income as a % of shareholder equity. 15%+ is strong.',
+            'Return on Assets': 'Net income as a % of total assets. Higher is better.',
+            'Revenue': 'Total sales. Higher is better.',
+            'Gross Profits': 'Revenue minus cost of goods sold. Higher is better.',
+            'Net Income': 'Profit after all expenses. Higher is better.'
+        } %}
         <ul class="list-group mb-4">
             {% for key, val in fundamentals.items() %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>{{ key }}</span>
+                    <span title="{{ descriptions.get(key, '') }}">{{ key }}</span>
                     <span>{{ val }}</span>
                 </li>
             {% endfor %}
@@ -29,6 +44,7 @@
             <table class="table table-sm table-striped">
                 <thead>
                     <tr>
+                        <th>Date/Time</th>
                         {% for col in df.columns %}
                             <th>{{ col }}</th>
                         {% endfor %}
@@ -37,8 +53,10 @@
                 <tbody>
                     {% for row in df.itertuples() %}
                         <tr>
+                            {% set row_dict = row._asdict() %}
+                            <td>{{ row.Index }}</td>
                             {% for col in df.columns %}
-                                <td>{{ getattr(row, col) }}</td>
+                                <td>{{ row_dict[col] }}</td>
                             {% endfor %}
                         </tr>
                     {% endfor %}

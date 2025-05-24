@@ -26,6 +26,8 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/ticker-analyze">Ticker Analyzer</a>
                     </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <span class="navbar-text me-3">
                             Welcome, {{ current_user.username }}
@@ -39,6 +41,8 @@
         </div>
     </nav>
 
+    {% block content %}
+    <!-- Main dashboard content starts here -->
     <div class="container-fluid mt-4">
         <div class="row">
             <!-- Active Bots Section -->
@@ -114,6 +118,7 @@
             </div>
         </div>
     </div>
+    {% endblock %}
 
     <!-- Start Bot Modal -->
     <div class="modal fade" id="startBotModal" tabindex="-1">
