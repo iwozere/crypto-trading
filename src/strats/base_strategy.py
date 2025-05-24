@@ -16,6 +16,8 @@ Classes:
 import backtrader as bt
 from src.notification.logger import _logger
 from src.notification.telegram_notifier import create_notifier
+import os
+import json
 
 class BaseStrategy(bt.Strategy):
     params = (
@@ -41,7 +43,49 @@ class BaseStrategy(bt.Strategy):
 
     def record_trade(self, trade_dict):
         self.trades.append(trade_dict)
+        self._save_trade_json(trade_dict)
         self.on_trade_exit(trade_dict)
+
+    def _save_trade_json(self, trade_dict):
+        """
+        Save the trade as a JSON file in logs/json and append to a master trades.json file.
+        """
+        folder = os.path.join('logs', 'json')
+        os.makedirs(folder, exist_ok=True)
+        # Use entry_time or current time for filename
+        ts = trade_dict.get('entry_time')
+        if hasattr(ts, 'isoformat'):
+            ts = ts.isoformat()
+        elif ts is None:
+            import datetime
+            ts = datetime.datetime.now().isoformat()
+        symbol = trade_dict.get('symbol', 'UNKNOWN')
+        fname = f"{symbol}_{ts.replace(':', '').replace('-', '').replace('T', '_')}.json"
+        fpath = os.path.join(folder, fname)
+        # Write individual trade file
+        try:
+            with open(fpath, 'w', encoding='utf-8') as f:
+                json.dump(trade_dict, f, default=str, indent=2)
+        except Exception as e:
+            self.log(f"Failed to write trade JSON: {e}", level="error")
+        # Append to master trades.json
+        master_path = os.path.join(folder, 'trades.json')
+        try:
+            if os.path.exists(master_path):
+                with open(master_path, 'r+', encoding='utf-8') as f:
+                    try:
+                        all_trades = json.load(f)
+                    except Exception:
+                        all_trades = []
+                    all_trades.append(trade_dict)
+                    f.seek(0)
+                    json.dump(all_trades, f, default=str, indent=2)
+                    f.truncate()
+            else:
+                with open(master_path, 'w', encoding='utf-8') as f:
+                    json.dump([trade_dict], f, default=str, indent=2)
+        except Exception as e:
+            self.log(f"Failed to append to master trades.json: {e}", level="error")
 
     def on_trade_entry(self, trade_dict):
         if self.p.notify and self.notifier:

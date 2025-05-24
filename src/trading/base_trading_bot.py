@@ -21,9 +21,14 @@ from src.notification.telegram_notifier import create_notifier as create_telegra
 from src.notification.emailer import EmailNotifier
 from config.donotshare.donotshare import SENDGRID_API_KEY as sgkey
 import asyncio
+import os
+import json
 
 class BaseTradingBot:
-    def __init__(self, config, strategy):
+    def __init__(self, config, strategy, broker=None, paper_trading=True):
+        """
+        Initialize the trading bot with config, strategy, broker, and mode.
+        """
         self.config = config
         self.trading_pair = config.get('trading_pair', 'BTCUSDT')
         self.initial_balance = config.get('initial_balance', 1000.0)
@@ -33,6 +38,9 @@ class BaseTradingBot:
         self.strategy = strategy
         self.current_balance = self.initial_balance
         self.total_pnl = 0.0
+        self.broker = broker
+        self.paper_trading = paper_trading
+        self.state_file = os.path.join('logs', 'json', f'{self.trading_pair}_bot_state.json')
         # Notification setup
         self.telegram_notifier = create_telegram_notifier()
         try:
@@ -40,8 +48,15 @@ class BaseTradingBot:
         except Exception as e:
             self.email_notifier = None
             self.log_message(f"Email notifier not initialized: {e}", level="error")
+        self.max_drawdown_pct = config.get('max_drawdown_pct', 20.0)
+        self.max_exposure = config.get('max_exposure', 1.0)  # 1.0 = 100% of balance
+        self.position_sizing_pct = config.get('position_sizing_pct', 0.1)  # 10% of balance per trade
+        self.load_state()
 
     def run(self):
+        """
+        Main bot loop. Handles signals, order management, error handling, and state persistence.
+        """
         self.is_running = True
         self.log_message(f"Starting bot for {self.trading_pair}")
         while self.is_running:
@@ -49,9 +64,11 @@ class BaseTradingBot:
                 signals = self.get_signals()
                 self.process_signals(signals)
                 self.update_positions()
+                self.save_state()
                 time.sleep(1)
             except Exception as e:
                 self.log_message(f"Error in bot loop: {str(e)}", level="error")
+                self.notify_error(str(e))
                 time.sleep(5)
 
     def get_signals(self):
@@ -65,32 +82,141 @@ class BaseTradingBot:
                 self.execute_trade('sell', signal['price'], signal['size'])
 
     def execute_trade(self, trade_type, price, size):
+        """
+        Execute a trade (buy/sell) using the broker or paper trading logic. Log and persist all trades and orders.
+        """
         timestamp = datetime.now()
-        if trade_type == 'buy':
-            self.active_positions[self.trading_pair] = {
-                'entry_price': price,
-                'size': size,
-                'entry_time': timestamp
+        order = None
+        try:
+            if not self.paper_trading and self.broker:
+                order = self.broker.place_order(self.trading_pair, trade_type.upper(), size, price=price)
+                self.log_order(order)
+            if trade_type == 'buy':
+                self.active_positions[self.trading_pair] = {
+                    'entry_price': price,
+                    'size': size,
+                    'entry_time': timestamp
+                }
+                self.notify_trade_event('BUY', price, size, timestamp)
+            else:  # sell
+                if self.trading_pair in self.active_positions:
+                    position = self.active_positions[self.trading_pair]
+                    pnl = ((price - position['entry_price']) / position['entry_price']) * 100
+                    trade = {
+                        'bot_id': id(self),
+                        'pair': self.trading_pair,
+                        'type': 'long',
+                        'entry_price': position['entry_price'],
+                        'exit_price': price,
+                        'size': position['size'],
+                        'pl': pnl,
+                        'time': timestamp.isoformat()
+                    }
+                    self.trade_history.append(trade)
+                    self.log_trade(trade)
+                    self.current_balance *= (1 + pnl/100)
+                    self.total_pnl += pnl
+                    del self.active_positions[self.trading_pair]
+                    self.notify_trade_event('SELL', price, size, timestamp, entry_price=position['entry_price'], pnl=pnl)
+        except Exception as e:
+            self.log_message(f"Error executing trade: {e}", level="error")
+            self.notify_error(str(e))
+
+    def log_order(self, order):
+        """
+        Persist order details to logs/json/orders.json.
+        """
+        folder = os.path.join('logs', 'json')
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, 'orders.json')
+        try:
+            if os.path.exists(path):
+                with open(path, 'r+', encoding='utf-8') as f:
+                    try:
+                        all_orders = json.load(f)
+                    except Exception:
+                        all_orders = []
+                    all_orders.append(order)
+                    f.seek(0)
+                    json.dump(all_orders, f, default=str, indent=2)
+                    f.truncate()
+            else:
+                with open(path, 'w', encoding='utf-8') as f:
+                    json.dump([order], f, default=str, indent=2)
+        except Exception as e:
+            self.log_message(f"Failed to log order: {e}", level="error")
+
+    def log_trade(self, trade):
+        """
+        Persist trade details to logs/json/trades.json.
+        """
+        folder = os.path.join('logs', 'json')
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, 'trades.json')
+        try:
+            if os.path.exists(path):
+                with open(path, 'r+', encoding='utf-8') as f:
+                    try:
+                        all_trades = json.load(f)
+                    except Exception:
+                        all_trades = []
+                    all_trades.append(trade)
+                    f.seek(0)
+                    json.dump(all_trades, f, default=str, indent=2)
+                    f.truncate()
+            else:
+                with open(path, 'w', encoding='utf-8') as f:
+                    json.dump([trade], f, default=str, indent=2)
+        except Exception as e:
+            self.log_message(f"Failed to log trade: {e}", level="error")
+
+    def save_state(self):
+        """
+        Save open positions and bot state to disk for recovery.
+        """
+        folder = os.path.join('logs', 'json')
+        os.makedirs(folder, exist_ok=True)
+        try:
+            state = {
+                'active_positions': self.active_positions,
+                'trade_history': self.trade_history,
+                'current_balance': self.current_balance,
+                'total_pnl': self.total_pnl
             }
-            self.notify_trade_event('BUY', price, size, timestamp)
-        else:  # sell
-            if self.trading_pair in self.active_positions:
-                position = self.active_positions[self.trading_pair]
-                pnl = ((price - position['entry_price']) / position['entry_price']) * 100
-                self.trade_history.append({
-                    'bot_id': id(self),
-                    'pair': self.trading_pair,
-                    'type': 'long',
-                    'entry_price': position['entry_price'],
-                    'exit_price': price,
-                    'size': position['size'],
-                    'pl': pnl,
-                    'time': timestamp.isoformat()
-                })
-                self.current_balance *= (1 + pnl/100)
-                self.total_pnl += pnl
-                del self.active_positions[self.trading_pair]
-                self.notify_trade_event('SELL', price, size, timestamp, entry_price=position['entry_price'], pnl=pnl)
+            with open(self.state_file, 'w', encoding='utf-8') as f:
+                json.dump(state, f, default=str, indent=2)
+        except Exception as e:
+            self.log_message(f"Failed to save bot state: {e}", level="error")
+
+    def load_state(self):
+        """
+        Load open positions and bot state from disk if available.
+        """
+        if os.path.exists(self.state_file):
+            try:
+                with open(self.state_file, 'r', encoding='utf-8') as f:
+                    state = json.load(f)
+                    self.active_positions = state.get('active_positions', {})
+                    self.trade_history = state.get('trade_history', [])
+                    self.current_balance = state.get('current_balance', self.initial_balance)
+                    self.total_pnl = state.get('total_pnl', 0.0)
+            except Exception as e:
+                self.log_message(f"Failed to load bot state: {e}", level="error")
+
+    def notify_error(self, error_msg):
+        """
+        Send error notification via Telegram and email.
+        """
+        if self.telegram_notifier:
+            try:
+                asyncio.run(self.telegram_notifier.send_error_notification(error_msg))
+            except Exception:
+                pass
+        if self.email_notifier:
+            try:
+                self.email_notifier.send_notification_email('ERROR', self.trading_pair, 0, 0, body=error_msg)
+            except Exception:
+                pass
 
     def notify_trade_event(self, side, price, size, timestamp, entry_price=None, pnl=None):
         # Telegram notification
