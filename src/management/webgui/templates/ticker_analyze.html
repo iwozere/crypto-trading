@@ -46,9 +46,14 @@
             </table>
         </div>
     {% endif %}
-    {% if plot_path %}
+    {% if plotly_json %}
         <h4>Chart</h4>
-        <img src="/{{ plot_path }}" alt="Ticker Chart" class="img-fluid" style="max-width:100%; border:1px solid #ccc;">
+        <div id="plotly-chart" style="width:100%;height:600px;"></div>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script>
+            const plotlyFig = {{ plotly_json|safe }};
+            Plotly.newPlot('plotly-chart', plotlyFig.data, plotlyFig.layout);
+        </script>
     {% endif %}
 </div>
 {% endblock %} 

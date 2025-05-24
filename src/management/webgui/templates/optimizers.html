@@ -1,0 +1,45 @@
+{% extends 'index.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Optimizer Management</h2>
+    <form method="post" class="mb-4">
+        <div class="form-group">
+            <label for="optimizer">Select Optimizer:</label>
+            <select class="form-control" id="optimizer" name="optimizer" required>
+                {% for opt in available_optimizers %}
+                    <option value="{{ opt }}">{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="data_file">Select Data File:</label>
+            <select class="form-control" id="data_file" name="data_file" required>
+                {% for file in data_files %}
+                    <option value="{{ file }}">{{ file }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Start Optimization</button>
+    </form>
+    <h4>Running Optimizations</h4>
+    <ul class="list-group mb-4">
+        {% for job in running %}
+            <li class="list-group-item">{{ job }} <span class="badge badge-info">Running</span></li>
+        {% else %}
+            <li class="list-group-item">No running optimizations.</li>
+        {% endfor %}
+    </ul>
+    <h4>Finished Optimizations</h4>
+    <ul class="list-group">
+        {% for job in finished %}
+            <li class="list-group-item">
+                {{ job }}
+                <a href="/optimizers/{{ job }}/results" class="btn btn-sm btn-info ml-2">View Results (JSON)</a>
+                <a href="/optimizers/{{ job }}/download" class="btn btn-sm btn-success ml-2">Download Results</a>
+            </li>
+        {% else %}
+            <li class="list-group-item">No finished optimizations.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %} 

@@ -79,6 +79,44 @@ class BaseOptimizer:
             pass
         return None
 
+    @staticmethod
+    def calculate_sortino(returns, risk_free_rate=0.0):
+        """Calculate the Sortino ratio for a series of returns."""
+        returns = np.array(returns)
+        downside = returns[returns < risk_free_rate]
+        expected_return = np.mean(returns) - risk_free_rate
+        downside_std = np.std(downside) if len(downside) > 0 else 0
+        if downside_std > 0:
+            return float(expected_return / downside_std)
+        return None
+
+    @staticmethod
+    def calculate_calmar(returns, max_drawdown):
+        """Calculate the Calmar ratio: annualized return / max drawdown."""
+        ann_return = np.mean(returns) * 252  # Assuming daily returns
+        if max_drawdown != 0:
+            return float(ann_return / abs(max_drawdown))
+        return None
+
+    @staticmethod
+    def calculate_omega(returns, threshold=0.0):
+        """Calculate the Omega ratio for a series of returns."""
+        returns = np.array(returns)
+        gains = returns[returns > threshold] - threshold
+        losses = threshold - returns[returns < threshold]
+        if losses.sum() > 0:
+            return float(gains.sum() / losses.sum())
+        return None
+
+    @staticmethod
+    def calculate_rolling_sharpe(returns, window=30):
+        """Calculate rolling Sharpe ratio (returns must be a pandas Series)."""
+        if not isinstance(returns, pd.Series):
+            returns = pd.Series(returns)
+        rolling = returns.rolling(window)
+        rolling_sharpe = rolling.mean() / rolling.std()
+        return rolling_sharpe
+
     def _calculate_supertrend_for_plot(self, data_df: pd.DataFrame, period: int, multiplier: float) -> pd.Series:
         """Helper to calculate SuperTrend for plotting, using ta library for ATR."""
         if not all(col in data_df.columns for col in ['high', 'low', 'close']):
@@ -284,9 +322,13 @@ class BaseOptimizer:
                 'metrics': metrics,
                 'sqn_pct': sqn_pct,
                 'cagr': cagr,
+                'sortino_ratio': metrics.get('sortino_ratio'),
+                'calmar_ratio': metrics.get('calmar_ratio'),
+                'omega_ratio': metrics.get('omega_ratio'),
+                'rolling_sharpe': metrics.get('rolling_sharpe'),
+                'plot_path': plot_path,
                 'trades': trades_records,
-                'optimization_history': optimization_history,
-                'plot_path': plot_path
+                'optimization_history': optimization_history
             }
             filename_base = f"{data_file}_optimization_results"
             results_path = os.path.join(self.results_dir, f'{filename_base}.json')
@@ -454,6 +496,23 @@ class BaseOptimizer:
         except Exception:
             pass
 
+        # Calculate additional metrics
+        sortino = None
+        calmar = None
+        omega = None
+        rolling_sharpe = None
+        try:
+            if trades and len(trades) > 1:
+                trades_df = pd.DataFrame(trades)
+                returns = trades_df['pnl_comm'] / trades_df['entry_price']
+                sortino = BaseOptimizer.calculate_sortino(returns)
+                max_dd = drawdown_analysis.get('max', {}).get('drawdown', 0)
+                calmar = BaseOptimizer.calculate_calmar(returns, max_dd)
+                omega = BaseOptimizer.calculate_omega(returns)
+                rolling_sharpe = BaseOptimizer.calculate_rolling_sharpe(returns).tolist()
+        except Exception:
+            pass
+
         self.current_metrics = {
             'total_trades': total_trades,
             'win_rate': win_rate,
@@ -466,7 +525,11 @@ class BaseOptimizer:
             'net_profit': net_profit,
             'portfolio_growth_pct': portfolio_growth,
             'final_value': final_value,
-            'params': param_dict
+            'params': param_dict,
+            'sortino_ratio': sortino,
+            'calmar_ratio': calmar,
+            'omega_ratio': omega,
+            'rolling_sharpe': rolling_sharpe,
         }
         return self.score_objective(self.current_metrics)
 
