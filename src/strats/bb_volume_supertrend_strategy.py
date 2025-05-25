@@ -150,18 +150,13 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         # Debug: print trade history and size
         self.log(f'Trade history: {getattr(trade, "history", None)}')
         self.log(f'Trade size: {getattr(trade, "size", None)}')
-        # Determine direction robustly from trade history
+        
+        # Determine direction directly from trade size
         direction = 'unknown'
-        if hasattr(trade, 'history') and trade.history:
-            for hist in trade.history:
-                event = getattr(hist, 'event', None)
-                if event and hasattr(event, 'size'):
-                    if event.size > 0:
-                        direction = 'long'
-                        break
-                    elif event.size < 0:
-                        direction = 'short'
-                        break
+        if trade.size > 0:
+            direction = 'long'
+        elif trade.size < 0:
+            direction = 'short'
 
         # Get entry price robustly
         entry_price = None
