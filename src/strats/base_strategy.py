@@ -18,6 +18,8 @@ from src.notification.logger import _logger
 from src.notification.telegram_notifier import create_notifier
 import os
 import json
+from typing import Any, Dict, Optional
+import datetime
 
 class BaseStrategy(bt.Strategy):
     params = (
@@ -29,7 +31,7 @@ class BaseStrategy(bt.Strategy):
         self.trades = []
         self.notifier = create_notifier() if self.p.notify else None
 
-    def log(self, txt, dt=None, doprint=False, level="info"):
+    def log(self, txt: str, dt: Optional[datetime.datetime] = None, doprint: bool = False, level: str = "info") -> None:
         """
         Log a message using the configured logger.
         - level: "info" (default) for normal messages, "error" for errors.
@@ -41,12 +43,12 @@ class BaseStrategy(bt.Strategy):
                 _logger.info(txt)
 
 
-    def record_trade(self, trade_dict):
+    def record_trade(self, trade_dict: Dict[str, Any]) -> None:
         self.trades.append(trade_dict)
         self._save_trade_json(trade_dict)
         self.on_trade_exit(trade_dict)
 
-    def _save_trade_json(self, trade_dict):
+    def _save_trade_json(self, trade_dict: Dict[str, Any]) -> None:
         """
         Save the trade as a JSON file in logs/json and append to a master trades.json file.
         """
@@ -87,15 +89,15 @@ class BaseStrategy(bt.Strategy):
         except Exception as e:
             self.log(f"Failed to append to master trades.json: {e}", level="error")
 
-    def on_trade_entry(self, trade_dict):
+    def on_trade_entry(self, trade_dict: Dict[str, Any]) -> None:
         if self.p.notify and self.notifier:
             self.notifier.send_trade_notification(trade_dict)
 
-    def on_trade_exit(self, trade_dict):
+    def on_trade_exit(self, trade_dict: Dict[str, Any]) -> None:
         if self.p.notify and self.notifier:
             self.notifier.send_trade_update(trade_dict)
 
-    def on_error(self, error):
+    def on_error(self, error: Exception) -> None:
         if self.p.notify and self.notifier:
             self.notifier.send_error_notification(str(error))
             

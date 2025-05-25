@@ -16,6 +16,7 @@ Classes:
 """
 import time
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from src.notification.logger import _logger
 from src.notification.telegram_notifier import create_notifier as create_telegram_notifier
 from src.notification.emailer import EmailNotifier
@@ -25,9 +26,14 @@ import os
 import json
 
 class BaseTradingBot:
-    def __init__(self, config, strategy, broker=None, paper_trading=True):
+    def __init__(self, config: Dict[str, Any], strategy: Any, broker: Any = None, paper_trading: bool = True) -> None:
         """
         Initialize the trading bot with config, strategy, broker, and mode.
+        Args:
+            config: Configuration dictionary
+            strategy: Strategy instance
+            broker: Broker instance (optional)
+            paper_trading: Whether to use paper trading mode
         """
         self.config = config
         self.trading_pair = config.get('trading_pair', 'BTCUSDT')
@@ -53,7 +59,7 @@ class BaseTradingBot:
         self.position_sizing_pct = config.get('position_sizing_pct', 0.1)  # 10% of balance per trade
         self.load_state()
 
-    def run(self):
+    def run(self) -> None:
         """
         Main bot loop. Handles signals, order management, error handling, and state persistence.
         """
@@ -71,19 +77,33 @@ class BaseTradingBot:
                 self.notify_error(str(e))
                 time.sleep(5)
 
-    def get_signals(self):
+    def get_signals(self) -> List[Dict[str, Any]]:
+        """
+        Get trading signals from the strategy for the current trading pair.
+        Returns:
+            List of signal dictionaries
+        """
         return self.strategy.get_signals(self.trading_pair)
 
-    def process_signals(self, signals):
+    def process_signals(self, signals: List[Dict[str, Any]]) -> None:
+        """
+        Process a list of trading signals and execute trades as needed.
+        Args:
+            signals: List of signal dictionaries
+        """
         for signal in signals:
             if signal['type'] == 'buy' and self.trading_pair not in self.active_positions:
                 self.execute_trade('buy', signal['price'], signal['size'])
             elif signal['type'] == 'sell' and self.trading_pair in self.active_positions:
                 self.execute_trade('sell', signal['price'], signal['size'])
 
-    def execute_trade(self, trade_type, price, size):
+    def execute_trade(self, trade_type: str, price: float, size: float) -> None:
         """
         Execute a trade (buy/sell) using the broker or paper trading logic. Log and persist all trades and orders.
+        Args:
+            trade_type: 'buy' or 'sell'
+            price: Trade price
+            size: Trade size
         """
         timestamp = datetime.now()
         order = None
@@ -122,9 +142,11 @@ class BaseTradingBot:
             self.log_message(f"Error executing trade: {e}", level="error")
             self.notify_error(str(e))
 
-    def log_order(self, order):
+    def log_order(self, order: Any) -> None:
         """
         Persist order details to logs/json/orders.json.
+        Args:
+            order: Order object or dictionary
         """
         folder = os.path.join('logs', 'json')
         os.makedirs(folder, exist_ok=True)
@@ -146,9 +168,11 @@ class BaseTradingBot:
         except Exception as e:
             self.log_message(f"Failed to log order: {e}", level="error")
 
-    def log_trade(self, trade):
+    def log_trade(self, trade: Dict[str, Any]) -> None:
         """
         Persist trade details to logs/json/trades.json.
+        Args:
+            trade: Trade dictionary
         """
         folder = os.path.join('logs', 'json')
         os.makedirs(folder, exist_ok=True)
@@ -170,7 +194,7 @@ class BaseTradingBot:
         except Exception as e:
             self.log_message(f"Failed to log trade: {e}", level="error")
 
-    def save_state(self):
+    def save_state(self) -> None:
         """
         Save open positions and bot state to disk for recovery.
         """
@@ -188,7 +212,7 @@ class BaseTradingBot:
         except Exception as e:
             self.log_message(f"Failed to save bot state: {e}", level="error")
 
-    def load_state(self):
+    def load_state(self) -> None:
         """
         Load open positions and bot state from disk if available.
         """
@@ -203,9 +227,11 @@ class BaseTradingBot:
             except Exception as e:
                 self.log_message(f"Failed to load bot state: {e}", level="error")
 
-    def notify_error(self, error_msg):
+    def notify_error(self, error_msg: str) -> None:
         """
         Send error notification via Telegram and email.
+        Args:
+            error_msg: Error message string
         """
         if self.telegram_notifier:
             try:
@@ -218,7 +244,17 @@ class BaseTradingBot:
             except Exception:
                 pass
 
-    def notify_trade_event(self, side, price, size, timestamp, entry_price=None, pnl=None):
+    def notify_trade_event(self, side: str, price: float, size: float, timestamp: datetime, entry_price: Optional[float] = None, pnl: Optional[float] = None) -> None:
+        """
+        Send trade event notification via Telegram and email.
+        Args:
+            side: 'BUY' or 'SELL'
+            price: Trade price
+            size: Trade size
+            timestamp: Trade timestamp
+            entry_price: Entry price (optional)
+            pnl: Profit/loss (optional)
+        """
         # Telegram notification
         if self.telegram_notifier:
             trade_data = {

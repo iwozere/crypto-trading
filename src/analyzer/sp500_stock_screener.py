@@ -6,6 +6,8 @@ import pandas as pd
 import yfinance as yf
 from src.analyzer.stock_screener import StockScreener
 from src.analyzer.tickers_list import get_sp500_tickers
+import datetime
+from typing import Any, Dict, Optional
 
 """
 Screening criteria:

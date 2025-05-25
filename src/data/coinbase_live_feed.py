@@ -15,6 +15,8 @@ Classes:
 import pandas as pd
 import time
 import backtrader as bt
+import datetime
+from typing import Any, Dict, Optional
 
 class CoinbaseLiveFeed(bt.feeds.PandasData):
     def __init__(self, client, symbol='BTC-USD', interval='1m', window=200):

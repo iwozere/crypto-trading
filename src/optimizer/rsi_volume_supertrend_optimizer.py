@@ -24,19 +24,28 @@ from src.strats.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrateg
 import matplotlib.gridspec as gridspec
 from ta.momentum import RSIIndicator
 from src.optimizer.base_optimizer import BaseOptimizer
+from typing import Any, Dict, Optional
 
 class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
     """
     Optimizer for the RsiVolumeSuperTrendStrategy.
     """
-    def __init__(self, initial_capital=1000.0, commission=0.001):
+    def __init__(self, initial_capital: float = 1000.0, commission: float = 0.001) -> None:
+        """
+        Initialize the optimizer with initial capital and commission.
+        Args:
+            initial_capital: Starting capital for backtests
+            commission: Commission rate per trade
+        """
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
         self.strategy_name = 'RsiVolumeSuperTrendStrategy'
         self.strategy_class = RsiVolumeSuperTrendStrategy
         super().__init__(initial_capital, commission)
         os.makedirs(self.results_dir, exist_ok=True)
-        
+        plt.style.use('default')
+        plt.rcParams['figure.figsize'] = (15, 10)
+        plt.rcParams['font.size'] = 10
         self.space = [
             Integer(7, 28, name='rsi_period'),
             Real(20.0, 40.0, name='rsi_entry_long_level'),
@@ -49,11 +58,23 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
             Integer(7, 21, name='atr_period'),
             Real(1.0, 5.0, name='tp_atr_mult'),
             Real(0.5, 3.0, name='sl_atr_mult'),
-            Integer(3, 15, name='time_based_exit_period')
+            Integer(3, 15, name='time_based_exit_period'),
+            Integer(0, 1, name='check_rsi_slope')
         ]
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
+        warnings.filterwarnings('ignore', category=RuntimeWarning)
     
-    def plot_results(self, data, trades_df, params, data_file):
+    def plot_results(self, data: Any, trades_df: Any, params: Dict[str, Any], data_file: str) -> Optional[str]:
+        """
+        Plot the results of the strategy, including price, indicators, trades, and equity curve.
+        Args:
+            data: DataFrame with OHLCV data
+            trades_df: DataFrame with trade records (must include 'type', 'entry_time', 'entry_price', 'exit_time', 'exit_price')
+            params: Dictionary of strategy parameters
+            data_file: Name of the data file (for plot title and saving)
+        Returns:
+            Path to the saved plot image, or None if plotting fails
+        """
         plt.style.use('dark_background')
         fig = plt.figure(figsize=(60, 30))
         gs = gridspec.GridSpec(4, 1, height_ratios=[3, 1, 1, 1])

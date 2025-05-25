@@ -2,6 +2,8 @@ import pandas as pd
 import requests
 import io
 import yfinance as yf
+import datetime
+from typing import Any, Dict, Optional
 
 
 # Download SIX ticker list

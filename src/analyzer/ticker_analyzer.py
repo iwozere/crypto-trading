@@ -1,6 +1,8 @@
 import yfinance as yf
 import pandas as pd
 import ta
+import datetime
+from typing import Any, Dict, Optional
 
 class TickerAnalyzer:
     """

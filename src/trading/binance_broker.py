@@ -2,6 +2,8 @@ from src.trading.abstract_broker import AbstractBroker
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
 import pandas as pd
+import datetime
+from typing import Any, Dict, Optional
 
 class BinanceBroker(AbstractBroker):
     def __init__(self, api_key, api_secret):

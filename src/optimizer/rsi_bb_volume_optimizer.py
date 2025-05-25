@@ -27,6 +27,7 @@ from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
 from datetime import datetime
 from src.optimizer.base_optimizer import BaseOptimizer
+from typing import Any, Dict, Optional
 
 class RsiBBVolumeOptimizer(BaseOptimizer):
     """
@@ -40,7 +41,13 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         - Markets with mean-reverting tendencies and volume-driven moves
         - Finds optimal parameters for maximizing profit and minimizing drawdown
     """
-    def __init__(self, initial_capital=1000.0, commission=0.001):
+    def __init__(self, initial_capital: float = 1000.0, commission: float = 0.001) -> None:
+        """
+        Initialize the optimizer with initial capital and commission.
+        Args:
+            initial_capital: Starting capital for backtests
+            commission: Commission rate per trade
+        """
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
         self.strategy_name = 'RSIBollVolumeATRStrategy'
@@ -68,8 +75,17 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         ]
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
     
-    def plot_results(self, data, trades_df, params, data_file):
-        """Plot the results of the optimization"""
+    def plot_results(self, data: Any, trades_df: Any, params: Dict[str, Any], data_file: str) -> Optional[str]:
+        """
+        Plot the results of the strategy, including price, indicators, trades, and equity curve.
+        Args:
+            data: DataFrame with OHLCV data
+            trades_df: DataFrame with trade records (must include 'entry_time', 'entry_price', 'exit_time', 'exit_price')
+            params: Dictionary of strategy parameters
+            data_file: Name of the data file (for plot title and saving)
+        Returns:
+            Path to the saved plot image, or None if plotting fails
+        """
         plt.style.use('dark_background')
         fig = plt.figure(figsize=(60, 30))
         

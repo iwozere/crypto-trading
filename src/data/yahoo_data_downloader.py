@@ -1,9 +1,10 @@
 import os
 import pandas as pd
 import yfinance as yf
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 import logging
 from .base_data_downloader import BaseDataDownloader
+import datetime
 
 """
 Yahoo Data Downloader Module

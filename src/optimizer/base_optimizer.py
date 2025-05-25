@@ -24,9 +24,17 @@ from datetime import datetime
 from ta.volatility import AverageTrueRange
 from src.notification.logger import _logger
 from skopt import gp_minimize
+from typing import Any, Dict, List, Optional, Union
 
 class BaseOptimizer:
-    def __init__(self, initial_capital=1000.0, commission=0.001, notify=False):
+    def __init__(self, initial_capital: float = 1000.0, commission: float = 0.001, notify: bool = False) -> None:
+        """
+        Initialize the base optimizer with initial capital, commission, and notification flag.
+        Args:
+            initial_capital: Starting capital for backtests
+            commission: Commission rate per trade
+            notify: Whether to enable notifications
+        """
         self.initial_capital = initial_capital
         self.commission = commission
         self.current_metrics = {}
@@ -37,7 +45,7 @@ class BaseOptimizer:
         self.notify = notify
 
     class DateTimeEncoder(json.JSONEncoder):
-        def default(self, obj):
+        def default(self, obj: Any) -> Any:
             if isinstance(obj, (pd.Timestamp, datetime)):
                 return obj.isoformat()
             if isinstance(obj, np.integer):
@@ -49,8 +57,14 @@ class BaseOptimizer:
             return super().default(obj)
 
     @staticmethod
-    def calculate_sqn_pct(trades_df):
-        """Calculate SQN on percent returns per trade (pnl_comm / entry_price * 100)."""
+    def calculate_sqn_pct(trades_df: pd.DataFrame) -> Optional[float]:
+        """
+        Calculate SQN on percent returns per trade (pnl_comm / entry_price * 100).
+        Args:
+            trades_df: DataFrame of trades
+        Returns:
+            SQN value or None if not enough trades
+        """
         if trades_df is None or len(trades_df) < 2:
             return None
         trades_df = trades_df.dropna(subset=['entry_price', 'pnl_comm'])
@@ -64,8 +78,17 @@ class BaseOptimizer:
         return None
 
     @staticmethod
-    def calculate_cagr(initial_value, final_value, start_date, end_date):
-        """Calculate CAGR given initial/final value and start/end date (datetime or str)."""
+    def calculate_cagr(initial_value: float, final_value: float, start_date: Union[str, datetime], end_date: Union[str, datetime]) -> Optional[float]:
+        """
+        Calculate CAGR given initial/final value and start/end date (datetime or str).
+        Args:
+            initial_value: Initial portfolio value
+            final_value: Final portfolio value
+            start_date: Start date (str or datetime)
+            end_date: End date (str or datetime)
+        Returns:
+            CAGR value or None if calculation fails
+        """
         try:
             if isinstance(start_date, str):
                 start_date = pd.to_datetime(start_date)
@@ -80,8 +103,15 @@ class BaseOptimizer:
         return None
 
     @staticmethod
-    def calculate_sortino(returns, risk_free_rate=0.0):
-        """Calculate the Sortino ratio for a series of returns."""
+    def calculate_sortino(returns: Union[List[float], np.ndarray], risk_free_rate: float = 0.0) -> Optional[float]:
+        """
+        Calculate the Sortino ratio for a series of returns.
+        Args:
+            returns: List or array of returns
+            risk_free_rate: Risk-free rate (default 0.0)
+        Returns:
+            Sortino ratio or None if not computable
+        """
         returns = np.array(returns)
         downside = returns[returns < risk_free_rate]
         expected_return = np.mean(returns) - risk_free_rate
@@ -91,16 +121,30 @@ class BaseOptimizer:
         return None
 
     @staticmethod
-    def calculate_calmar(returns, max_drawdown):
-        """Calculate the Calmar ratio: annualized return / max drawdown."""
+    def calculate_calmar(returns: Union[List[float], np.ndarray], max_drawdown: float) -> Optional[float]:
+        """
+        Calculate the Calmar ratio: annualized return / max drawdown.
+        Args:
+            returns: List or array of returns
+            max_drawdown: Maximum drawdown value
+        Returns:
+            Calmar ratio or None if not computable
+        """
         ann_return = np.mean(returns) * 252  # Assuming daily returns
         if max_drawdown != 0:
             return float(ann_return / abs(max_drawdown))
         return None
 
     @staticmethod
-    def calculate_omega(returns, threshold=0.0):
-        """Calculate the Omega ratio for a series of returns."""
+    def calculate_omega(returns: Union[List[float], np.ndarray], threshold: float = 0.0) -> Optional[float]:
+        """
+        Calculate the Omega ratio for a series of returns.
+        Args:
+            returns: List or array of returns
+            threshold: Threshold value (default 0.0)
+        Returns:
+            Omega ratio or None if not computable
+        """
         returns = np.array(returns)
         gains = returns[returns > threshold] - threshold
         losses = threshold - returns[returns < threshold]
@@ -109,8 +153,15 @@ class BaseOptimizer:
         return None
 
     @staticmethod
-    def calculate_rolling_sharpe(returns, window=30):
-        """Calculate rolling Sharpe ratio (returns must be a pandas Series)."""
+    def calculate_rolling_sharpe(returns: Union[List[float], pd.Series], window: int = 30) -> pd.Series:
+        """
+        Calculate rolling Sharpe ratio (returns must be a pandas Series).
+        Args:
+            returns: List or Series of returns
+            window: Rolling window size
+        Returns:
+            Series of rolling Sharpe ratios
+        """
         if not isinstance(returns, pd.Series):
             returns = pd.Series(returns)
         rolling = returns.rolling(window)
@@ -118,7 +169,15 @@ class BaseOptimizer:
         return rolling_sharpe
 
     def _calculate_supertrend_for_plot(self, data_df: pd.DataFrame, period: int, multiplier: float) -> pd.Series:
-        """Helper to calculate SuperTrend for plotting, using ta library for ATR."""
+        """
+        Helper to calculate SuperTrend for plotting, using ta library for ATR.
+        Args:
+            data_df: DataFrame with OHLC data
+            period: ATR/SuperTrend period
+            multiplier: SuperTrend multiplier
+        Returns:
+            Series of SuperTrend values
+        """
         if not all(col in data_df.columns for col in ['high', 'low', 'close']):
             self.log_message("Warning: Dataframe for SuperTrend calculation must contain 'high', 'low', 'close' columns.")
             return pd.Series(index=data_df.index, dtype='float64')
@@ -194,10 +253,12 @@ class BaseOptimizer:
                 supertrend.iloc[i] = np.nan
         return supertrend
 
-    def log_message(self, message, level="info"):
+    def log_message(self, message: str, level: str = "info") -> None:
         """
         Log a message using the configured logger.
-        - level: "info" (default) for normal messages, "error" for errors.
+        Args:
+            message: Message string
+            level: "info" (default) for normal messages, "error" for errors.
         """
         if level == "error":
             _logger.error(message)
@@ -313,6 +374,13 @@ class BaseOptimizer:
                     except Exception as e:
                         self.log_message(f"Warning: Could not process optimization history entry: {e}", level='warning')
                         continue
+            # Ensure all metrics are present and not None, and move all to metrics dict
+            metrics['sqn_pct'] = sqn_pct if sqn_pct is not None else 0.0
+            metrics['cagr'] = cagr if cagr is not None else 0.0
+            metrics['sortino_ratio'] = metrics.get('sortino_ratio', 0.0) or 0.0
+            metrics['calmar_ratio'] = metrics.get('calmar_ratio', 0.0) or 0.0
+            metrics['omega_ratio'] = metrics.get('omega_ratio', 0.0) or 0.0
+            metrics['rolling_sharpe'] = metrics.get('rolling_sharpe', []) or []
             # Compose results dict
             results_dict = {
                 'timestamp': datetime.now().isoformat(),
@@ -320,12 +388,6 @@ class BaseOptimizer:
                 'strategy_name': strategy_name,
                 'best_params': best_params,
                 'metrics': metrics,
-                'sqn_pct': sqn_pct,
-                'cagr': cagr,
-                'sortino_ratio': metrics.get('sortino_ratio'),
-                'calmar_ratio': metrics.get('calmar_ratio'),
-                'omega_ratio': metrics.get('omega_ratio'),
-                'rolling_sharpe': metrics.get('rolling_sharpe'),
                 'plot_path': plot_path,
                 'trades': trades_records,
                 'optimization_history': optimization_history
@@ -372,7 +434,7 @@ class BaseOptimizer:
             result = gp_minimize(
                 func=self.objective, 
                 dimensions=self.space,
-                n_calls=200, 
+                n_calls=100, 
                 n_random_starts=20, 
                 noise=0.01, 
                 n_jobs=-1, 

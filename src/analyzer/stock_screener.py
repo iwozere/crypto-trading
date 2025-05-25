@@ -1,5 +1,7 @@
 import yfinance as yf
 import pandas as pd
+import datetime
+from typing import Any, Dict, Optional
 
 class StockScreener:
     def __init__(self, stock_data):

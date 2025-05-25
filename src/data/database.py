@@ -13,7 +13,7 @@ Classes:
 - Database: Main class for managing SQLite database operations for trades and metrics
 """
 import sqlite3
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 import json
 

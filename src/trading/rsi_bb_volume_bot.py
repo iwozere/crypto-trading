@@ -20,7 +20,7 @@ import json
 import logging
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
 from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy

@@ -18,6 +18,7 @@ import os
 import json
 import pandas as pd
 from datetime import datetime
+from typing import Any, Dict, Optional
 
 def extract_symbol_interval_dates(filename):
     """Extract symbol, interval, start_date, end_date from filename like LTCUSDT_4h_20240501_20250501.csv_optimization_results.json"""

@@ -8,6 +8,8 @@ import numpy as np
 from src.indicator.super_trend import SuperTrend
 from src.strats.base_strategy import BaseStrategy
 # from src.notification.telegram import create_notifier # Temporarily commented out
+import datetime
+from typing import Any, Dict, Optional
 
 """
 BB Volume SuperTrend Strategy Module
@@ -148,19 +150,18 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         # Debug: print trade history and size
         self.log(f'Trade history: {getattr(trade, "history", None)}')
         self.log(f'Trade size: {getattr(trade, "size", None)}')
-        # Determine direction based on trade size or history
+        # Determine direction robustly from trade history
         direction = 'unknown'
-        if hasattr(trade, 'size') and trade.size > 0:
-            direction = 'long'
-        elif hasattr(trade, 'size') and trade.size < 0:
-            direction = 'short'
-        elif hasattr(trade, 'history') and trade.history:
-            first_event = getattr(trade.history[0], 'event', None)
-            if first_event and hasattr(first_event, 'size'):
-                if first_event.size > 0:
-                    direction = 'long'
-                elif first_event.size < 0:
-                    direction = 'short'
+        if hasattr(trade, 'history') and trade.history:
+            for hist in trade.history:
+                event = getattr(hist, 'event', None)
+                if event and hasattr(event, 'size'):
+                    if event.size > 0:
+                        direction = 'long'
+                        break
+                    elif event.size < 0:
+                        direction = 'short'
+                        break
 
         # Get exit price robustly
         exit_price = None

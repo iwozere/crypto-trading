@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, Response
 import os
 import logging
 from functools import wraps
+from typing import Callable, Any
 from config.donotshare.donotshare import API_LOGIN, API_PASSWORD, API_PORT
 from src.management.bot_manager import start_bot, stop_bot, get_status, get_trades, get_running_bots
 
@@ -14,18 +15,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def check_auth(username, password):
+def check_auth(username: str, password: str) -> bool:
+    """
+    Check if the provided username and password match the API credentials.
+    """
     return username == API_LOGIN and password == API_PASSWORD
 
-def authenticate():
+def authenticate() -> Response:
+    """
+    Return a 401 response for failed authentication.
+    """
     return Response(
         'Could not verify your access level for that URL.\n'
         'You have to login with proper credentials', 401,
         {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
-def requires_auth(f):
+def requires_auth(f: Callable) -> Callable:
+    """
+    Decorator to require HTTP Basic authentication for a Flask route.
+    """
     @wraps(f)
-    def decorated(*args, **kwargs):
+    def decorated(*args: Any, **kwargs: Any) -> Any:
         auth = request.authorization
         if not auth or not check_auth(auth.username, auth.password):
             return authenticate()
@@ -34,7 +44,12 @@ def requires_auth(f):
 
 @app.route('/start_bot', methods=['POST'])
 @requires_auth
-def start_bot_api():
+def start_bot_api() -> Response:
+    """
+    Start a trading bot for the given strategy and configuration.
+    Expects JSON with 'strategy', optional 'config', and optional 'bot_id'.
+    Returns a JSON response with the started bot ID or error.
+    """
     data = request.json
     strategy_name = data.get('strategy')
     config = data.get('config', {'trading_pair': 'BTCUSDT', 'initial_balance': 1000.0})
@@ -50,7 +65,11 @@ def start_bot_api():
 
 @app.route('/stop_bot', methods=['POST'])
 @requires_auth
-def stop_bot_api():
+def stop_bot_api() -> Response:
+    """
+    Stop a running bot by bot_id. Expects JSON with 'bot_id'.
+    Returns a JSON response with a message or error.
+    """
     data = request.json
     bot_id = data.get('bot_id')
     if not bot_id:
@@ -64,12 +83,32 @@ def stop_bot_api():
 
 @app.route('/status', methods=['GET'])
 @requires_auth
-def status_api():
+def status_api() -> Response:
+    """
+    Get the status of all running bots.
+    Returns a JSON object mapping bot IDs to their status.
+    """
     return jsonify(get_status())
 
 @app.route('/trades', methods=['GET'])
 @requires_auth
-def trades_api():
+def trades_api() -> Response:
+    """
+    Get the trade history for a running bot by bot_id (as a query parameter).
+    Returns a JSON list of trades or an error if bot_id is missing.
+    """
+    bot_id = request.args.get('bot_id')
+    if not bot_id:
+        return jsonify({'error': 'Missing bot_id'}), 400
+    return jsonify(get_trades(bot_id))
+
+@app.route('/api/trade-history', methods=['GET'])
+@requires_auth
+def trade_history_api() -> Response:
+    """
+    Get the trade history for a running bot by bot_id (as a query parameter).
+    Returns a JSON list of trades or an error if bot_id is missing.
+    """
     bot_id = request.args.get('bot_id')
     if not bot_id:
         return jsonify({'error': 'Missing bot_id'}), 400
@@ -77,7 +116,11 @@ def trades_api():
 
 @app.route('/log', methods=['GET'])
 @requires_auth
-def log():
+def log() -> Response:
+    """
+    Get the last 20 lines of the log file for a given strategy (as a query parameter).
+    Returns a JSON object with the log or an error if the log file is missing.
+    """
     strategy_name = request.args.get('strategy')
     if not strategy_name:
         return jsonify({'error': 'Missing strategy'}), 400
@@ -90,7 +133,12 @@ def log():
 
 @app.route('/backtest', methods=['POST'])
 @requires_auth
-def backtest():
+def backtest() -> Response:
+    """
+    Run a backtest for a given strategy, ticker, and timeframe.
+    Expects JSON with 'strategy', 'ticker', and 'tf'.
+    Returns a JSON message (stub implementation).
+    """
     data = request.json
     strategy = data.get('strategy')
     ticker = data.get('ticker')

@@ -17,7 +17,7 @@ import os
 from datetime import datetime, timedelta
 import pandas as pd
 from binance.client import Client
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from .base_data_downloader import BaseDataDownloader
 
 class BinanceDataDownloader(BaseDataDownloader):

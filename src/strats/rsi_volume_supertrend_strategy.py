@@ -7,6 +7,8 @@ import pandas as pd
 import numpy as np
 from src.indicator.super_trend import SuperTrend
 from src.strats.base_strategy import BaseStrategy
+import datetime
+from typing import Any, Dict, Optional
 
 """
 RSI Volume SuperTrend Strategy Module
