@@ -58,16 +58,16 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         - Fixed Take Profit (TP) or Stop Loss (SL) is hit (based on ATR).
     """
     params = (
-        ('bb_period', 20),
-        ('bb_devfactor', 2.0),
-        ('st_period', 10),
-        ('st_multiplier', 3.0),
-        ('vol_ma_period', 20),
-        ('vol_strength_mult', 1.5), # Multiplier for volume spike confirmation
-        ('atr_period', 14),         # ATR period for TP/SL
-        ('tp_atr_mult', 2.0),       # ATR multiplier for Take Profit
-        ('sl_atr_mult', 1.0),       # ATR multiplier for Stop Loss
-        ('printlog', False),        # Enable/disable logging
+        ('bb_period', 38),
+        ('bb_devfactor', 1.5),
+        ('st_period', 100),
+        ('st_multiplier', 1.0),
+        ('vol_ma_period', 50),
+        ('vol_strength_mult', 3.0), # Multiplier for volume spike confirmation
+        ('atr_period', 17),         # ATR period for TP/SL
+        ('tp_atr_mult', 1.45),       # ATR multiplier for Take Profit
+        ('sl_atr_mult', 0.74),       # ATR multiplier for Stop Loss
+        ('printlog', True),        # Enable/disable logging
     )
 
     def __init__(self):

@@ -12,21 +12,18 @@ Main Features:
 Classes:
 - BinanceLiveFeed: Custom Backtrader data feed for live Binance market data
 """
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
 import pandas as pd
 import time
 import backtrader as bt
 
 class BinanceLiveFeed(bt.feeds.PandasData):
-    def __init__(self, client, symbol='BTCUSDT', interval='1m', window=200):
-        self.client = client
-        self.symbol = symbol
-        self.interval = interval
-        self.window = window
-        self.df = self.fetch()
-        super().__init__(dataname=self.df)
-
-    def fetch(self):
-        bars = self.client.get_klines(symbol=self.symbol, interval=self.interval, limit=self.window)
+    @classmethod
+    def from_binance(cls, client, symbol='BTCUSDT', interval='1m', window=200, **kwargs):
+        bars = client.get_klines(symbol=symbol, interval=interval, limit=window)
         df = pd.DataFrame(bars, columns=[
             'datetime', 'open', 'high', 'low', 'close', 'volume',
             'close_time', 'quote_asset_volume', 'number_of_trades',
@@ -35,7 +32,7 @@ class BinanceLiveFeed(bt.feeds.PandasData):
         df['datetime'] = pd.to_datetime(df['datetime'], unit='ms')
         df.set_index('datetime', inplace=True)
         df = df.astype(float)
-        return df
+        return cls(dataname=df, **kwargs)
 
     def _load(self):
         time.sleep(60)

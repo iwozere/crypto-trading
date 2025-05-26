@@ -1,15 +1,18 @@
-import datetime
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
 from typing import Any, Dict, Optional
 from binance.client import Client
 from binance.enums import *
 import backtrader as bt
+ 
 from src.notification.logger import _logger
 from src.notification.emailer import send_email_alert
 from src.notification.telegram_notifier import send_telegram_alert
-import threading
-from src.data.binance_live_feed import BinanceLiveData
+from src.data.binance_live_feed import BinanceLiveFeed
 from src.strats.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
-from config.donotshare import BINANCE_PAPER_API_KEY, BINANCE_PAPER_API_SECRET
+from config.donotshare.donotshare import BINANCE_PAPER_KEY, BINANCE_PAPER_SECRET
 
 
 class BinancePaperBroker(bt.BrokerBase):
@@ -87,8 +90,9 @@ class BinancePaperBroker(bt.BrokerBase):
 
 
 cerebro = bt.Cerebro()
-data = BinanceLiveData(symbol='BTCUSDT', timeframe='1m')
+client = Client(BINANCE_PAPER_KEY, BINANCE_PAPER_SECRET)
+data = BinanceLiveFeed(symbol='LTCUSDC', timeframe='1m', client=client)
 cerebro.adddata(data)
 cerebro.addstrategy(BBSuperTrendVolumeBreakoutStrategy)
-cerebro.setbroker(BinancePaperBroker(BINANCE_PAPER_API_KEY, BINANCE_PAPER_API_SECRET, cash=1000.0))
+cerebro.setbroker(BinancePaperBroker(BINANCE_PAPER_KEY, BINANCE_PAPER_SECRET, cash=1000.0))
 cerebro.run()
