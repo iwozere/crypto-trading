@@ -663,10 +663,12 @@ def stock_screener():
 def get_bot_types():
     bot_types = list(optimizers.keys())
     return jsonify({'bot_types': bot_types})
- 
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
 print(app.url_map)
-
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=WEBGUI_PORT) 

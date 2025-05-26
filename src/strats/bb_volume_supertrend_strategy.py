@@ -91,6 +91,7 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         self.active_tp_price = None
         self.active_sl_price = None
         self.trades = [] # Simple list to log trades
+        self.last_exit_price = None # Store exit price for trade logging
         # self.notifier = create_notifier() # Temporarily commented out
 
     def notify_order(self, order):
@@ -116,6 +117,7 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
                 self.log(f'SELL EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
                 if self.trade_active: # This is a closing sell
                      self.trade_active = False # Reset flag after closing trade
+                     self.last_exit_price = order.executed.price # Store exit price for trade logging
                 else: # This is an opening short sell
                     self.entry_price = order.executed.price
                     atr_val = self.atr[-(self.datas[0].datetime.idx - self.entry_bar)]
@@ -147,30 +149,17 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
             return
 
         self.log(f'OPERATION PROFIT, GROSS {trade.pnl:.2f}, NET {trade.pnlcomm:.2f}')
-        # Debug: print trade history and size
         self.log(f'Trade history: {getattr(trade, "history", None)}')
         self.log(f'Trade size: {getattr(trade, "size", None)}')
         
-        # Determine direction directly from trade size
         direction = 'unknown'
         if trade.size > 0:
             direction = 'long'
         elif trade.size < 0:
             direction = 'short'
 
-        # Get entry price robustly
-        entry_price = None
-        if hasattr(trade, 'history') and trade.history and hasattr(trade.history[0], 'event'):
-            entry_price = trade.history[0].event.price
-        elif hasattr(trade, 'price'):
-            entry_price = trade.price  # fallback
-
-        # Get exit price robustly
-        exit_price = None
-        if hasattr(trade, 'history') and trade.history and hasattr(trade.history[-1], 'event'):
-            exit_price = trade.history[-1].event.price
-        elif hasattr(trade, 'price'):
-            exit_price = trade.price
+        entry_price = trade.price
+        exit_price = self.last_exit_price
 
         trade_dict = {
             'symbol': trade.data._name if hasattr(trade.data, '_name') else 'UNKNOWN',
@@ -189,6 +178,7 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         self.entry_price = None
         self.active_tp_price = None
         self.active_sl_price = None
+        self.last_exit_price = None
 
 
     def next(self):
@@ -199,8 +189,6 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         volume = self.data.volume[0]
         
         # Ensure all indicators have enough data
-        # SuperTrend init might take `st_period` + internal ATR period.
-        # For safety, check if supertrend direction is non-zero (meaning it has been determined)
         if len(self.supertrend.lines.supertrend) < 1 or self.supertrend.lines.direction[0] == 0:
              self.log(f"Supertrend not ready or direction is 0. ST Direction: {self.supertrend.lines.direction[0] if len(self.supertrend.lines.supertrend) > 0 else 'N/A'}")
              return
@@ -210,7 +198,6 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         if len(self.boll.lines.top) < 1: # Check if BB is ready
             self.log("Bollinger Bands not ready.")
             return
-
 
         st_direction = self.supertrend.lines.direction[0]
         vol_ma_val = self.vol_ma[0]
@@ -229,15 +216,7 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
                 self.order = self.buy()
                 self.trade_active = True # Mark that we are attempting to enter a trade
                 # TP/SL will be set in notify_order upon execution based on ATR at self.entry_bar
-            
-            # Short Entry Condition
-            elif close < bb_bot and st_direction == -1 and volume > (vol_ma_val * self.p.vol_strength_mult):
-                self.log(f'SHORT ENTRY SIGNAL: Close {close:.2f} < BB Bot {bb_bot:.2f}, ST Red, Vol {volume:.0f} > MA*Mult {vol_ma_val * self.p.vol_strength_mult:.0f}')
-                self.entry_bar = self.datas[0].datetime.idx # Bar index of signal
-                self.order = self.sell()
-                self.trade_active = True # Mark that we are attempting to enter a trade
-                # TP/SL will be set in notify_order
-
+            # No short entry logic
         else: # In a position, check for exit
             self.trade_active = True # Should already be true, but ensure
             # Exit Logic
@@ -260,24 +239,7 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
                 elif self.active_sl_price and close <= self.active_sl_price:
                     exit_signal = True
                     exit_reason = f"Long Exit: Stop Loss hit at {self.active_sl_price:.2f}"
-
-            elif self.position.size < 0: # In a short position
-                # 1. Price closes back inside Bollinger Bands (above lower band)
-                if close > bb_bot:
-                    exit_signal = True
-                    exit_reason = "Short Exit: Close back inside BB Bot"
-                # 2. SuperTrend flips against position (turns green)
-                elif st_direction == 1:
-                    exit_signal = True
-                    exit_reason = "Short Exit: SuperTrend flipped to Green"
-                # 3. Fixed TP/SL
-                elif self.active_tp_price and close <= self.active_tp_price: # TP is lower for shorts
-                    exit_signal = True
-                    exit_reason = f"Short Exit: Take Profit hit at {self.active_tp_price:.2f}"
-                elif self.active_sl_price and close >= self.active_sl_price: # SL is higher for shorts
-                    exit_signal = True
-                    exit_reason = f"Short Exit: Stop Loss hit at {self.active_sl_price:.2f}"
-            
+            # No short position/exit logic
             if exit_signal:
                 self.log(f'EXIT SIGNAL: {exit_reason}. Closing position.')
                 self.order = self.close() # Close position
