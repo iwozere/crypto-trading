@@ -1,3 +1,25 @@
+# Crypto Trading Bot Platform
+
+A modular, extensible platform for research, backtesting, and live trading of algorithmic strategies on crypto and stock markets. Features a web GUI, REST API, strategy optimizers, and robust logging/notification.
+
+---
+
+## Table of Contents
+- [Setup](#setup)
+- [Project Structure](#project-structure)
+- [Strategy and Optimizer Conventions](#strategy-and-optimizer-conventions)
+- [Strategies](#strategies)
+- [Optimizers](#optimizers)
+- [Development](#development)
+- [Testing](#testing)
+- [Quick Start Example](#quick-start-example)
+- [Quick Start Example: Optimizer](#quick-start-example-optimizer)
+- [Usage](#usage)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+
+---
+
 # Python Project
 
 This is a Python project template with virtual environment setup.
@@ -248,4 +270,82 @@ with open('optimization_results.json', 'w') as f:
 
 - Replace the optimizer and CSV path as needed.
 - Each optimizer exposes a `run_optimization` method and uses the standardized strategy interface.
-- Results include the best parameters, best metrics, and a full optimization history. 
+- Results include the best parameters, best metrics, and a full optimization history.
+
+## Usage
+
+### Running the Web GUI
+
+1. Activate your virtual environment.
+2. Set environment variables for sensitive config (see `.env.example` or `config/donotshare/donotshare.py`).
+3. Start the web GUI:
+   ```bash
+   python src/management/webgui/app.py
+   ```
+4. Open your browser to [http://localhost:5000](http://localhost:5000) (or the port you configured).
+
+### Running the REST API
+
+1. Activate your virtual environment.
+2. Set environment variables for API credentials and port.
+3. Start the API server:
+   ```bash
+   python src/management/api/api.py
+   ```
+4. Use tools like `curl`, Postman, or your own scripts to interact with the API.
+
+### Running the Telegram Bot
+
+1. Set your Telegram bot token in the config.
+2. Run:
+   ```bash
+   python src/management/telegram/telegram_mgmt.py
+   ```
+
+## Deployment
+
+### Docker (Recommended for Production)
+
+1. Build the Docker image:
+   ```bash
+   docker build -t crypto-trading-bot .
+   ```
+2. Run the container:
+   ```bash
+   docker run -d -p 5000:5000 --env-file .env crypto-trading-bot
+   ```
+3. For production, use a WSGI server (e.g., Gunicorn) and a reverse proxy (e.g., Nginx) for SSL and static files.
+
+### Environment Variables
+- Store all secrets (API keys, DB URIs, email credentials) in a `.env` file or environment variables.
+- Example variables:
+  - `WEBGUI_LOGIN`, `WEBGUI_PASSWORD`, `WEBGUI_PORT`
+  - `API_LOGIN`, `API_PASSWORD`, `API_PORT`
+  - `MAIL_USERNAME`, `MAIL_PASSWORD`
+  - `TELEGRAM_BOT_TOKEN`
+
+### Database
+- By default, uses SQLite for user/session storage. For production, consider PostgreSQL or MySQL.
+
+### Log Files
+- Logs are written to `logs/log/app.log`, `logs/log/app_errors.log`, and `logs/log/trades.log`.
+- Ensure the `logs/log/` directory exists and is writable.
+
+## Troubleshooting
+
+### Common Issues
+- **Web GUI/API not starting**: Check for missing environment variables or port conflicts.
+- **Database errors**: Ensure the `db/` directory exists and is writable. For SQLite, check file permissions.
+- **No data in charts**: Verify your CSV data files are present in `data/all/` and correctly formatted.
+- **Email/Telegram notifications not working**: Double-check credentials and network access.
+- **Strategy errors**: Review logs in `logs/log/app.log` and `logs/log/app_errors.log` for stack traces.
+- **Docker issues**: Ensure Docker has access to the project directory and environment variables.
+
+### Getting Help
+- Check the [CHANGELOG](docs/CHANGELOG.md) for recent changes.
+- Review the [OpenAPI spec](docs/openapi.yaml) for API details.
+- For bugs or feature requests, open an issue on the project repository.
+
+---
+
+For more information, see the in-code docstrings and comments, or contact the project maintainers. 

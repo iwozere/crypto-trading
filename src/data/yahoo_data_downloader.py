@@ -5,6 +5,7 @@ from typing import Optional, List, Dict, Any
 import logging
 from .base_data_downloader import BaseDataDownloader
 import datetime
+from src.notification.logger import _logger
 
 """
 Yahoo Data Downloader Module
@@ -47,7 +48,6 @@ class YahooDataDownloader(BaseDataDownloader):
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s'
         )
-        self.logger = logging.getLogger(__name__)
     
     def download_data(
         self,
@@ -100,7 +100,7 @@ class YahooDataDownloader(BaseDataDownloader):
             return df
             
         except Exception as e:
-            self.logger.error(f"Error downloading data for {symbol}: {str(e)}")
+            _logger.error(f"Error downloading data for {symbol}: {str(e)}")
             raise
     
     def save_data(self, df: pd.DataFrame, symbol: str, start_date: str = None, end_date: str = None) -> str:
@@ -125,7 +125,7 @@ class YahooDataDownloader(BaseDataDownloader):
             return super().save_data(df, symbol, start_date, end_date)
             
         except Exception as e:
-            self.logger.error(f"Error saving data for {symbol}: {str(e)}")
+            _logger.error(f"Error saving data for {symbol}: {str(e)}")
             raise
     
     def load_data(self, filepath: str) -> pd.DataFrame:
@@ -142,7 +142,7 @@ class YahooDataDownloader(BaseDataDownloader):
             return super().load_data(filepath)
             
         except Exception as e:
-            self.logger.error(f"Error loading data from {filepath}: {str(e)}")
+            _logger.error(f"Error loading data from {filepath}: {str(e)}")
             raise
     
     def update_data(self, symbol: str, interval: str) -> str:
@@ -178,7 +178,7 @@ class YahooDataDownloader(BaseDataDownloader):
             new_df = self.download_data(symbol, interval, new_start, new_end)
             
             if new_df.empty:
-                self.logger.info(f"No new data available for {symbol}")
+                _logger.info(f"No new data available for {symbol}")
                 return filepath
             
             # Combine existing and new data
@@ -190,7 +190,7 @@ class YahooDataDownloader(BaseDataDownloader):
             return self.save_data(combined_df, symbol)
             
         except Exception as e:
-            self.logger.error(f"Error updating data for {symbol}: {str(e)}")
+            _logger.error(f"Error updating data for {symbol}: {str(e)}")
             raise
     
     def download_multiple_symbols(

@@ -108,8 +108,6 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         ax2.axhline(y=params['rsi_entry_long_level'], color='lightgreen', linestyle=':', alpha=0.5, label=f'RSI Long Entry ({params["rsi_entry_long_level"]})')
         ax2.axhline(y=params['rsi_exit_short_level'], color='red', linestyle='--', alpha=0.5, label=f'RSI Short Exit ({params["rsi_exit_short_level"]})')
         ax2.axhline(y=params['rsi_entry_short_level'], color='lightcoral', linestyle=':', alpha=0.5, label=f'RSI Short Entry ({params["rsi_entry_short_level"]})')
-        # ax2.fill_between(data.index, params['rsi_exit_long_level'], 100, color='green', alpha=0.1)
-        # ax2.fill_between(data.index, 0, params['rsi_exit_short_level'], color='red', alpha=0.1)
         
         vol_ma_period = params.get('vol_ma_period', 10)
         ax3.bar(data.index, data['volume'], label='Volume', color='blue', alpha=0.7)

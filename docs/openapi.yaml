@@ -1,12 +1,18 @@
 openapi: 3.0.0
 info:
   title: Trading Bot Management API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     Unified REST API for managing trading bots. Used by both api.py (REST) and webgui/app.py (Web GUI).
     
     - api.py uses HTTP Basic Auth
-    - webgui/app.py uses session-based login
+    - webgui/app.py uses session-based login (with secure session cookies: Secure, HttpOnly, SameSite=Lax)
+    - Version: 1.1.0
+    
+    New endpoints:
+      - /api/health (no auth, returns {status: ok})
+      - /api/health/full (detailed, requires login)
+      - /api/bot-types (GET, returns list of available bot types)
 servers:
   - url: http://localhost:5000
 
@@ -76,6 +82,33 @@ components:
       properties:
         message:
           type: string
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+    HealthFull:
+      type: object
+      properties:
+        flask:
+          type: string
+        disk:
+          type: object
+        memory:
+          type: object
+        cpu:
+          type: object
+        hostname:
+          type: string
+        binance:
+          type: string
+    BotTypes:
+      type: object
+      properties:
+        bot_types:
+          type: array
+          items:
+            type: string
 
 security:
   - basicAuth: []
@@ -361,4 +394,39 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object 
+                  type: object
+  /api/health:
+    get:
+      summary: Simple health check (no auth)
+      responses:
+        '200':
+          description: Health OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: ok
+  /api/health/full:
+    get:
+      summary: Detailed health check (requires login)
+      security: []
+      responses:
+        '200':
+          description: Detailed health info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthFull'
+  /api/bot-types:
+    get:
+      summary: List available bot types
+      responses:
+        '200':
+          description: List of bot types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotTypes'
+              example:
+                bot_types: [bb_volume_supertrend, rsi_bb_volume, ichimoku_rsi_atr_volume] 

@@ -1,3 +1,5 @@
+__version__ = "0.1.0"
+
 """
 Web GUI Flask Application for Trading Bot Management
 ---------------------------------------------------
@@ -49,6 +51,9 @@ from ib_insync import IB, Stock
 # --- App and DB Initialization (MUST BE FIRST) ---
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.urandom(24)
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', '..', 'db', 'webgui_users.db')
 db_path = os.path.abspath(db_path)
@@ -671,4 +676,8 @@ def page_not_found(e):
 print(app.url_map)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=WEBGUI_PORT) 
+    app.run(debug=True, host='0.0.0.0', port=WEBGUI_PORT)
+
+@app.context_processor
+def inject_version():
+    return dict(app_version=__version__) 

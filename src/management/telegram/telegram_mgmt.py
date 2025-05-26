@@ -1,9 +1,9 @@
 import os
 import importlib
-import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
+from src.notification.logger import _logger
 
 """
 Telegram Bot Management Module
@@ -30,11 +30,10 @@ Commands:
 running_bots = {}
 
 # Set up logging
-logging.basicConfig(
+_logger.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=_logger.INFO
 )
-logger = logging.getLogger(__name__)
 
 async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
@@ -57,7 +56,7 @@ async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         t.start()
         await update.message.reply_text(f"Started bot for {strategy_name}.")
     except Exception as e:
-        logger.error(f"Failed to start bot: {e}")
+        _logger.error(f"Failed to start bot: {e}")
         await update.message.reply_text(f"Failed to start bot: {e}")
 
 async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -74,7 +73,7 @@ async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del running_bots[strategy_name]
         await update.message.reply_text(f"Stopped bot for {strategy_name}.")
     except Exception as e:
-        logger.error(f"Failed to stop bot: {e}")
+        _logger.error(f"Failed to stop bot: {e}")
         await update.message.reply_text(f"Failed to stop bot: {e}")
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):

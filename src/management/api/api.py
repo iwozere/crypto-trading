@@ -1,19 +1,12 @@
 from flask import Flask, request, jsonify, Response
 import os
-import logging
 from functools import wraps
 from typing import Callable, Any
 from config.donotshare.donotshare import API_LOGIN, API_PASSWORD, API_PORT
 from src.management.bot_manager import start_bot, stop_bot, get_status, get_trades, get_running_bots
+from src.notification.logger import _logger
 
 app = Flask(__name__)
-
-# Set up logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logger = logging.getLogger(__name__)
 
 def check_auth(username: str, password: str) -> bool:
     """
@@ -60,7 +53,7 @@ def start_bot_api() -> Response:
         started_bot_id = start_bot(strategy_name, config, bot_id)
         return jsonify({'message': f'Started bot for {strategy_name}.', 'bot_id': started_bot_id})
     except Exception as e:
-        logger.error(f"Failed to start bot: {e}")
+        _logger.error(f"Failed to start bot: {e}")
         return jsonify({'error': f'Failed to start bot: {e}'}), 500
 
 @app.route('/stop_bot', methods=['POST'])
@@ -78,7 +71,7 @@ def stop_bot_api() -> Response:
         stop_bot(bot_id)
         return jsonify({'message': f'Stopped bot {bot_id}.'})
     except Exception as e:
-        logger.error(f"Failed to stop bot: {e}")
+        _logger.error(f"Failed to stop bot: {e}")
         return jsonify({'error': f'Failed to stop bot: {e}'}), 500
 
 @app.route('/status', methods=['GET'])

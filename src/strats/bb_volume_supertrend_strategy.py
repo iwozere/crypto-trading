@@ -152,7 +152,8 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         self.log(f'Trade history: {getattr(trade, "history", None)}')
         self.log(f'Trade size: {getattr(trade, "size", None)}')
         
-        direction = 'unknown'
+        # Direction in my case is always long
+        direction = 'long'
         if trade.size > 0:
             direction = 'long'
         elif trade.size < 0:
