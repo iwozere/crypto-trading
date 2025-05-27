@@ -24,7 +24,7 @@ from src.trading.base_trading_bot import BaseTradingBot
 from typing import Any, Dict
 from src.data.binance_live_feed import BinanceLiveFeed
 from src.strats.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
-from src.trading.binance_paper_broker import BinancePaperBroker
+from src.broker.binance_paper_broker import BinancePaperBroker
 
 
 class RsiBbVolumeBot(BaseTradingBot):

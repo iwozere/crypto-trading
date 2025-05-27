@@ -1,7 +1,7 @@
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
 import pandas as pd
-from src.trading.base_broker import BaseBroker
+from src.broker.base_broker import BaseBroker
 from typing import Any, Optional
 
 class BinanceBroker(BaseBroker):

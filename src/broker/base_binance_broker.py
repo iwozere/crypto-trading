@@ -4,7 +4,7 @@ from binance.enums import *
 from src.notification.logger import _logger
 from src.notification.emailer import send_email_alert
 from src.notification.telegram_notifier import send_telegram_alert
-from src.trading.base_broker import BaseBroker
+from src.broker.base_broker import BaseBroker
 import pandas as pd
 from typing import Any, Optional
 

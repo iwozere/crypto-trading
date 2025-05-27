@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from src.trading.binance_broker import BinanceBroker
+from src.broker.binance_broker import BinanceBroker
 from binance.exceptions import BinanceAPIException
 
 @pytest.fixture

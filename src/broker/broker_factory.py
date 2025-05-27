@@ -1,7 +1,7 @@
-from src.trading.binance_broker import BinanceBroker
-from src.trading.binance_paper_broker import BinancePaperBroker
-from src.trading.ibkr_broker import IBKRBroker
-from src.trading.base_broker import MockBroker
+from src.broker.binance_broker import BinanceBroker
+from src.broker.binance_paper_broker import BinancePaperBroker
+from src.broker.ibkr_broker import IBKRBroker
+from src.broker.base_broker import MockBroker
 from typing import Any, Dict
 
 def get_broker(config: Dict[str, Any]):

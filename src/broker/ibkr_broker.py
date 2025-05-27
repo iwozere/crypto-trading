@@ -1,4 +1,4 @@
-from src.trading.base_broker import BaseBroker
+from src.broker.base_broker import BaseBroker
 import pandas as pd
 from ib_insync import IB, Stock, MarketOrder, LimitOrder
 import datetime
