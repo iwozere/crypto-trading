@@ -28,7 +28,8 @@ Classes:
 
 class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
     """
-    A breakout strategy using Bollinger Bands, SuperTrend, and Volume.
+    Breakout strategy using Bollinger Bands, SuperTrend, and Volume indicators.
+    Accepts a single params/config dictionary.
 
     Indicators:
     - Bollinger Bands: Identifies squeeze/breakout conditions.
@@ -57,41 +58,27 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         - SuperTrend flips against the position.
         - Fixed Take Profit (TP) or Stop Loss (SL) is hit (based on ATR).
     """
-    params = (
-        ('bb_period', 38),
-        ('bb_devfactor', 1.5),
-        ('st_period', 100),
-        ('st_multiplier', 1.0),
-        ('vol_ma_period', 50),
-        ('vol_strength_mult', 3.0), # Multiplier for volume spike confirmation
-        ('atr_period', 17),         # ATR period for TP/SL
-        ('tp_atr_mult', 1.45),       # ATR multiplier for Take Profit
-        ('sl_atr_mult', 0.74),       # ATR multiplier for Stop Loss
-        ('printlog', True),        # Enable/disable logging
-    )
-
-    def __init__(self):
-        super().__init__()
+    def __init__(self, params: dict):
+        super().__init__(params)
         self.boll = bt.indicators.BollingerBands(
-            period=self.p.bb_period,
-            devfactor=self.p.bb_devfactor
+            period=self.params.get('bb_period', 20),
+            devfactor=self.params.get('bb_devfactor', 2.0)
         )
         self.supertrend = SuperTrend(
-            self.datas[0], # Pass the data feed
-            period=self.p.st_period,
-            multiplier=self.p.st_multiplier
+            self.datas[0],
+            period=self.params.get('st_period', 10),
+            multiplier=self.params.get('st_multiplier', 3.0)
         )
-        self.atr = bt.indicators.ATR(period=self.p.atr_period)
-        self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.p.vol_ma_period)
-
+        self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
+        self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.params.get('vol_ma_period', 20))
         self.order = None
         self.entry_price = None
         self.trade_active = False
-        self.entry_bar = None # To track bar of entry for TP/SL calculation
+        self.entry_bar = None
         self.active_tp_price = None
         self.active_sl_price = None
-        self.trades = [] # Simple list to log trades
-        self.last_exit_price = None # Store exit price for trade logging
+        self.trades = []
+        self.last_exit_price = None
         # self.notifier = create_notifier() # Temporarily commented out
 
     def notify_order(self, order):
@@ -105,8 +92,8 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
                 # Calculate TP/SL based on ATR at entry bar
                 atr_val = self.atr[-(self.datas[0].datetime.idx - self.entry_bar)] # ATR at time of entry signal
                 if atr_val > 0: # Ensure ATR is valid
-                    self.active_tp_price = self.entry_price + self.p.tp_atr_mult * atr_val
-                    self.active_sl_price = self.entry_price - self.p.sl_atr_mult * atr_val
+                    self.active_tp_price = self.entry_price + self.params.get('tp_atr_mult', 1.45) * atr_val
+                    self.active_sl_price = self.entry_price - self.params.get('sl_atr_mult', 0.74) * atr_val
                     self.log(f'BUY TP: {self.active_tp_price:.2f}, SL: {self.active_sl_price:.2f}, ATR: {atr_val:.2f}')
                 else:
                     self.log('ATR was zero or invalid at entry for TP/SL calc for BUY.')
@@ -122,8 +109,8 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
                     self.entry_price = order.executed.price
                     atr_val = self.atr[-(self.datas[0].datetime.idx - self.entry_bar)]
                     if atr_val > 0:
-                        self.active_tp_price = self.entry_price - self.p.tp_atr_mult * atr_val # TP is lower for shorts
-                        self.active_sl_price = self.entry_price + self.p.sl_atr_mult * atr_val # SL is higher for shorts
+                        self.active_tp_price = self.entry_price - self.params.get('tp_atr_mult', 1.45) * atr_val # TP is lower for shorts
+                        self.active_sl_price = self.entry_price + self.params.get('sl_atr_mult', 0.74) * atr_val # SL is higher for shorts
                         self.log(f'SHORT TP: {self.active_tp_price:.2f}, SL: {self.active_sl_price:.2f}, ATR: {atr_val:.2f}')
                     else:
                         self.log('ATR was zero or invalid at entry for TP/SL calc for SHORT.')
@@ -211,8 +198,8 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         if not self.position: # Not in position, check for entry
             self.trade_active = False # Ensure flag is false if not in position
             # Long Entry Condition
-            if close > bb_top and st_direction == 1 and volume > (vol_ma_val * self.p.vol_strength_mult):
-                self.log(f'LONG ENTRY SIGNAL: Close {close:.2f} > BB Top {bb_top:.2f}, ST Green, Vol {volume:.0f} > MA*Mult {vol_ma_val * self.p.vol_strength_mult:.0f}')
+            if close > bb_top and st_direction == 1 and volume > (vol_ma_val * self.params.get('vol_strength_mult', 3.0)):
+                self.log(f'LONG ENTRY SIGNAL: Close {close:.2f} > BB Top {bb_top:.2f}, ST Green, Vol {volume:.0f} > MA*Mult {vol_ma_val * self.params.get('vol_strength_mult', 3.0):.0f}')
                 self.entry_bar = self.datas[0].datetime.idx # Bar index of signal
                 self.order = self.buy()
                 self.trade_active = True # Mark that we are attempting to enter a trade

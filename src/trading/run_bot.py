@@ -9,11 +9,13 @@ from src.trading import create_trading_bot
 # from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
 
 
-def main():
-    if len(sys.argv) != 2:
+def main(config_name : str):
+    if len(sys.argv) != 2 and not config_name:
         print("Usage: python run_bot.py rsi_bb_volume1.json")
         sys.exit(1)
-    config_path = f'src/trading/config/{sys.argv[1]}'
+    if not config_name:
+        config_name = sys.argv[1]
+    config_path = f'src/trading/config/{config_name}'
     try:
         with open(config_path, 'r') as f:
             config = json.load(f)
@@ -24,6 +26,7 @@ def main():
     # Example: You must map config['strategy_type'] to your actual strategy class
     strategy_type = config.get('strategy_type', 'rsi_bb_volume')
     if strategy_type == 'rsi_bb_volume':
+        parameters = config.get('strategy_params', {})
         from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
         strategy = RSIBollVolumeATRStrategy(
             rsi_period=config.get('rsi_period', 14),
@@ -44,4 +47,4 @@ def main():
     bot.run()
 
 if __name__ == "__main__":
-    main() 
+    main('rsi_bb_volume1.json') 

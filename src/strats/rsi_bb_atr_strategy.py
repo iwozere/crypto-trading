@@ -27,6 +27,7 @@ Classes:
 class MeanReversionRSBBATRStrategy(BaseStrategy):
     """
     A mean-reversion strategy using Bollinger Bands, RSI, and ATR.
+    Accepts a single params/config dictionary.
     
     Use Case:
     Ranging/sideways markets (e.g., forex pairs, altcoins)
@@ -57,29 +58,14 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
         from 5m to 4H. May underperform in strong trending markets due to premature exits
         or fighting the trend.
     """
-    params = (
-        ('bb_period', 20),
-        ('bb_devfactor', 2.0),
-        ('rsi_period', 14),
-        ('rsi_oversold', 30),
-        ('rsi_overbought', 70),
-        ('rsi_mid_level', 50), # Neutral RSI level for exits
-        ('atr_period', 14),
-        ('tp_atr_mult', 1.5), # Take Profit ATR multiplier
-        ('sl_atr_mult', 1.0), # Stop Loss ATR multiplier
-        ('trail_atr_mult', 2.0), # Trailing Stop ATR multiplier (NEW)
-        ('printlog', False),   # For logging strategy actions
-        ('check_rsi_slope', False), # Optional: check if RSI is rising/falling for entry
-    )
-
-    def __init__(self):
-        super().__init__()
+    def __init__(self, params: dict):
+        super().__init__(params)
         self.boll = bt.indicators.BollingerBands(
-            period=self.p.bb_period,
-            devfactor=self.p.bb_devfactor
+            period=self.params.get('bb_period', 20),
+            devfactor=self.params.get('bb_devfactor', 2.0)
         )
-        self.rsi = bt.indicators.RSI(period=self.p.rsi_period)
-        self.atr = bt.indicators.ATR(period=self.p.atr_period)
+        self.rsi = bt.indicators.RSI(period=self.params.get('rsi_period', 14))
+        self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
         self.order = None
         self.entry_price = None
         self.entry_bar_idx = None
@@ -107,12 +93,12 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
                 self.log(f'BUY EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
                 self.entry_price = order.executed.price
                 if atr_at_entry_signal > 0:
-                    self.active_tp_price = self.entry_price + self.p.tp_atr_mult * atr_at_entry_signal
-                    self.active_sl_price = self.entry_price - self.p.sl_atr_mult * atr_at_entry_signal
+                    self.active_tp_price = self.entry_price + self.params.get('tp_atr_mult', 1.5) * atr_at_entry_signal
+                    self.active_sl_price = self.entry_price - self.params.get('sl_atr_mult', 1.0) * atr_at_entry_signal
                     self.log(f'BUY TP: {self.active_tp_price:.2f}, SL: {self.active_sl_price:.2f}, ATR@EntrySignal: {atr_at_entry_signal:.2f}')
                     self.highest_close = self.entry_price
-                    self.trailing_stop = self.entry_price - self.p.trail_atr_mult * atr_at_entry_signal
-                    self.log(f'Trailing Stop set at {self.trailing_stop:.2f} (ATR x {self.p.trail_atr_mult})')
+                    self.trailing_stop = self.entry_price - self.params.get('trail_atr_mult', 2.0) * atr_at_entry_signal
+                    self.log(f'Trailing Stop set at {self.trailing_stop:.2f} (ATR x {self.params.get("trail_atr_mult", 2.0)})')
                 else:
                     self.log('BUY: ATR invalid, TP/SL not set.')
                     self.active_tp_price = None
@@ -168,18 +154,18 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
             return
         close = self.data.close[0]
         rsi_val = self.rsi[0]
-        if (len(self.rsi.lines.rsi) < self.p.rsi_period or
-            len(self.boll.lines.bot) < self.p.bb_period or
-            len(self.atr.lines.atr) < self.p.atr_period):
+        if (len(self.rsi.lines.rsi) < self.params.get('rsi_period', 14) or
+            len(self.boll.lines.bot) < self.params.get('bb_period', 20) or
+            len(self.atr.lines.atr) < self.params.get('atr_period', 14)):
             self.log("Indicators not ready yet.")
             return
         bb_lower = self.boll.lines.bot[0]
         bb_middle = self.boll.lines.mid[0]
         if not self.position:
             rsi_is_rising = self.rsi[0] > self.rsi[-1] if len(self.rsi.lines.rsi) > 1 else False
-            long_rsi_condition = rsi_is_rising if self.p.check_rsi_slope else True
-            if close < bb_lower and rsi_val < self.p.rsi_oversold and long_rsi_condition:
-                self.log(f'LONG ENTRY SIGNAL: Close {close:.2f} < BB Low {bb_lower:.2f}, RSI {rsi_val:.2f} < {self.p.rsi_oversold}')
+            long_rsi_condition = rsi_is_rising if self.params.get('check_rsi_slope', False) else True
+            if close < bb_lower and rsi_val < self.params.get('rsi_oversold', 30) and long_rsi_condition:
+                self.log(f'LONG ENTRY SIGNAL: Close {close:.2f} < BB Low {bb_lower:.2f}, RSI {rsi_val:.2f} < {self.params.get("rsi_oversold", 30)}')
                 self.entry_bar_idx = len(self)
                 size = (self.broker.getvalue() * 0.1) / close
                 self.order = self.buy(size=size)
@@ -190,9 +176,9 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
                 if close >= bb_middle:
                     exit_signal = True
                     exit_reason = "Long Exit: Reverted to Middle BB"
-                elif rsi_val > self.p.rsi_mid_level:
+                elif rsi_val > self.params.get('rsi_mid_level', 50):
                     exit_signal = True
-                    exit_reason = f"Long Exit: RSI {rsi_val:.2f} crossed above Mid Level {self.p.rsi_mid_level}"
+                    exit_reason = f"Long Exit: RSI {rsi_val:.2f} crossed above Mid Level {self.params.get('rsi_mid_level', 50)}"
                 elif self.active_tp_price and close >= self.active_tp_price:
                     exit_signal = True
                     exit_reason = f"Long Exit: Take Profit hit at {self.active_tp_price:.2f}"

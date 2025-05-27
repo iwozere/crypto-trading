@@ -71,28 +71,15 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
         - Exit type (TP/SL)
         - Technical indicators at entry
     """
-    params = (
-        ('rsi_period', 14),
-        ('boll_period', 20),
-        ('boll_devfactor', 2.0),
-        ('atr_period', 14),
-        ('vol_ma_period', 20),
-        ('tp_atr_mult', 2.0),
-        ('sl_atr_mult', 1.5),
-        ('rsi_oversold', 30),
-        ('rsi_overbought', 70),
-        ('printlog', False),
-    )
-
-    def __init__(self):
-        super().__init__()
-        self.rsi = bt.ind.RSI(period=self.p.rsi_period)
+    def __init__(self, params: dict):
+        super().__init__(params)
+        self.rsi = bt.ind.RSI(period=self.params.get('rsi_period', 14))
         self.boll = bt.ind.BollingerBands(
-            period=self.p.boll_period,
-            devfactor=self.p.boll_devfactor
+            period=self.params.get('boll_period', 20),
+            devfactor=self.params.get('boll_devfactor', 2.0)
         )
-        self.atr = bt.ind.ATR(period=self.p.atr_period)
-        self.vol_ma = bt.ind.SMA(self.data.volume, period=self.p.vol_ma_period)
+        self.atr = bt.ind.ATR(period=self.params.get('atr_period', 14))
+        self.vol_ma = bt.ind.SMA(self.data.volume, period=self.params.get('vol_ma_period', 20))
         self.order = None
         self.entry_price = None
         self.highest_price = None
@@ -130,12 +117,12 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
         volume = self.data.volume[0]
         close = self.data.close[0]
         if not self.position and self.position_closed and (self.last_order_type is None or self.last_order_type == 'sell'):
-            if (rsi_value < self.p.rsi_oversold and
+            if (rsi_value < self.params.get('rsi_oversold', 30) and
                 close < bb_low and
                 volume > vol_ma_value):
                 self.entry_price = close
-                self.tp_price = self.entry_price + self.p.tp_atr_mult * atr_value
-                self.sl_price = self.entry_price - self.p.sl_atr_mult * atr_value
+                self.tp_price = self.entry_price + self.params.get('tp_atr_mult', 2.0) * atr_value
+                self.sl_price = self.entry_price - self.params.get('sl_atr_mult', 1.5) * atr_value
                 self.highest_price = self.entry_price
                 self.current_trade = {
                     'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
@@ -159,7 +146,7 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                     self.position_closed = False
         elif self.position:
             self.highest_price = max(self.highest_price, close)
-            trailing_sl = self.highest_price - self.p.sl_atr_mult * atr_value
+            trailing_sl = self.highest_price - self.params.get('sl_atr_mult', 1.5) * atr_value
             if close >= self.tp_price:
                 self.order = self.close()
                 if self.current_trade:

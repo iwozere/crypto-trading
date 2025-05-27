@@ -27,37 +27,15 @@ Classes:
 
 class RsiVolumeSuperTrendStrategy(BaseStrategy):
     """
-    Backtrader-native trend-following strategy using SuperTrend for trend direction,
-    RSI for pullback entries, and Volume for confirmation. ATR is used for calculating
-    Take Profit and Stop Loss levels. Supports both Long and Short trades.
-
-    - Inherits from BaseStrategy (Backtrader-native, standardized trade logging, notification, and event-driven architecture)
-    - Uses Backtrader's param system (self.p)
-    - Uses self.trades and self.record_trade for trade logging
-    - All logic in __init__, next, notify_order, notify_trade
+    Trend-following strategy using SuperTrend, RSI, Volume, and ATR.
+    Accepts a single params/config dictionary.
     """
-    params = (
-        ('rsi_period', 14),
-        ('rsi_entry_long_level', 40.0),
-        ('rsi_entry_short_level', 60.0),
-        ('rsi_exit_long_level', 70.0),
-        ('rsi_exit_short_level', 30.0),
-        ('st_period', 10),
-        ('st_multiplier', 3.0),
-        ('vol_ma_period', 10),
-        ('atr_period', 14),
-        ('tp_atr_mult', 2.0),
-        ('sl_atr_mult', 1.5),
-        ('time_based_exit_period', 5),
-        ('printlog', False),
-    )
-
-    def __init__(self):
-        super().__init__()
-        self.rsi = bt.indicators.RSI(period=self.p.rsi_period)
-        self.st = SuperTrend(period=self.p.st_period, multiplier=self.p.st_multiplier)
-        self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.p.vol_ma_period)
-        self.atr = bt.indicators.ATR(period=self.p.atr_period)
+    def __init__(self, params: dict):
+        super().__init__(params)
+        self.rsi = bt.indicators.RSI(period=self.params.get('rsi_period', 14))
+        self.st = SuperTrend(period=self.params.get('st_period', 10), multiplier=self.params.get('st_multiplier', 3.0))
+        self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.params.get('vol_ma_period', 10))
+        self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
         self.order = None
         self.entry_price = None
         self.bar_executed = 0
@@ -79,8 +57,8 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                     if self.current_trade:
                         self.current_trade['entry_price'] = self.entry_price
                         atr_val = self.atr[0]
-                        self.tp_price = self.entry_price + self.p.tp_atr_mult * atr_val
-                        self.sl_price = self.entry_price - self.p.sl_atr_mult * atr_val
+                        self.tp_price = self.entry_price + self.params.get('tp_atr_mult', 2.0) * atr_val
+                        self.sl_price = self.entry_price - self.params.get('sl_atr_mult', 1.5) * atr_val
                         self.current_trade['tp_price'] = self.tp_price
                         self.current_trade['sl_price'] = self.sl_price
             elif order.issell():
@@ -113,9 +91,9 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
             current_pnl_pct = 0
             if self.position.size > 0:
                 if self.entry_price: current_pnl_pct = (close - self.entry_price) / self.entry_price * 100
-                if rsi_val > self.p.rsi_exit_long_level: exit_reason = 'rsi_long_exit'
+                if rsi_val > self.params.get('rsi_exit_long_level', 70.0): exit_reason = 'rsi_long_exit'
                 elif st_direction == -1: exit_reason = 'st_flip_long_exit'
-                elif (len(self) - self.bar_executed) >= self.p.time_based_exit_period and self.entry_price and close <= self.entry_price: exit_reason = 'time_long_exit'
+                elif (len(self) - self.bar_executed) >= self.params.get('time_based_exit_period', 5) and self.entry_price and close <= self.entry_price: exit_reason = 'time_long_exit'
                 elif self.sl_price and close <= self.sl_price: exit_reason = 'sl_long'
                 elif self.tp_price and close >= self.tp_price: exit_reason = 'tp_long'
                 if exit_reason:
@@ -126,7 +104,7 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                     return
         else:
             if st_direction == 1 and \
-               prev_rsi_val < self.p.rsi_entry_long_level and rsi_val > prev_rsi_val and \
+               prev_rsi_val < self.params.get('rsi_entry_long_level', 40.0) and rsi_val > prev_rsi_val and \
                volume > vol_ma_val:
                 self.current_trade = {
                     'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',

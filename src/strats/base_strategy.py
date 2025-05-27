@@ -22,21 +22,20 @@ from typing import Any, Dict, Optional
 import datetime
 
 class BaseStrategy(bt.Strategy):
-    params = (
-        ('printlog', False),
-        ('notify', True),
-    )
-
-    def __init__(self):
+    """
+    Abstract base class for trading strategies. Accepts a single params/config dictionary.
+    """
+    def __init__(self, params: dict):
+        self.params = params
         self.trades = []
-        self.notifier = create_notifier() if self.p.notify else None
+        self.notifier = create_notifier() if params.get('notify', True) else None
 
     def log(self, txt: str, dt: Optional[datetime.datetime] = None, doprint: bool = False, level: str = "info") -> None:
         """
         Log a message using the configured logger.
         - level: "info" (default) for normal messages, "error" for errors.
         """
-        if self.p.printlog or doprint:
+        if self.params.get('printlog', False) or doprint:
             if level == "error":
                 _logger.error(txt)
             else:
@@ -90,14 +89,14 @@ class BaseStrategy(bt.Strategy):
             self.log(f"Failed to append to master trades.json: {e}", level="error")
 
     def on_trade_entry(self, trade_dict: Dict[str, Any]) -> None:
-        if self.p.notify and self.notifier:
+        if self.params.get('notify', True) and self.notifier:
             self.notifier.send_trade_notification(trade_dict)
 
     def on_trade_exit(self, trade_dict: Dict[str, Any]) -> None:
-        if self.p.notify and self.notifier:
+        if self.params.get('notify', True) and self.notifier:
             self.notifier.send_trade_update(trade_dict)
 
     def on_error(self, error: Exception) -> None:
-        if self.p.notify and self.notifier:
+        if self.params.get('notify', True) and self.notifier:
             self.notifier.send_error_notification(str(error))
             

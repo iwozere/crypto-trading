@@ -22,45 +22,30 @@ Classes:
 class IchimokuRSIATRVolumeStrategy(BaseStrategy):
     """
     Backtrader-native strategy using Ichimoku, RSI, ATR (for trailing stop), and a volume confirmation.
-    - Inherits from BaseStrategy (Backtrader-native, standardized trade logging, notification, and event-driven architecture)
-    - Uses Backtrader's param system (self.p)
-    - Uses self.trades and self.record_trade for trade logging
-    - All logic in __init__, next, notify_order, notify_trade
+    Accepts a single params/config dictionary.
     """
-    params = (
-        ('tenkan_period', 9),
-        ('kijun_period', 26),
-        ('senkou_span_b_period', 52),
-        ('rsi_period', 14),
-        ('rsi_entry', 50),
-        ('atr_period', 14),
-        ('atr_mult', 2.0),
-        ('vol_ma_period', 20),
-        ('printlog', False),
-    )
-
-    def __init__(self):
-        super().__init__()
+    def __init__(self, params: dict):
+        super().__init__(params)
         self.ichimoku = bt.ind.Ichimoku(
             self.data,
-            tenkan=self.p.tenkan_period,
-            kijun=self.p.kijun_period,
-            senkou=self.p.senkou_span_b_period
+            tenkan=params.get('tenkan_period', 9),
+            kijun=params.get('kijun_period', 26),
+            senkou=params.get('senkou_span_b_period', 52)
         )
         self.tenkan = self.ichimoku.tenkan_sen
         self.kijun = self.ichimoku.kijun_sen
         self.senkou_a = self.ichimoku.senkou_span_a
         self.senkou_b = self.ichimoku.senkou_span_b
         self.chikou = self.ichimoku.chikou_span
-        self.rsi = bt.ind.RSI(period=self.p.rsi_period)
-        self.atr = bt.ind.ATR(period=self.p.atr_period)
-        self.vol_ma = bt.ind.SMA(self.data.volume, period=self.p.vol_ma_period)
+        self.rsi = bt.ind.RSI(period=params.get('rsi_period', 14))
+        self.atr = bt.ind.ATR(period=params.get('atr_period', 14))
+        self.vol_ma = bt.ind.SMA(self.data.volume, period=params.get('vol_ma_period', 20))
         self.order = None
         self.entry_price = None
         self.trailing_stop = None
         self.position_type = None
         self.current_trade = None
-        self.notifier = create_notifier()
+        self.notifier = create_notifier() if params.get('notify', True) else None
 
     def next(self):
         if self.order:
@@ -81,12 +66,12 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
             if (
                 close > cloud_top and
                 tenkan > kijun and self.tenkan[-1] <= self.kijun[-1] and
-                rsi > self.p.rsi_entry and
+                rsi > self.params.get('rsi_entry', 50) and
                 volume > vol_ma
             ):
                 self.order = self.buy()
                 self.entry_price = close
-                self.trailing_stop = close - self.p.atr_mult * atr
+                self.trailing_stop = close - self.params.get('atr_mult', 2.0) * atr
                 self.position_type = 'long'
                 self.current_trade = {
                     'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
@@ -130,7 +115,7 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
 
         else:
             if self.position_type == 'long':
-                new_stop = close - self.p.atr_mult * atr
+                new_stop = close - self.params.get('atr_mult', 2.0) * atr
                 if new_stop > self.trailing_stop:
                     self.trailing_stop = new_stop
                 exit_signal = False
