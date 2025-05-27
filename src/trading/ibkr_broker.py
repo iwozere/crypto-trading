@@ -1,18 +1,44 @@
-from src.trading.abstract_broker import AbstractBroker
+from src.trading.base_broker import BaseBroker
 import pandas as pd
 from ib_insync import IB, Stock, MarketOrder, LimitOrder
 import datetime
 from typing import Any, Dict, Optional
 
-class IBKRBroker(AbstractBroker):
-    def __init__(self, host='127.0.0.1', port=7497, client_id=1):
-        """
-        Initialize IBKRBroker and connect to TWS or IB Gateway.
-        """
-        if IB is None:
-            raise ImportError('ib_insync package is required for IBKRBroker')
+class IBKRBroker(BaseBroker):
+    """
+    Interactive Brokers (IBKR) broker implementation.
+    """
+    def __init__(self, host: str = '127.0.0.1', port: int = 7497, client_id: int = 1, cash: float = 1000.0) -> None:
+        super().__init__(cash)
         self.ib = IB()
         self.ib.connect(host, port, clientId=client_id)
+        self.broker_name = "IBKR"
+
+    def buy(self, symbol: str, qty: float, price: Optional[float] = None) -> Any:
+        """Place a buy order on IBKR."""
+        try:
+            contract = Stock(symbol, 'SMART', 'USD')
+            order = MarketOrder('BUY', qty) if price is None else LimitOrder('BUY', qty, price)
+            trade = self.ib.placeOrder(contract, order)
+            self.ib.sleep(1)
+            self.orders.append(trade)
+            self._notify_order(trade)
+            return trade.orderStatus.status
+        except Exception as e:
+            return {'error': str(e)}
+
+    def sell(self, symbol: str, qty: float, price: Optional[float] = None) -> Any:
+        """Place a sell order on IBKR."""
+        try:
+            contract = Stock(symbol, 'SMART', 'USD')
+            order = MarketOrder('SELL', qty) if price is None else LimitOrder('SELL', qty, price)
+            trade = self.ib.placeOrder(contract, order)
+            self.ib.sleep(1)
+            self.orders.append(trade)
+            self._notify_order(trade)
+            return trade.orderStatus.status
+        except Exception as e:
+            return {'error': str(e)}
 
     def place_order(self, symbol, side, quantity, order_type='market', price=None, **kwargs):
         """

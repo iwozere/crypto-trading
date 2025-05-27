@@ -21,12 +21,10 @@ import json
 import pandas as pd
 from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
-import seaborn as sns
 import warnings
 from src.strats.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
 import matplotlib.gridspec as gridspec
-from datetime import datetime
-from ta.volatility import AverageTrueRange, BollingerBands
+from ta.volatility import BollingerBands
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
 

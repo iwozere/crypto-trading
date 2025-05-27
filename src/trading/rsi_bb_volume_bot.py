@@ -14,61 +14,44 @@ Classes:
 - RsiBbVolumeBot: Main bot class for this strategy
 """
 
-import os
 import time
-import json
-import logging
-import pandas as pd
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+import backtrader as bt
+from datetime import datetime
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
-from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
-from config.donotshare.donotshare import BINANCE_KEY, BINANCE_SECRET
+from config.donotshare.donotshare import BINANCE_PAPER_KEY, BINANCE_PAPER_SECRET
 from src.trading.base_trading_bot import BaseTradingBot
+from typing import Any, Dict
+from src.data.binance_live_feed import BinanceLiveFeed
+from src.strats.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
+from src.trading.binance_paper_broker import BinancePaperBroker
+
 
 class RsiBbVolumeBot(BaseTradingBot):
-    def __init__(self, config):
-        strategy = RSIBollVolumeATRStrategy(
-            rsi_period=config.get('rsi_period', 14),
-            boll_period=config.get('boll_period', 20),
-            boll_devfactor=config.get('boll_devfactor', 2.0),
-            atr_period=config.get('atr_period', 14),
-            vol_ma_period=config.get('vol_ma_period', 20),
-            tp_atr_mult=config.get('tp_atr_mult', 2.0),
-            sl_atr_mult=config.get('sl_atr_mult', 1.0),
-            rsi_oversold=config.get('rsi_oversold', 30),
-            rsi_overbought=config.get('rsi_overbought', 70)
-        )
-        super().__init__(config, strategy)
+    """
+    Trading bot for RSI, Bollinger Bands, and Volume strategies. Accepts any strategy and broker.
+    """
+    def __init__(self, config: Dict[str, Any], strategy: Any, broker: Any = None) -> None:
+        super().__init__(config, strategy, broker)
 
-    def run(self):
-        """Main bot loop"""
+    def run(self) -> None:
+        """Main bot loop."""
         self.is_running = True
         print(f"Starting bot for {self.trading_pair}")
-        
         while self.is_running:
             try:
-                # Get trading signals
                 signals = self.strategy.get_signals(self.trading_pair)
-                
-                # Process signals
                 for signal in signals:
                     if signal['type'] == 'buy' and self.trading_pair not in self.active_positions:
                         self.execute_trade('buy', signal['price'], signal['size'])
                     elif signal['type'] == 'sell' and self.trading_pair in self.active_positions:
                         self.execute_trade('sell', signal['price'], signal['size'])
-                
-                # Update positions
                 self.update_positions()
-                
-                # Sleep to prevent excessive API calls
                 time.sleep(1)
-                
             except Exception as e:
                 print(f"Error in bot loop: {str(e)}")
                 time.sleep(5)
-    
+
     def execute_trade(self, trade_type, price, size):
         """Execute a trade and record it"""
         timestamp = datetime.now()
@@ -144,3 +127,12 @@ if __name__ == "__main__":
     }
     bot = RsiBbVolumeBot(config)
     bot.run() 
+    
+    cerebro = bt.Cerebro()
+    client = Client(BINANCE_PAPER_KEY, BINANCE_PAPER_SECRET)
+    data = BinanceLiveFeed(symbol='LTCUSDC', timeframe='1m', client=client)
+    cerebro.adddata(data)
+    cerebro.addstrategy(BBSuperTrendVolumeBreakoutStrategy)
+    cerebro.setbroker(BinancePaperBroker(BINANCE_PAPER_KEY, BINANCE_PAPER_SECRET, cash=1000.0))
+    cerebro.run()
+    

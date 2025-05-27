@@ -26,6 +26,9 @@ import os
 import json
 
 class BaseTradingBot:
+    """
+    Base class for trading bots. Handles config, strategy, broker, notifications, and state.
+    """
     def __init__(self, config: Dict[str, Any], strategy: Any, broker: Any = None, paper_trading: bool = True) -> None:
         """
         Initialize the trading bot with config, strategy, broker, and mode.
