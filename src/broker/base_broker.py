@@ -1,9 +1,8 @@
 import backtrader as bt
 from src.notification.logger import _logger
-from abc import ABC, abstractmethod
 from typing import Any
 
-class BaseBroker(bt.BrokerBase, ABC):
+class BaseBroker(bt.BrokerBase):
     """
     Abstract base class for all brokers. Defines the required interface and common attributes.
     """
@@ -34,15 +33,13 @@ class BaseBroker(bt.BrokerBase, ABC):
         symbol = data._name
         return self.positions.get(symbol, 0)
 
-    @abstractmethod
     def buy(self, symbol: str, qty: float, price: float = None) -> Any:
         """Place a buy order. Must be implemented by subclasses."""
-        pass
+        raise NotImplementedError("Subclasses must implement buy()")
 
-    @abstractmethod
     def sell(self, symbol: str, qty: float, price: float = None) -> Any:
         """Place a sell order. Must be implemented by subclasses."""
-        pass
+        raise NotImplementedError("Subclasses must implement sell()")
 
     def _notify_order(self, order: Any) -> None:
         """Notify about an order (stub for notification logic)."""

@@ -1,8 +1,7 @@
 from src.broker.base_broker import BaseBroker
 import pandas as pd
 from ib_insync import IB, Stock, MarketOrder, LimitOrder
-import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 class IBKRBroker(BaseBroker):
     """
