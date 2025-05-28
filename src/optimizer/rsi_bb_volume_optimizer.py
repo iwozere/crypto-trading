@@ -55,25 +55,27 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
         
-        # Set up plotting style
+        self.plot_size = config.get('plot_size', [15, 10])
         plt.style.use('default')
         sns.set_theme(style="darkgrid")
-        plt.rcParams['figure.figsize'] = (15, 10)
+        plt.rcParams['figure.figsize'] = self.plot_size
         plt.rcParams['font.size'] = 10
         
-        # Define parameter space for optimization
-        self.space = [
-            Integer(7, 21, name='rsi_period'),
-            Integer(15, 40, name='boll_period'),
-            Real(1.5, 3.5, name='boll_devfactor'),
-            Integer(10, 25, name='atr_period'),
-            Integer(15, 40, name='vol_ma_period'),
-            Real(1.5, 4.0, name='tp_atr_mult'),
-            Real(0.8, 2.5, name='sl_atr_mult'),
-            Real(25, 35, name='rsi_oversold'),
-            Real(65, 75, name='rsi_overbought')
-        ]
+        # Read search space from config and convert to skopt space objects
+        self.space = self._build_skopt_space_from_config(config.get('search_space', []))
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
+    
+    def _build_skopt_space_from_config(self, search_space_config):
+        from skopt.space import Real, Integer, Categorical
+        skopt_space = []
+        for param in search_space_config:
+            if param['type'] == 'Integer':
+                skopt_space.append(Integer(param['low'], param['high'], name=param['name']))
+            elif param['type'] == 'Real':
+                skopt_space.append(Real(param['low'], param['high'], name=param['name']))
+            elif param['type'] == 'Categorical':
+                skopt_space.append(Categorical(param['categories'], name=param['name']))
+        return skopt_space
     
     def plot_results(self, data: Any, trades_df: Any, params: Dict[str, Any], data_file: str) -> Optional[str]:
         """
@@ -87,7 +89,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
             Path to the saved plot image, or None if plotting fails
         """
         plt.style.use('dark_background')
-        fig = plt.figure(figsize=(60, 30))
+        fig = plt.figure(figsize=self.plot_size)
         
         # Create subplots
         gs = gridspec.GridSpec(4, 1, height_ratios=[3, 1, 1, 1])
@@ -174,5 +176,8 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         return plot_path
 
 if __name__ == "__main__":
-    optimizer = RsiBBVolumeOptimizer(initial_capital=1000.0, commission=0.001)
+    import json
+    with open("optimizer_config.json") as f:
+        config = json.load(f)
+    optimizer = RsiBBVolumeOptimizer(config)
     optimizer.run_optimization()

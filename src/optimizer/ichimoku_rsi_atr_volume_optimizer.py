@@ -47,24 +47,27 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         self.strategy_class = IchimokuRSIATRVolumeStrategy
         super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
+        self.plot_size = config.get('plot_size', [15, 10])
         plt.style.use('default')
         sns.set_theme(style="darkgrid")
-        plt.rcParams['figure.figsize'] = (15, 10)
+        plt.rcParams['figure.figsize'] = self.plot_size
         plt.rcParams['font.size'] = 10
-        self.space = [
-            Integer(7, 30, name='rsi_period'),
-            Real(20.0, 40.0, name='rsi_oversold'),
-            Real(60.0, 80.0, name='rsi_overbought'),
-            Integer(7, 30, name='atr_period'),
-            Real(1.0, 3.0, name='tp_atr_mult'),
-            Real(0.5, 2.0, name='sl_atr_mult'),
-            Integer(5, 30, name='ichimoku_tenkan'),
-            Integer(20, 60, name='ichimoku_kijun'),
-            Integer(40, 120, name='ichimoku_senkou'),
-            Integer(0, 1, name='check_rsi_slope')
-        ]
+        # Read search space from config and convert to skopt space objects
+        self.space = self._build_skopt_space_from_config(config.get('search_space', []))
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
         warnings.filterwarnings('ignore', category=RuntimeWarning)
+
+    def _build_skopt_space_from_config(self, search_space_config):
+        from skopt.space import Real, Integer, Categorical
+        skopt_space = []
+        for param in search_space_config:
+            if param['type'] == 'Integer':
+                skopt_space.append(Integer(param['low'], param['high'], name=param['name']))
+            elif param['type'] == 'Real':
+                skopt_space.append(Real(param['low'], param['high'], name=param['name']))
+            elif param['type'] == 'Categorical':
+                skopt_space.append(Categorical(param['categories'], name=param['name']))
+        return skopt_space
 
     def plot_results(self, data_df: Any, trades_df: Any, params: Dict[str, Any], data_file_name: str) -> Optional[str]:
         """
@@ -78,7 +81,7 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
             Path to the saved plot image, or None if plotting fails
         """
         plt.style.use('dark_background')
-        fig = plt.figure(figsize=(60, 30))
+        fig = plt.figure(figsize=self.plot_size)
         gs = gridspec.GridSpec(5, 1, height_ratios=[3, 1, 1, 1, 1])
         ax1 = plt.subplot(gs[0])
         ax2 = plt.subplot(gs[1], sharex=ax1)
@@ -168,5 +171,8 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         return plot_path
 
 if __name__ == "__main__":
-    optimizer = IchimokuRSIATRVolumeOptimizer(initial_capital=1000.0, commission=0.001)
+    import json
+    with open("optimizer_config.json") as f:
+        config = json.load(f)
+    optimizer = IchimokuRSIATRVolumeOptimizer(config)
     optimizer.run_optimization() 

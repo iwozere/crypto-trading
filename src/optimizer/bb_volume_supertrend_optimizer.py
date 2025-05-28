@@ -53,20 +53,23 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         self.strategy_class = BBSuperTrendVolumeBreakoutStrategy
         super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
-        
-        self.space = [
-            Integer(10, 50, name='bb_period'),
-            Real(1.5, 3.5, name='bb_devfactor'),
-            Integer(7, 100, name='st_period'),
-            Real(1.0, 4.0, name='st_multiplier'),
-            Integer(10, 50, name='vol_ma_period'),
-            Real(1.2, 3.0, name='vol_strength_mult'),
-            Integer(7, 21, name='atr_period'),
-            Real(1.0, 5.0, name='tp_atr_mult'),
-            Real(0.5, 3.0, name='sl_atr_mult')
-        ]
+        # Read search space from config and convert to skopt space objects
+        self.space = self._build_skopt_space_from_config(config.get('search_space', []))
+        self.plot_size = config.get('plot_size', [15, 10])
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
         warnings.filterwarnings('ignore', category=RuntimeWarning)
+
+    def _build_skopt_space_from_config(self, search_space_config):
+        from skopt.space import Real, Integer, Categorical
+        skopt_space = []
+        for param in search_space_config:
+            if param['type'] == 'Integer':
+                skopt_space.append(Integer(param['low'], param['high'], name=param['name']))
+            elif param['type'] == 'Real':
+                skopt_space.append(Real(param['low'], param['high'], name=param['name']))
+            elif param['type'] == 'Categorical':
+                skopt_space.append(Categorical(param['categories'], name=param['name']))
+        return skopt_space
 
     def plot_results(self, data_df: pd.DataFrame, trades_df: pd.DataFrame, params: Dict[str, Any], data_file_name: str) -> Optional[str]:
         """
@@ -82,7 +85,7 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         print(trades_df)
         
         plt.style.use('dark_background')
-        fig = plt.figure(figsize=(20, 16))
+        fig = plt.figure(figsize=self.plot_size)
         gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 1]) 
         ax1 = plt.subplot(gs[0])
         ax2 = plt.subplot(gs[1], sharex=ax1)
@@ -146,5 +149,8 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         return plot_path
 
 if __name__ == "__main__":
-    optimizer = BBSuperTrendVolumeBreakoutOptimizer(initial_capital=1000.0, commission=0.001)
+    import json
+    with open("optimizer_config.json") as f:
+        config = json.load(f)
+    optimizer = BBSuperTrendVolumeBreakoutOptimizer(config)
     optimizer.run_optimization()

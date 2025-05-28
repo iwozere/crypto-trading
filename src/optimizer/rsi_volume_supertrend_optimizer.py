@@ -43,27 +43,27 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         self.strategy_class = RsiVolumeSuperTrendStrategy
         super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
+        self.plot_size = config.get('plot_size', [15, 10])
         plt.style.use('default')
-        plt.rcParams['figure.figsize'] = (15, 10)
+        plt.rcParams['figure.figsize'] = self.plot_size
         plt.rcParams['font.size'] = 10
-        self.space = [
-            Integer(7, 28, name='rsi_period'),
-            Real(20.0, 40.0, name='rsi_entry_long_level'),
-            Real(60.0, 80.0, name='rsi_entry_short_level'),
-            Real(65.0, 85.0, name='rsi_exit_long_level'),
-            Real(15.0, 35.0, name='rsi_exit_short_level'),
-            Integer(5, 100, name='st_period'),
-            Real(1.5, 4.0, name='st_multiplier'),
-            Integer(5, 30, name='vol_ma_period'),
-            Integer(7, 21, name='atr_period'),
-            Real(1.0, 5.0, name='tp_atr_mult'),
-            Real(0.5, 3.0, name='sl_atr_mult'),
-            Integer(3, 15, name='time_based_exit_period'),
-            Integer(0, 1, name='check_rsi_slope')
-        ]
+        # Read search space from config and convert to skopt space objects
+        self.space = self._build_skopt_space_from_config(config.get('search_space', []))
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
         warnings.filterwarnings('ignore', category=RuntimeWarning)
     
+    def _build_skopt_space_from_config(self, search_space_config):
+        from skopt.space import Real, Integer, Categorical
+        skopt_space = []
+        for param in search_space_config:
+            if param['type'] == 'Integer':
+                skopt_space.append(Integer(param['low'], param['high'], name=param['name']))
+            elif param['type'] == 'Real':
+                skopt_space.append(Real(param['low'], param['high'], name=param['name']))
+            elif param['type'] == 'Categorical':
+                skopt_space.append(Categorical(param['categories'], name=param['name']))
+        return skopt_space
+
     def plot_results(self, data: Any, trades_df: Any, params: Dict[str, Any], data_file: str) -> Optional[str]:
         """
         Plot the results of the strategy, including price, indicators, trades, and equity curve.
@@ -76,7 +76,7 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
             Path to the saved plot image, or None if plotting fails
         """
         plt.style.use('dark_background')
-        fig = plt.figure(figsize=(60, 30))
+        fig = plt.figure(figsize=self.plot_size)
         gs = gridspec.GridSpec(4, 1, height_ratios=[3, 1, 1, 1])
         ax1 = plt.subplot(gs[0])
         ax2 = plt.subplot(gs[1], sharex=ax1)
@@ -136,5 +136,8 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         return plot_path
 
 if __name__ == "__main__":
-    optimizer = RsiVolumeSuperTrendOptimizer(initial_capital=1000.0, commission=0.001)
+    import json
+    with open("optimizer_config.json") as f:
+        config = json.load(f)
+    optimizer = RsiVolumeSuperTrendOptimizer(config)
     optimizer.run_optimization()

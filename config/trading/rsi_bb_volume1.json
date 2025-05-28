@@ -1,0 +1,20 @@
+{
+    "description": "RSI BB Volume strategy for Binance Paper, symbol LTCUSDT",
+    "type": "binance_paper",
+    "bot_type": "rsi_bb_volume",
+    "strategy_type": "rsi_bb_volume",
+    "trading_pair": "LTCUSDT",
+    "initial_balance": 1000.0,
+    "cash": 1000.0,
+    "strategy_params": {
+        "rsi_period": 14,
+        "boll_period": 20,
+        "boll_devfactor": 2.0,
+        "atr_period": 14,
+        "vol_ma_period": 20,
+        "tp_atr_mult": 2.0,
+        "sl_atr_mult": 1.0,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70
+    }
+}

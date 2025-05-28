@@ -20,14 +20,17 @@ class OptimizerTemplate(BaseOptimizer):
     - Implement the optimization logic.
     - Handle result saving and plotting.
     """
-    def __init__(self, data_dir: str = 'data/all', results_dir: str = 'results') -> None:
+    def __init__(self, config: dict):
         """
-        Initialize the optimizer template with data and results directories.
+        Initialize the optimizer with a configuration dictionary.
         Args:
-            data_dir: Directory containing data files
-            results_dir: Directory to save results
+            config: Dictionary containing all optimizer parameters.
         """
-        super().__init__(data_dir=data_dir, results_dir=results_dir)
+        self.data_dir = ... # set as needed
+        self.results_dir = ... # set as needed
+        self.strategy_name = 'MyCustomStrategy'
+        self.strategy_class = MyCustomStrategy
+        super().__init__(config)
         # Define the parameter search space
         self.search_space = [
             Integer(10, 30, name='example_period'),
@@ -75,3 +78,11 @@ class OptimizerTemplate(BaseOptimizer):
         """
         # Example: Use matplotlib to plot trades and metrics
         pass 
+
+# Example usage:
+if __name__ == "__main__":
+    import json
+    with open('optimizer_config.json') as f:
+        config = json.load(f)
+    optimizer = OptimizerTemplate(config)
+    optimizer.run_optimization() 

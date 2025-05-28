@@ -15,7 +15,7 @@ def main(config_name : str):
         sys.exit(1)
     if not config_name:
         config_name = sys.argv[1]
-    config_path = f'src/trading/config/{config_name}'
+    config_path = f'config/trading/{config_name}'
     try:
         with open(config_path, 'r') as f:
             config = json.load(f)

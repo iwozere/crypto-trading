@@ -56,3 +56,6 @@ results/
 *.jsonl.gz.part
 *.jsonl.gz.part.tmp
 *.jsonl.gz.part.tmp.tmp
+
+!config/trading/*.json
+!config/optimizer/*.json
