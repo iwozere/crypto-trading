@@ -140,6 +140,8 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
             'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
             'size': trade.size
         }
+        if 'pnl_comm' not in trade_dict or trade_dict['pnl_comm'] is None:
+            trade_dict['pnl_comm'] = trade_dict['pnl']
         self.record_trade(trade_dict)
         self.last_exit_price = None
         self.last_exit_dt = None

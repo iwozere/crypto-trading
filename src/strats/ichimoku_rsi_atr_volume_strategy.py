@@ -140,6 +140,8 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
                             'exit_reason': exit_reason,
                             'pnl': (close - self.entry_price) / self.entry_price * 100
                         })
+                        if 'pnl_comm' not in self.current_trade:
+                            self.current_trade['pnl_comm'] = self.current_trade['pnl']
                         self.record_trade(self.current_trade)
                         self.current_trade = None
                     self.log(f'LONG EXIT: {close:.2f} ({exit_reason})')

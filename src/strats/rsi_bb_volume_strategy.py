@@ -158,6 +158,8 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                         'exit_type': 'tp',
                         'pnl': (close - self.entry_price) / self.entry_price * 100
                     })
+                    if 'pnl_comm' not in self.current_trade:
+                        self.current_trade['pnl_comm'] = self.current_trade['pnl']
                     self.record_trade(self.current_trade)
                     self.current_trade = None
             elif close <= trailing_sl:
@@ -170,6 +172,8 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                         'exit_type': 'sl',
                         'pnl': (close - self.entry_price) / self.entry_price * 100
                     })
+                    if 'pnl_comm' not in self.current_trade:
+                        self.current_trade['pnl_comm'] = self.current_trade['pnl']
                     self.record_trade(self.current_trade)
                     self.current_trade = None
 

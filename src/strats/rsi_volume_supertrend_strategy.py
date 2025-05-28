@@ -101,6 +101,8 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                     if self.current_trade:
                         self.current_trade['pnl'] = current_pnl_pct
                         self.current_trade['exit_type'] = exit_reason
+                        if 'pnl_comm' not in self.current_trade:
+                            self.current_trade['pnl_comm'] = self.current_trade['pnl']
                     self.order = self.close()
                     return
         else:

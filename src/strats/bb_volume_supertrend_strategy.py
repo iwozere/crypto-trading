@@ -162,6 +162,8 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
             'size': trade.size, 'value': trade.value,
             'commission': trade.commission
         }
+        if 'pnl_comm' not in trade_dict or trade_dict['pnl_comm'] is None:
+            trade_dict['pnl_comm'] = trade_dict['pnl']
         self.record_trade(trade_dict)
         self.trade_active = False # Ensure flag is reset
         self.entry_price = None
