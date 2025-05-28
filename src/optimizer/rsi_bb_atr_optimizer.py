@@ -28,6 +28,7 @@ from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
+import datetime
 
 class MeanReversionRSBBATROptimizer(BaseOptimizer):
     """
@@ -155,7 +156,7 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         ax1.set_title(f'Trading Results - {data_file_name} - Params: {params}', fontsize=16)
         for ax in [ax1, ax2, ax3, ax4]: ax.legend(loc='upper left', fontsize=10)
         plt.xticks(rotation=45); plt.tight_layout()
-        plot_path = os.path.join(self.results_dir, f'{data_file_name}_plot.png')
+        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file_name, suffix='_plot.png', current_data=data_df))
         plt.savefig(plot_path, dpi=300, bbox_inches='tight'); plt.close()
         return plot_path
 

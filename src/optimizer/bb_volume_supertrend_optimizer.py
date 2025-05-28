@@ -27,6 +27,7 @@ import matplotlib.gridspec as gridspec
 from ta.volatility import BollingerBands
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
+import datetime
 
 class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
     """
@@ -140,8 +141,7 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         plt.setp(ax1.get_xticklabels(), visible=False)
         plt.setp(ax2.get_xticklabels(), visible=False)
         plt.tight_layout(pad=1.5)
-        plot_filename = f'{self.current_symbol}_{data_file_name.replace(".csv","")}_plot.png'
-        plot_path = os.path.join(self.results_dir, plot_filename)
+        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file_name, suffix='_plot.png', current_data=data_df))
         plt.savefig(plot_path, dpi=200, bbox_inches='tight'); plt.close(fig)
         self.log_message(f"Plot saved to {plot_path}")
         return plot_path

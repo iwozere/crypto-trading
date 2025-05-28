@@ -101,4 +101,10 @@ class BaseStrategy(bt.Strategy):
     def on_error(self, error: Exception) -> None:
         if self.notify and self.notifier:
             self.notifier.send_error_notification(str(error))
+
+    def notify_trade(self, trade):
+        if not trade.isclosed:
+            return
+        #print(f"TRADE CLOSED: PnL: {trade.pnl}, PnL Comm: {trade.pnlcomm}")
+        # Optionally, log or record the trade here as well
             

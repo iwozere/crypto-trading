@@ -332,6 +332,34 @@ class BaseOptimizer:
                 typed_param_dict[name] = float(value)
         return typed_param_dict 
 
+    def get_result_filename(self, data_file, suffix='', current_data=None, strategy_name=None):
+        """
+        Generate a standardized filename for results and plots based on data_file and current_data.
+        """
+        import datetime
+        # Extract strategy name
+        if not strategy_name:
+            strategy_name = getattr(self, 'strategy_name', 'Strategy')
+        # Extract symbol and interval from data_file
+        symbol = getattr(self, 'current_symbol', 'SYMBOL')
+        interval = 'INTERVAL'
+        if '_' in data_file:
+            parts = data_file.replace('.csv','').split('_')
+            if len(parts) >= 2:
+                symbol = parts[0]
+                interval = parts[1]
+        # Get start and end date from current_data
+        if current_data is None:
+            current_data = getattr(self, 'current_data', None)
+        if current_data is not None and not getattr(current_data, 'empty', True):
+            start_date = str(current_data.index.min())[:10]
+            end_date = str(current_data.index.max())[:10]
+        else:
+            start_date = 'STARTDATE'
+            end_date = 'ENDDATE'
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        return f"{strategy_name}_{symbol}_{interval}_{start_date}_{end_date}_{timestamp}{suffix}"
+
     def save_results(self, data_file, best_params, metrics, trades_df, optimization_result=None, plot_path=None, strategy_name=None):
         """
         Unified method to save optimization results. Handles serialization, extra metrics, and logging.
@@ -384,15 +412,30 @@ class BaseOptimizer:
             # Compose results dict
             results_dict = {
                 'timestamp': datetime.now().isoformat(),
-                'data_file': data_file,
                 'strategy_name': strategy_name,
+                'data_file': data_file,
                 'best_params': best_params,
                 'metrics': metrics,
                 'plot_path': plot_path,
                 'trades': trades_records,
                 'optimization_history': optimization_history
             }
-            filename_base = f"{data_file}_optimization_results"
+            # Extract symbol, interval, start and end date
+            symbol = getattr(self, 'current_symbol', 'SYMBOL')
+            interval = 'INTERVAL'
+            if '_' in data_file:
+                parts = data_file.replace('.csv','').split('_')
+                if len(parts) >= 2:
+                    symbol = parts[0]
+                    interval = parts[1]
+            if hasattr(self, 'current_data') and self.current_data is not None and not self.current_data.empty:
+                start_date = str(self.current_data.index.min())[:10]
+                end_date = str(self.current_data.index.max())[:10]
+            else:
+                start_date = 'STARTDATE'
+                end_date = 'ENDDATE'
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename_base = self.get_result_filename(data_file)
             results_path = os.path.join(self.results_dir, f'{filename_base}.json')
             self.log_message(f"Saving results to: {results_path}", level='info')
             try:
@@ -567,12 +610,21 @@ class BaseOptimizer:
             if trades and len(trades) > 1:
                 trades_df = pd.DataFrame(trades)
                 returns = trades_df['pnl_comm'] / trades_df['entry_price']
+                print("[DEBUG] Returns for metrics:", returns.tolist())
+                print("Any NaN in returns:", returns.isna().any())
+                print("Any inf in returns:", np.isinf(returns).any())
+                print("Returns describe:", returns.describe())
                 sortino = BaseOptimizer.calculate_sortino(returns)
+                print(f"[DEBUG] Sortino: {sortino}")
                 max_dd = drawdown_analysis.get('max', {}).get('drawdown', 0)
                 calmar = BaseOptimizer.calculate_calmar(returns, max_dd)
+                print(f"[DEBUG] Calmar: {calmar}")
                 omega = BaseOptimizer.calculate_omega(returns)
+                print(f"[DEBUG] Omega: {omega}")
                 rolling_sharpe = BaseOptimizer.calculate_rolling_sharpe(returns).tolist()
-        except Exception:
+                print(f"[DEBUG] Rolling Sharpe: {rolling_sharpe}")
+        except Exception as e:
+            print(f"[DEBUG] Exception in risk metrics calculation: {e}")
             pass
 
         self.current_metrics = {
@@ -587,11 +639,11 @@ class BaseOptimizer:
             'net_profit': net_profit,
             'portfolio_growth_pct': portfolio_growth,
             'final_value': final_value,
-            'params': param_dict,
             'sortino_ratio': sortino,
             'calmar_ratio': calmar,
             'omega_ratio': omega,
             'rolling_sharpe': rolling_sharpe,
+            'params': param_dict,
         }
         return self.score_objective(self.current_metrics)
 

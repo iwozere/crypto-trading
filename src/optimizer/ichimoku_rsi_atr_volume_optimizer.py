@@ -163,7 +163,7 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         ax1.legend(loc='upper left', fontsize=12)
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plot_path = os.path.join(self.results_dir, f'{data_file_name}_plot.png')
+        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file_name, suffix='_plot.png', current_data=data_df))
         plt.savefig(plot_path, dpi=300, bbox_inches='tight')
         plt.close()
         return plot_path

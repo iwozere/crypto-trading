@@ -28,6 +28,7 @@ from ta.momentum import RSIIndicator
 from datetime import datetime
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
+import numpy as np
 
 class RsiBBVolumeOptimizer(BaseOptimizer):
     """
@@ -131,8 +132,8 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         # Calculate and plot equity curve
         if not trades_df.empty:
             # Calculate cumulative returns
-            trades_df['returns'] = trades_df['pnl'] / 100  # Convert percentage to decimal
-            cumulative_returns = (1 + trades_df['returns']).cumprod()
+            returns = trades_df['pnl_comm'] / trades_df['entry_price']
+            cumulative_returns = (1 + returns).cumprod()
             initial_equity = self.initial_capital
             equity_curve = initial_equity * cumulative_returns
             
@@ -167,11 +168,10 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         # Adjust layout
         plt.tight_layout()
         
-        # Save plot
-        plot_path = os.path.join(self.results_dir, f'{data_file}_plot.png')
+        # Use base class helper for plot file name
+        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file, suffix='_plot.png', current_data=data))
         plt.savefig(plot_path, dpi=300, bbox_inches='tight')
         plt.close()
-        
         return plot_path
 
 if __name__ == "__main__":

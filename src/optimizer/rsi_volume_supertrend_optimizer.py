@@ -25,6 +25,7 @@ import matplotlib.gridspec as gridspec
 from ta.momentum import RSIIndicator
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
+import datetime
 
 class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
     """
@@ -131,7 +132,7 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         ax4.set_xlabel('Date', fontsize=12)
         for ax in [ax1, ax2, ax3, ax4]: ax.legend(loc='upper left', fontsize=10)
         plt.xticks(rotation=45); plt.tight_layout()
-        plot_path = os.path.join(self.results_dir, f'{self.current_symbol}_{data_file}_plot.png') # Ensure unique plot names
+        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file, suffix='_plot.png', current_data=data))
         plt.savefig(plot_path, dpi=300, bbox_inches='tight'); plt.close()
         return plot_path
 
