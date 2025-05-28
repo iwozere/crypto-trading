@@ -1,5 +1,5 @@
 {
-  "data_dir": "data/all",
+  "data_dir": "data",
   "results_dir": "results",
   "strategy_name": "RsiVolumeSuperTrendStrategy",
   "symbol": "BTCUSDT",
