@@ -44,9 +44,29 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
         self.plot_size = config.get('plot_size', [15, 10])
-        plt.style.use('default')
+        self.plot_style = config.get('plot_style', 'default')
+        self.font_size = config.get('font_size', 10)
+        self.plot_dpi = config.get('plot_dpi', 300)
+        self.show_grid = config.get('show_grid', True)
+        self.legend_loc = config.get('legend_loc', 'upper left')
+        self.save_plot = config.get('save_plot', True)
+        self.show_plot = config.get('show_plot', False)
+        self.plot_format = config.get('plot_format', 'png')
+        self.show_equity_curve = config.get('show_equity_curve', True)
+        self.show_indicators = config.get('show_indicators', True)
+        self.color_scheme = config.get('color_scheme', {})
+        self.report_metrics = config.get('report_metrics', [])
+        self.save_trades = config.get('save_trades', True)
+        self.trades_csv_path = config.get('trades_csv_path', None)
+        self.save_metrics = config.get('save_metrics', True)
+        self.metrics_format = config.get('metrics_format', 'json')
+        self.print_summary = config.get('print_summary', True)
+        self.report_params = config.get('report_params', True)
+        self.report_filename_pattern = config.get('report_filename_pattern', None)
+        self.include_plots_in_report = config.get('include_plots_in_report', True)
+        plt.style.use(self.plot_style)
         plt.rcParams['figure.figsize'] = self.plot_size
-        plt.rcParams['font.size'] = 10
+        plt.rcParams['font.size'] = self.font_size
         # Read search space from config and convert to skopt space objects
         self.space = self._build_skopt_space_from_config(config.get('search_space', []))
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
@@ -75,13 +95,15 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         Returns:
             Path to the saved plot image, or None if plotting fails
         """
-        plt.style.use('dark_background')
+        plt.style.use(self.plot_style)
         fig = plt.figure(figsize=self.plot_size)
         gs = gridspec.GridSpec(4, 1, height_ratios=[3, 1, 1, 1])
         ax1 = plt.subplot(gs[0])
         ax2 = plt.subplot(gs[1], sharex=ax1)
         ax3 = plt.subplot(gs[2], sharex=ax1)
         ax4 = plt.subplot(gs[3], sharex=ax1)
+        for ax in [ax1, ax2, ax3, ax4]:
+            ax.grid(self.show_grid)
         
         ax1.plot(data.index, data['close'], label='Price', color='white', linewidth=2)
         
@@ -125,19 +147,25 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
             ax4.fill_between(trades_df['exit_time'], equity_curve, equity_curve + (drawdown_pct/100 * equity_curve) , color='red', alpha=0.3, label='Drawdown From Peak Equity')
             ax4.axhline(y=initial_equity, color='white', linestyle='--', alpha=0.5, label='Initial Capital')
         
-        ax1.set_title(f'Trading Results - {data_file} - Params: {params}', fontsize=16)
-        ax1.set_ylabel('Price', fontsize=12); ax2.set_ylabel('RSI', fontsize=12)
-        ax3.set_ylabel('Volume', fontsize=12); ax4.set_ylabel('Equity', fontsize=12)
-        ax4.set_xlabel('Date', fontsize=12)
-        for ax in [ax1, ax2, ax3, ax4]: ax.legend(loc='upper left', fontsize=10)
-        plt.xticks(rotation=45); plt.tight_layout()
-        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file, suffix='_plot.png', current_data=data))
-        plt.savefig(plot_path, dpi=300, bbox_inches='tight'); plt.close()
+        ax1.set_title(f'Trading Results - {data_file} - Params: {params}', fontsize=self.font_size)
+        ax1.set_ylabel('Price', fontsize=self.font_size); ax2.set_ylabel('RSI', fontsize=self.font_size)
+        ax3.set_ylabel('Volume', fontsize=self.font_size); ax4.set_ylabel('Equity', fontsize=self.font_size)
+        ax4.set_xlabel('Date', fontsize=self.font_size)
+        for ax in [ax1, ax2, ax3, ax4]:
+            ax.legend(loc=self.legend_loc, fontsize=self.font_size)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file, suffix='_plot.'+self.plot_format, current_data=data))
+        if self.save_plot:
+            plt.savefig(plot_path, dpi=self.plot_dpi, bbox_inches='tight', format=self.plot_format)
+        if self.show_plot:
+            plt.show()
+        plt.close()
         return plot_path
 
 if __name__ == "__main__":
     import json
-    with open("optimizer_config.json") as f:
+    with open("config/optimizer/rsi_volume_supertrend_optimizer.json") as f:
         config = json.load(f)
     optimizer = RsiVolumeSuperTrendOptimizer(config)
     optimizer.run_optimization()

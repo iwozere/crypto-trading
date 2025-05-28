@@ -48,10 +48,29 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
         self.plot_size = config.get('plot_size', [15, 10])
-        plt.style.use('default')
-        sns.set_theme(style="darkgrid")
+        self.plot_style = config.get('plot_style', 'default')
+        self.font_size = config.get('font_size', 10)
+        self.plot_dpi = config.get('plot_dpi', 300)
+        self.show_grid = config.get('show_grid', True)
+        self.legend_loc = config.get('legend_loc', 'upper left')
+        self.save_plot = config.get('save_plot', True)
+        self.show_plot = config.get('show_plot', False)
+        self.plot_format = config.get('plot_format', 'png')
+        self.show_equity_curve = config.get('show_equity_curve', True)
+        self.show_indicators = config.get('show_indicators', True)
+        self.color_scheme = config.get('color_scheme', {})
+        self.report_metrics = config.get('report_metrics', [])
+        self.save_trades = config.get('save_trades', True)
+        self.trades_csv_path = config.get('trades_csv_path', None)
+        self.save_metrics = config.get('save_metrics', True)
+        self.metrics_format = config.get('metrics_format', 'json')
+        self.print_summary = config.get('print_summary', True)
+        self.report_params = config.get('report_params', True)
+        self.report_filename_pattern = config.get('report_filename_pattern', None)
+        self.include_plots_in_report = config.get('include_plots_in_report', True)
+        plt.style.use(self.plot_style)
         plt.rcParams['figure.figsize'] = self.plot_size
-        plt.rcParams['font.size'] = 10
+        plt.rcParams['font.size'] = self.font_size
         # Read search space from config and convert to skopt space objects
         self.space = self._build_skopt_space_from_config(config.get('search_space', []))
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
@@ -80,7 +99,7 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         Returns:
             Path to the saved plot image, or None if plotting fails
         """
-        plt.style.use('dark_background')
+        plt.style.use(self.plot_style)
         fig = plt.figure(figsize=self.plot_size)
         gs = gridspec.GridSpec(5, 1, height_ratios=[3, 1, 1, 1, 1])
         ax1 = plt.subplot(gs[0])
@@ -88,6 +107,8 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         ax3 = plt.subplot(gs[2], sharex=ax1)
         ax4 = plt.subplot(gs[3], sharex=ax1)
         ax5 = plt.subplot(gs[4], sharex=ax1)
+        for ax in [ax1, ax2, ax3, ax4, ax5]:
+            ax.grid(self.show_grid)
 
         # Price and Ichimoku Cloud
         ax1.plot(data_df.index, data_df['close'], label='Price', color='white', linewidth=2)
@@ -127,21 +148,21 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         ax2.plot(data_df.index, rsi, label=f'RSI ({params["rsi_period"]})', color='cyan', linewidth=2)
         ax2.axhline(y=params['rsi_oversold'], color='yellow', linestyle='--', alpha=0.7, label=f'RSI Oversold ({params["rsi_oversold"]})')
         ax2.axhline(y=params['rsi_overbought'], color='red', linestyle='--', alpha=0.7, label=f'RSI Overbought ({params["rsi_overbought"]})')
-        ax2.set_ylabel('RSI', fontsize=12)
-        ax2.legend(loc='upper left', fontsize=10)
+        ax2.set_ylabel('RSI', fontsize=self.font_size)
+        ax2.legend(loc=self.legend_loc, fontsize=self.font_size)
 
         # ATR (for trailing stop)
         atr = AverageTrueRange(high=data_df['high'], low=data_df['low'], close=data_df['close'], window=params['atr_period']).average_true_range()
         ax3.plot(data_df.index, atr, label=f'ATR ({params["atr_period"]})', color='orange', linewidth=1.5)
-        ax3.set_ylabel('ATR', fontsize=12)
-        ax3.legend(loc='upper left', fontsize=10)
+        ax3.set_ylabel('ATR', fontsize=self.font_size)
+        ax3.legend(loc=self.legend_loc, fontsize=self.font_size)
 
         # Volume
         ax4.bar(data_df.index, data_df['volume'], label='Volume', color='blue', alpha=0.7)
         vol_ma = data_df['volume'].rolling(window=params['ichimoku_senkou']).mean()
         ax4.plot(data_df.index, vol_ma, label=f'Volume MA ({params["ichimoku_senkou"]})', color='yellow', linewidth=2)
-        ax4.set_ylabel('Volume', fontsize=12)
-        ax4.legend(loc='upper left', fontsize=10)
+        ax4.set_ylabel('Volume', fontsize=self.font_size)
+        ax4.legend(loc=self.legend_loc, fontsize=self.font_size)
 
         # Equity Curve
         if not trades_df.empty:
@@ -154,25 +175,27 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
             drawdown = (equity_curve - rolling_max) / rolling_max * 100
             ax5.fill_between(trades_df['exit_time'], drawdown, 0, color='red', alpha=0.3, label='Drawdown')
             ax5.axhline(y=initial_equity, color='white', linestyle='--', alpha=0.5, label='Initial Capital')
-        ax5.set_ylabel('Equity', fontsize=12)
-        ax5.set_xlabel('Date', fontsize=12)
-        ax5.legend(loc='upper left', fontsize=10)
+        ax5.set_ylabel('Equity', fontsize=self.font_size)
+        ax5.set_xlabel('Date', fontsize=self.font_size)
+        ax5.legend(loc=self.legend_loc, fontsize=self.font_size)
 
         # Titles and layout
         ax1.set_title(f'Trading Results - {data_file_name}', fontsize=20)
         for ax in [ax1, ax2, ax3, ax4, ax5]:
-            ax.grid(True, linestyle=':', alpha=0.5)
-        ax1.legend(loc='upper left', fontsize=12)
+            ax.legend(loc=self.legend_loc, fontsize=self.font_size)
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file_name, suffix='_plot.png', current_data=data_df))
-        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file_name, suffix='_plot.'+self.plot_format, current_data=data_df))
+        if self.save_plot:
+            plt.savefig(plot_path, dpi=self.plot_dpi, bbox_inches='tight', format=self.plot_format)
+        if self.show_plot:
+            plt.show()
         plt.close()
         return plot_path
 
 if __name__ == "__main__":
     import json
-    with open("optimizer_config.json") as f:
+    with open("config/optimizer/ichimoku_rsi_atr_volume_optimizer.json") as f:
         config = json.load(f)
     optimizer = IchimokuRSIATRVolumeOptimizer(config)
     optimizer.run_optimization() 

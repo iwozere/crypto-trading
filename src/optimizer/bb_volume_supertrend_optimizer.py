@@ -56,6 +56,26 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         # Read search space from config and convert to skopt space objects
         self.space = self._build_skopt_space_from_config(config.get('search_space', []))
         self.plot_size = config.get('plot_size', [15, 10])
+        self.plot_style = config.get('plot_style', 'default')
+        self.font_size = config.get('font_size', 10)
+        self.plot_dpi = config.get('plot_dpi', 300)
+        self.show_grid = config.get('show_grid', True)
+        self.legend_loc = config.get('legend_loc', 'upper left')
+        self.save_plot = config.get('save_plot', True)
+        self.show_plot = config.get('show_plot', False)
+        self.plot_format = config.get('plot_format', 'png')
+        self.show_equity_curve = config.get('show_equity_curve', True)
+        self.show_indicators = config.get('show_indicators', True)
+        self.color_scheme = config.get('color_scheme', {})
+        self.report_metrics = config.get('report_metrics', [])
+        self.save_trades = config.get('save_trades', True)
+        self.trades_csv_path = config.get('trades_csv_path', None)
+        self.save_metrics = config.get('save_metrics', True)
+        self.metrics_format = config.get('metrics_format', 'json')
+        self.print_summary = config.get('print_summary', True)
+        self.report_params = config.get('report_params', True)
+        self.report_filename_pattern = config.get('report_filename_pattern', None)
+        self.include_plots_in_report = config.get('include_plots_in_report', True)
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
         warnings.filterwarnings('ignore', category=RuntimeWarning)
 
@@ -84,7 +104,7 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         """
         print(trades_df)
         
-        plt.style.use('dark_background')
+        plt.style.use(self.plot_style)
         fig = plt.figure(figsize=self.plot_size)
         gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 1]) 
         ax1 = plt.subplot(gs[0])
@@ -137,20 +157,24 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         ax2.set_ylabel('Volume', fontsize=12); 
         ax3.set_ylabel('Equity', fontsize=12)
         ax3.set_xlabel('Date', fontsize=12)
-        for ax in [ax1, ax2, ax3]: 
-            ax.legend(loc='upper left', fontsize=9)
-            ax.grid(True, linestyle=':', alpha=0.5)
+        for ax in [ax1, ax2, ax3]:
+            ax.legend(loc=self.legend_loc, fontsize=self.font_size)
+            ax.grid(self.show_grid)
         plt.setp(ax1.get_xticklabels(), visible=False)
         plt.setp(ax2.get_xticklabels(), visible=False)
         plt.tight_layout(pad=1.5)
-        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file_name, suffix='_plot.png', current_data=data_df))
-        plt.savefig(plot_path, dpi=200, bbox_inches='tight'); plt.close(fig)
+        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file_name, suffix='_plot.'+self.plot_format, current_data=data_df))
+        if self.save_plot:
+            plt.savefig(plot_path, dpi=self.plot_dpi, bbox_inches='tight', format=self.plot_format)
+        if self.show_plot:
+            plt.show()
+        plt.close()
         self.log_message(f"Plot saved to {plot_path}")
         return plot_path
 
 if __name__ == "__main__":
     import json
-    with open("optimizer_config.json") as f:
+    with open("config/optimizer/bb_volume_supertrend_optimizer.json") as f:
         config = json.load(f)
     optimizer = BBSuperTrendVolumeBreakoutOptimizer(config)
     optimizer.run_optimization()

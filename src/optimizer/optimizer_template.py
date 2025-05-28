@@ -82,7 +82,7 @@ class OptimizerTemplate(BaseOptimizer):
 # Example usage:
 if __name__ == "__main__":
     import json
-    with open('optimizer_config.json') as f:
+    with open('config/optimizer/optimizer_config.json') as f:
         config = json.load(f)
     optimizer = OptimizerTemplate(config)
     optimizer.run_optimization() 

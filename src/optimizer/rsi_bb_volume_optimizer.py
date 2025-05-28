@@ -56,10 +56,29 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         os.makedirs(self.results_dir, exist_ok=True)
         
         self.plot_size = config.get('plot_size', [15, 10])
-        plt.style.use('default')
-        sns.set_theme(style="darkgrid")
+        self.plot_style = config.get('plot_style', 'default')
+        self.font_size = config.get('font_size', 10)
+        self.plot_dpi = config.get('plot_dpi', 300)
+        self.show_grid = config.get('show_grid', True)
+        self.legend_loc = config.get('legend_loc', 'upper left')
+        self.save_plot = config.get('save_plot', True)
+        self.show_plot = config.get('show_plot', False)
+        self.plot_format = config.get('plot_format', 'png')
+        self.show_equity_curve = config.get('show_equity_curve', True)
+        self.show_indicators = config.get('show_indicators', True)
+        self.color_scheme = config.get('color_scheme', {})
+        self.report_metrics = config.get('report_metrics', [])
+        self.save_trades = config.get('save_trades', True)
+        self.trades_csv_path = config.get('trades_csv_path', None)
+        self.save_metrics = config.get('save_metrics', True)
+        self.metrics_format = config.get('metrics_format', 'json')
+        self.print_summary = config.get('print_summary', True)
+        self.report_params = config.get('report_params', True)
+        self.report_filename_pattern = config.get('report_filename_pattern', None)
+        self.include_plots_in_report = config.get('include_plots_in_report', True)
+        plt.style.use(self.plot_style)
         plt.rcParams['figure.figsize'] = self.plot_size
-        plt.rcParams['font.size'] = 10
+        plt.rcParams['font.size'] = self.font_size
         
         # Read search space from config and convert to skopt space objects
         self.space = self._build_skopt_space_from_config(config.get('search_space', []))
@@ -88,7 +107,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         Returns:
             Path to the saved plot image, or None if plotting fails
         """
-        plt.style.use('dark_background')
+        plt.style.use(self.plot_style)
         fig = plt.figure(figsize=self.plot_size)
         
         # Create subplots
@@ -97,6 +116,9 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         ax2 = plt.subplot(gs[1], sharex=ax1)
         ax3 = plt.subplot(gs[2], sharex=ax1)
         ax4 = plt.subplot(gs[3], sharex=ax1)
+        
+        for ax in [ax1, ax2, ax3, ax4]:
+            ax.grid(self.show_grid)
         
         # Calculate Bollinger Bands
         bb = BollingerBands(close=data['close'], window=params['boll_period'], window_dev=params['boll_devfactor'])
@@ -158,10 +180,8 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         ax4.set_xlabel('Date', fontsize=16)
         
         # Set legend
-        ax1.legend(loc='upper left', fontsize=12)
-        ax2.legend(loc='upper left', fontsize=12)
-        ax3.legend(loc='upper left', fontsize=12)
-        ax4.legend(loc='upper left', fontsize=12)
+        for ax in [ax1, ax2, ax3, ax4]:
+            ax.legend(loc=self.legend_loc, fontsize=self.font_size)
         
         # Rotate x-axis labels
         plt.xticks(rotation=45)
@@ -170,14 +190,17 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         plt.tight_layout()
         
         # Use base class helper for plot file name
-        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file, suffix='_plot.png', current_data=data))
-        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file, suffix='_plot.'+self.plot_format, current_data=data))
+        if self.save_plot:
+            plt.savefig(plot_path, dpi=self.plot_dpi, bbox_inches='tight', format=self.plot_format)
+        if self.show_plot:
+            plt.show()
         plt.close()
         return plot_path
 
 if __name__ == "__main__":
     import json
-    with open("optimizer_config.json") as f:
+    with open("config/optimizer/rsi_bb_volume_optimizer.json") as f:
         config = json.load(f)
     optimizer = RsiBBVolumeOptimizer(config)
     optimizer.run_optimization()

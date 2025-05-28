@@ -164,7 +164,7 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         return plot_path
 
 if __name__ == "__main__":
-    with open("optimizer_config.json") as f:
+    with open("config/optimizer/rsi_bb_atr_optimizer.json") as f:
         config = json.load(f)
     optimizer = MeanReversionRSBBATROptimizer(config)
     optimizer.run_optimization()
