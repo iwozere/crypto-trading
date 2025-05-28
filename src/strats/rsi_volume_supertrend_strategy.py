@@ -32,6 +32,7 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
     """
     def __init__(self, params: dict):
         super().__init__(params)
+        self.notify = self.params.get('notify', False)
         self.rsi = bt.indicators.RSI(period=self.params.get('rsi_period', 14))
         self.st = SuperTrend(period=self.params.get('st_period', 10), multiplier=self.params.get('st_multiplier', 3.0))
         self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.params.get('vol_ma_period', 10))

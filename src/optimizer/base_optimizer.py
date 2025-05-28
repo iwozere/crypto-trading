@@ -624,7 +624,9 @@ class BaseOptimizer:
         cerebro.broker.setcash(self.initial_capital)
         cerebro.broker.setcommission(commission=self.commission)
         cerebro.broker.set_checksubmit(False)
-        cerebro.addstrategy(self.strategy_class, notify=self.notify, **params)
+        
+        params['notify'] = self.notify
+        cerebro.addstrategy(self.strategy_class, params=params)
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.0, timeframe=bt.TimeFrame.Days, compression=1, annualize=True)
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')

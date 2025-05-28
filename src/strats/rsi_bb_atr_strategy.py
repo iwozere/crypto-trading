@@ -60,6 +60,7 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
     """
     def __init__(self, params: dict):
         super().__init__(params)
+        self.notify = self.params.get('notify', False)
         self.boll = bt.indicators.BollingerBands(
             period=self.params.get('bb_period', 20),
             devfactor=self.params.get('bb_devfactor', 2.0)

@@ -73,13 +73,14 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
     """
     def __init__(self, params: dict):
         super().__init__(params)
+        self.notify = self.params.get('notify', False)
         self.rsi = bt.ind.RSI(period=self.params.get('rsi_period', 14))
         self.boll = bt.ind.BollingerBands(
             period=self.params.get('boll_period', 20),
             devfactor=self.params.get('boll_devfactor', 2.0)
         )
         self.atr = bt.ind.ATR(period=self.params.get('atr_period', 14))
-        self.vol_ma = bt.ind.SMA(self.data.volume, period=self.params.get('vol_ma_period', 20))
+        self.vol_ma = bt.ind.SMA(self.data.volume, period=self.params.get('vol_ma_period', 10))
         self.order = None
         self.entry_price = None
         self.highest_price = None

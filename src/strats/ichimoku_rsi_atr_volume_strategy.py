@@ -26,6 +26,7 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
     """
     def __init__(self, params: dict):
         super().__init__(params)
+        self.notify = self.params.get('notify', False)
         self.ichimoku = bt.ind.Ichimoku(
             self.data,
             tenkan=params.get('tenkan_period', 9),
@@ -45,7 +46,7 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
         self.trailing_stop = None
         self.position_type = None
         self.current_trade = None
-        self.notifier = create_notifier() if params.get('notify', True) else None
+        self.notifier = create_notifier() if self.notify else None
 
     def next(self):
         if self.order:

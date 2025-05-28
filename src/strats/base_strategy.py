@@ -24,11 +24,13 @@ import datetime
 class BaseStrategy(bt.Strategy):
     """
     Abstract base class for trading strategies. Accepts a single params/config dictionary.
+    The notify flag (self.notify) is set from params['notify'] if present.
     """
     def __init__(self, params: dict):
         self.params = params
+        self.notify = self.params.get('notify', False)
         self.trades = []
-        self.notifier = create_notifier() if params.get('notify', True) else None
+        self.notifier = create_notifier() if self.notify else None
 
     def log(self, txt: str, dt: Optional[datetime.datetime] = None, doprint: bool = False, level: str = "info") -> None:
         """
@@ -89,14 +91,14 @@ class BaseStrategy(bt.Strategy):
             self.log(f"Failed to append to master trades.json: {e}", level="error")
 
     def on_trade_entry(self, trade_dict: Dict[str, Any]) -> None:
-        if self.params.get('notify', True) and self.notifier:
+        if self.notify and self.notifier:
             self.notifier.send_trade_notification(trade_dict)
 
     def on_trade_exit(self, trade_dict: Dict[str, Any]) -> None:
-        if self.params.get('notify', True) and self.notifier:
+        if self.notify and self.notifier:
             self.notifier.send_trade_update(trade_dict)
 
     def on_error(self, error: Exception) -> None:
-        if self.params.get('notify', True) and self.notifier:
+        if self.notify and self.notifier:
             self.notifier.send_error_notification(str(error))
             
