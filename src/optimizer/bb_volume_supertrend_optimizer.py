@@ -41,18 +41,17 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         - Volatile breakout markets
         - Finds optimal parameters for capturing large moves early while filtering out fakeouts
     """
-    def __init__(self, initial_capital: float = 1000.0, commission: float = 0.001) -> None:
+    def __init__(self, config: dict):
         """
-        Initialize the optimizer with initial capital and commission.
+        Initialize the optimizer with a configuration dictionary.
         Args:
-            initial_capital: Starting capital for backtests
-            commission: Commission rate per trade
+            config: Dictionary containing all optimizer parameters.
         """
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
         self.strategy_name = 'BBSuperTrendVolumeBreakoutStrategy'
         self.strategy_class = BBSuperTrendVolumeBreakoutStrategy
-        super().__init__(initial_capital, commission)
+        super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
         
         self.space = [

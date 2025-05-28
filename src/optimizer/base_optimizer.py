@@ -27,22 +27,22 @@ from skopt import gp_minimize
 from typing import Any, Dict, List, Optional, Union
 
 class BaseOptimizer:
-    def __init__(self, initial_capital: float = 1000.0, commission: float = 0.001, notify: bool = False) -> None:
+    def __init__(self, config: dict):
         """
-        Initialize the base optimizer with initial capital, commission, and notification flag.
+        Initialize the base optimizer with a configuration dictionary.
         Args:
-            initial_capital: Starting capital for backtests
-            commission: Commission rate per trade
-            notify: Whether to enable notifications
+            config: Dictionary containing all optimizer parameters.
         """
-        self.initial_capital = initial_capital
-        self.commission = commission
+        self.initial_capital = config.get('initial_capital', 1000.0)
+        self.commission = config.get('commission', 0.001)
+        self.notify = config.get('notify', False)
+        self.risk_free_rate = config.get('risk_free_rate', 0.0)
+        self.omega_threshold = config.get('omega_threshold', 0.0)
         self.current_metrics = {}
         self.current_data = None
         self.current_symbol = None
         self.raw_data = {}
         self.load_all_data()
-        self.notify = notify
 
     class DateTimeEncoder(json.JSONEncoder):
         def default(self, obj: Any) -> Any:
@@ -614,12 +614,12 @@ class BaseOptimizer:
                 print("Any NaN in returns:", returns.isna().any())
                 print("Any inf in returns:", np.isinf(returns).any())
                 print("Returns describe:", returns.describe())
-                sortino = BaseOptimizer.calculate_sortino(returns)
+                sortino = BaseOptimizer.calculate_sortino(returns, risk_free_rate=self.risk_free_rate)
                 print(f"[DEBUG] Sortino: {sortino}")
                 max_dd = drawdown_analysis.get('max', {}).get('drawdown', 0)
                 calmar = BaseOptimizer.calculate_calmar(returns, max_dd)
                 print(f"[DEBUG] Calmar: {calmar}")
-                omega = BaseOptimizer.calculate_omega(returns)
+                omega = BaseOptimizer.calculate_omega(returns, threshold=self.omega_threshold)
                 print(f"[DEBUG] Omega: {omega}")
                 rolling_sharpe = BaseOptimizer.calculate_rolling_sharpe(returns).tolist()
                 print(f"[DEBUG] Rolling Sharpe: {rolling_sharpe}")

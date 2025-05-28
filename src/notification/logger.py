@@ -79,7 +79,7 @@ LOG_CONFIG = {
         },
         "default": {
             "handlers": ["console"],
-            "level": "WARNING"
+            "level": "DEBUG"
         },
         "root": {
             "handlers": ["console"],
