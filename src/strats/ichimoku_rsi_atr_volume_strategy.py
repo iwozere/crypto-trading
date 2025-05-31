@@ -59,6 +59,7 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
         kijun = self.kijun[0]
         senkou_a = self.senkou_a[0]
         senkou_b = self.senkou_b[0]
+        chikou = self.chikou[0]
         atr = self.atr[0]
         cloud_top = max(senkou_a, senkou_b)
         cloud_bot = min(senkou_a, senkou_b)
@@ -79,13 +80,17 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
                     'entry_time': self.data.datetime.datetime(0),
                     'entry_price': close,
                     'type': 'long',
-                    'rsi': rsi,
-                    'volume': volume,
-                    'vol_ma': vol_ma,
-                    'tenkan': tenkan,
-                    'kijun': kijun,
-                    'cloud_top': cloud_top,
-                    'cloud_bot': cloud_bot
+                    'rsi_at_entry': rsi,
+                    'atr_at_entry': atr,
+                    'volume_at_entry': volume,
+                    'vol_ma_at_entry': vol_ma,
+                    'tenkan_at_entry': tenkan,
+                    'kijun_at_entry': kijun,
+                    'senkou_a_at_entry': senkou_a,
+                    'senkou_b_at_entry': senkou_b,
+                    'chikou_at_entry': chikou,
+                    'cloud_top_at_entry': cloud_top,
+                    'cloud_bot_at_entry': cloud_bot
                 }
                 self.log(f'LONG ENTRY: {close:.2f} (RSI {rsi:.2f}, Vol {volume:.0f} > MA {vol_ma:.0f})')
            
@@ -138,7 +143,18 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
                             'exit_time': self.data.datetime.datetime(0),
                             'exit_price': close,
                             'exit_reason': exit_reason,
-                            'pnl': (close - self.entry_price) / self.entry_price * 100
+                            'pnl': (close - self.entry_price) / self.entry_price * 100,
+                            'rsi_at_exit': rsi,
+                            'atr_at_exit': atr,
+                            'volume_at_exit': volume,
+                            'vol_ma_at_exit': vol_ma,
+                            'tenkan_at_exit': tenkan,
+                            'kijun_at_exit': kijun,
+                            'senkou_a_at_exit': senkou_a,
+                            'senkou_b_at_exit': senkou_b,
+                            'chikou_at_exit': chikou,
+                            'cloud_top_at_exit': cloud_top,
+                            'cloud_bot_at_exit': cloud_bot
                         })
                         if 'pnl_comm' not in self.current_trade:
                             self.current_trade['pnl_comm'] = self.current_trade['pnl']

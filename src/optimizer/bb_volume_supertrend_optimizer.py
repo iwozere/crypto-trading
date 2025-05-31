@@ -56,6 +56,7 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         # Read search space from config and convert to skopt space objects
         self.space = self._build_skopt_space_from_config(config.get('search_space', []))
         self.plot_size = config.get('plot_size', [15, 10])
+        plt.style.use('dark_background')
         self.plot_style = config.get('plot_style', 'default')
         self.font_size = config.get('font_size', 10)
         self.plot_dpi = config.get('plot_dpi', 300)
@@ -102,9 +103,9 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         Returns:
             Path to the saved plot image, or None if plotting fails
         """
+        plt.style.use('dark_background')
         print(trades_df)
         
-        plt.style.use(self.plot_style)
         fig = plt.figure(figsize=self.plot_size)
         gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 1]) 
         ax1 = plt.subplot(gs[0])

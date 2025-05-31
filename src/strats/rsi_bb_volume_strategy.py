@@ -131,13 +131,13 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                     'entry_price': self.entry_price,
                     'tp_price': self.tp_price,
                     'sl_price': self.sl_price,
-                    'atr': atr_value,
-                    'rsi': rsi_value,
-                    'volume': volume,
-                    'volume_ma': vol_ma_value,
-                    'bb_low': bb_low,
-                    'bb_mid': bb_mid,
-                    'bb_high': bb_high
+                    'atr_at_entry': atr_value,
+                    'rsi_at_entry': rsi_value,
+                    'volume_at_entry': volume,
+                    'vol_ma_at_entry': vol_ma_value,
+                    'bb_low_at_entry': bb_low,
+                    'bb_mid_at_entry': bb_mid,
+                    'bb_high_at_entry': bb_high
                 }
                 cash = self.broker.getcash()
                 value = self.broker.getvalue()
@@ -156,7 +156,14 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                         'exit_time': self.data.datetime.datetime(0),
                         'exit_price': close,
                         'exit_type': 'tp',
-                        'pnl': (close - self.entry_price) / self.entry_price * 100
+                        'pnl': (close - self.entry_price) / self.entry_price * 100,
+                        'atr_at_exit': atr_value,
+                        'rsi_at_exit': rsi_value,
+                        'volume_at_exit': volume,
+                        'vol_ma_at_exit': vol_ma_value,
+                        'bb_low_at_exit': bb_low,
+                        'bb_mid_at_exit': bb_mid,
+                        'bb_high_at_exit': bb_high
                     })
                     if 'pnl_comm' not in self.current_trade:
                         self.current_trade['pnl_comm'] = self.current_trade['pnl']
@@ -170,7 +177,14 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                         'exit_time': self.data.datetime.datetime(0),
                         'exit_price': close,
                         'exit_type': 'sl',
-                        'pnl': (close - self.entry_price) / self.entry_price * 100
+                        'pnl': (close - self.entry_price) / self.entry_price * 100,
+                        'atr_at_exit': atr_value,
+                        'rsi_at_exit': rsi_value,
+                        'volume_at_exit': volume,
+                        'vol_ma_at_exit': vol_ma_value,
+                        'bb_low_at_exit': bb_low,
+                        'bb_mid_at_exit': bb_mid,
+                        'bb_high_at_exit': bb_high
                     })
                     if 'pnl_comm' not in self.current_trade:
                         self.current_trade['pnl_comm'] = self.current_trade['pnl']

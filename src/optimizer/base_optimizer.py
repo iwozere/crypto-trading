@@ -710,3 +710,31 @@ class BaseOptimizer:
             self.log_message(f"Error during backtest run for params {params}: {str(e)}")
             self.log_message(traceback.format_exc(), level='error')
             return None 
+
+    def calculate_metrics(self, trades_df: pd.DataFrame, equity_curve: pd.Series = None) -> Dict[str, Any]:
+        """
+        Calculate and return all relevant metrics, including sortino_ratio, calmar_ratio, omega_ratio, etc.
+        Args:
+            trades_df: DataFrame of trades
+            equity_curve: Series of equity values (optional)
+        Returns:
+            Dictionary of metrics
+        """
+        metrics = {}
+        if trades_df is not None and not trades_df.empty:
+            returns = trades_df['pnl_comm'] / trades_df['entry_price']
+            metrics['sharpe_ratio'] = self.calculate_rolling_sharpe(returns, window=30).mean() if len(returns) > 1 else 0
+            metrics['sortino_ratio'] = self.calculate_sortino(returns, self.risk_free_rate) if len(returns) > 1 else 0
+            # Calculate max drawdown from equity curve if available
+            if equity_curve is not None and not equity_curve.empty:
+                max_drawdown = (equity_curve / equity_curve.cummax() - 1).min()
+            else:
+                max_drawdown = 0
+            metrics['calmar_ratio'] = self.calculate_calmar(returns, max_drawdown) if len(returns) > 1 and max_drawdown != 0 else 0
+            metrics['omega_ratio'] = self.calculate_omega(returns, self.omega_threshold) if len(returns) > 1 else 0
+        else:
+            metrics['sharpe_ratio'] = 0
+            metrics['sortino_ratio'] = 0
+            metrics['calmar_ratio'] = 0
+            metrics['omega_ratio'] = 0
+        return metrics 

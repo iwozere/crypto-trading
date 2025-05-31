@@ -57,7 +57,7 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         os.makedirs(self.results_dir, exist_ok=True)
         
         self.plot_size = config.get('plot_size', [15, 10])
-        plt.style.use('default')
+        plt.style.use('dark_background')
         sns.set_theme(style="darkgrid")
         plt.rcParams['figure.figsize'] = self.plot_size
         plt.rcParams['font.size'] = 10

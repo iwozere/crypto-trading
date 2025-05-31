@@ -56,6 +56,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         os.makedirs(self.results_dir, exist_ok=True)
         
         self.plot_size = config.get('plot_size', [15, 10])
+        plt.style.use('dark_background')
         self.plot_style = config.get('plot_style', 'default')
         self.font_size = config.get('font_size', 10)
         self.plot_dpi = config.get('plot_dpi', 300)
@@ -76,7 +77,6 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         self.report_params = config.get('report_params', True)
         self.report_filename_pattern = config.get('report_filename_pattern', None)
         self.include_plots_in_report = config.get('include_plots_in_report', True)
-        plt.style.use(self.plot_style)
         plt.rcParams['figure.figsize'] = self.plot_size
         plt.rcParams['font.size'] = self.font_size
         
@@ -107,7 +107,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         Returns:
             Path to the saved plot image, or None if plotting fails
         """
-        plt.style.use(self.plot_style)
+        plt.style.use('dark_background')
         fig = plt.figure(figsize=self.plot_size)
         
         # Create subplots

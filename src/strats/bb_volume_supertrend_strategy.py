@@ -140,16 +140,18 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         self.log(f'Trade history: {getattr(trade, "history", None)}')
         self.log(f'Trade size: {getattr(trade, "size", None)}')
         
-        # Direction in my case is always long
-        direction = 'long'
-        if trade.size > 0:
-            direction = 'long'
-        elif trade.size < 0:
-            direction = 'short'
-
+        direction = 'long' if trade.size > 0 else 'short'
         entry_price = trade.price
         exit_price = self.last_exit_price
-
+        # Get current indicator values
+        bb_lower = self.boll.lines.bot[0] if hasattr(self, 'boll') else None
+        bb_middle = self.boll.lines.mid[0] if hasattr(self, 'boll') else None
+        bb_upper = self.boll.lines.top[0] if hasattr(self, 'boll') else None
+        atr_val = self.atr[0] if hasattr(self, 'atr') else None
+        st_val = self.supertrend.lines.supertrend[0] if hasattr(self, 'supertrend') else None
+        st_dir = self.supertrend.lines.direction[0] if hasattr(self, 'supertrend') else None
+        vol_ma_val = self.vol_ma[0] if hasattr(self, 'vol_ma') else None
+        volume = self.data.volume[0] if hasattr(self.data, 'volume') else None
         trade_dict = {
             'symbol': trade.data._name if hasattr(trade.data, '_name') else 'UNKNOWN',
             'ref': trade.ref,
@@ -160,12 +162,21 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
             'exit_price': exit_price,
             'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
             'size': trade.size, 'value': trade.value,
-            'commission': trade.commission
+            'commission': trade.commission,
+            # Indicator values at exit
+            'bb_lower_at_exit': bb_lower,
+            'bb_middle_at_exit': bb_middle,
+            'bb_upper_at_exit': bb_upper,
+            'atr_at_exit': atr_val,
+            'supertrend_val_at_exit': st_val,
+            'supertrend_dir_at_exit': st_dir,
+            'volume_at_exit': volume,
+            'vol_ma_at_exit': vol_ma_val
         }
         if 'pnl_comm' not in trade_dict or trade_dict['pnl_comm'] is None:
             trade_dict['pnl_comm'] = trade_dict['pnl']
         self.record_trade(trade_dict)
-        self.trade_active = False # Ensure flag is reset
+        self.trade_active = False
         self.entry_price = None
         self.active_tp_price = None
         self.active_sl_price = None

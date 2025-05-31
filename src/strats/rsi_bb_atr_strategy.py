@@ -129,6 +129,12 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
         if not trade.isclosed:
             return
         self.log(f'TRADE CLOSED, PNL GROSS {trade.pnl:.2f}, PNL NET {trade.pnlcomm:.2f}')
+        # Get current indicator values
+        rsi_val = self.rsi[0] if hasattr(self, 'rsi') else None
+        bb_lower = self.boll.lines.bot[0] if hasattr(self, 'boll') else None
+        bb_middle = self.boll.lines.mid[0] if hasattr(self, 'boll') else None
+        bb_upper = self.boll.lines.top[0] if hasattr(self, 'boll') else None
+        atr_val = self.atr[0] if hasattr(self, 'atr') else None
         trade_dict = {
             'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
             'ref': trade.ref,
@@ -138,7 +144,13 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
             'exit_time': getattr(self, 'last_exit_dt', bt.num2date(trade.dtclose) if trade.dtclose else None),
             'exit_price': getattr(self, 'last_exit_price', None),
             'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
-            'size': trade.size
+            'size': trade.size,
+            # Add indicator values
+            'rsi_at_exit': rsi_val,
+            'bb_lower_at_exit': bb_lower,
+            'bb_middle_at_exit': bb_middle,
+            'bb_upper_at_exit': bb_upper,
+            'atr_at_exit': atr_val
         }
         if 'pnl_comm' not in trade_dict or trade_dict['pnl_comm'] is None:
             trade_dict['pnl_comm'] = trade_dict['pnl']
@@ -195,7 +207,14 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
 # Example Usage (for testing)
 if __name__ == '__main__':
     cerebro = bt.Cerebro()
-    cerebro.addstrategy(MeanReversionRSBBATRStrategy, printlog=True, check_rsi_slope=True)
+    cerebro.addstrategy(
+        MeanReversionRSBBATRStrategy,
+        {
+            "printlog": True,
+            "check_rsi_slope": True,
+            # add other params here as needed
+        }
+    )
 
     # Create dummy data
     data_len = 200

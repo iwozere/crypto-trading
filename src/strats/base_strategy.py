@@ -108,3 +108,7 @@ class BaseStrategy(bt.Strategy):
         #print(f"TRADE CLOSED: PnL: {trade.pnl}, PnL Comm: {trade.pnlcomm}")
         # Optionally, log or record the trade here as well
             
+    def get_trades(self):
+        """Return the list of recorded trades for this strategy instance."""
+        return self.trades
+            

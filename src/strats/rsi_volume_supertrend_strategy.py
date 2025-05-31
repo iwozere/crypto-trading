@@ -101,6 +101,12 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                     if self.current_trade:
                         self.current_trade['pnl'] = current_pnl_pct
                         self.current_trade['exit_type'] = exit_reason
+                        self.current_trade['atr_at_exit'] = atr_val
+                        self.current_trade['rsi_at_exit'] = rsi_val
+                        self.current_trade['volume_at_exit'] = volume
+                        self.current_trade['vol_ma_at_exit'] = vol_ma_val
+                        self.current_trade['supertrend_val_at_exit'] = st_value
+                        self.current_trade['supertrend_dir_at_exit'] = st_direction
                         if 'pnl_comm' not in self.current_trade:
                             self.current_trade['pnl_comm'] = self.current_trade['pnl']
                     self.order = self.close()
