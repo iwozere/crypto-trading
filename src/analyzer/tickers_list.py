@@ -6,6 +6,29 @@ import datetime
 from typing import Any, Dict, Optional
 
 
+def get_circulating_supply(ticker):
+    mapping = {
+        'BTC-USD': 'bitcoin',
+        'ETH-USD': 'ethereum',
+        'LTC-USD': 'litecoin',
+        'XRP-USD': 'xrp',
+        'BCH-USD': 'bitcoin-cash',
+        'XLM-USD': 'stellar',
+        'ADA-USD': 'cardano',
+        'DOT-USD': 'polkadot',
+    }
+    coin_id = mapping.get(ticker)
+    if coin_id is None:
+        coin_id = ticker
+    url = f'https://api.coingecko.com/api/v3/coins/{coin_id}'
+    try:
+        response = requests.get(url)
+        data = response.json()
+        return data['market_data']['circulating_supply']
+    except Exception as e:
+        print(f"Error fetching supply: {e}")
+        return 1e8
+
 # Download SIX ticker list
 def get_six_tickers():
     url = 'https://www.six-group.com/sheldon/equity_issuers/v1/equity_issuers.csv'
@@ -203,3 +226,8 @@ if __name__ == "__main__":
     print(get_us_medium_cap_tickers())
     print("\nUS Large Cap Tickers:")
     print(get_us_large_cap_tickers())
+    print("\nCirculating Supply:")
+    print(get_circulating_supply('bitcoin'))
+    print(get_circulating_supply('ethereum'))
+    print(get_circulating_supply('litecoin'))
+    print(get_circulating_supply('xrp'))
