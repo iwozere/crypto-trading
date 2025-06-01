@@ -136,7 +136,6 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
     def notify_trade(self, trade):
         if not trade.isclosed:
             return
-
         self.log(f'OPERATION PROFIT, GROSS {trade.pnl:.2f}, NET {trade.pnlcomm:.2f}')
         self.log(f'Trade history: {getattr(trade, "history", None)}')
         self.log(f'Trade size: {getattr(trade, "size", None)}')
@@ -154,7 +153,7 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         vol_ma_val = self.vol_ma[0] if hasattr(self, 'vol_ma') else None
         volume = self.data.volume[0] if hasattr(self.data, 'volume') else None
         trade_dict = {
-            'symbol': trade.data._name if hasattr(trade.data, '_name') else 'UNKNOWN',
+            # 'symbol': trade.data._name if hasattr(trade.data, '_name') else 'UNKNOWN',
             'ref': trade.ref,
             'entry_time': bt.num2date(trade.dtopen) if trade.dtopen else None,
             'entry_price': entry_price,

@@ -137,7 +137,7 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
         bb_upper = self.boll.lines.top[0] if hasattr(self, 'boll') else None
         atr_val = self.atr[0] if hasattr(self, 'atr') else None
         trade_dict = {
-            'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
+            # 'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
             'ref': trade.ref,
             'entry_time': bt.num2date(trade.dtopen) if trade.dtopen else None,
             'entry_price': trade.price, 

@@ -62,7 +62,7 @@ class StrategyTemplate(BaseStrategy):
             return
         self.log(f'OPERATION PROFIT, GROSS {trade.pnl:.2f}, NET {trade.pnlcomm:.2f}')
         trade_dict = {
-            'symbol': trade.data._name if hasattr(trade.data, '_name') else 'UNKNOWN',
+            # 'symbol': trade.data._name if hasattr(trade.data, '_name') else 'UNKNOWN',
             'ref': trade.ref,
             'entry_time': bt.num2date(trade.dtopen) if trade.dtopen else None,
             'entry_price': trade.price,

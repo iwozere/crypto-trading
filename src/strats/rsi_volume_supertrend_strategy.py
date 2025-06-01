@@ -69,6 +69,7 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                         self.current_trade['exit_price'] = order.executed.price
                         self.current_trade['exit_time'] = self.data.datetime.datetime(0)
                         self.current_trade['exit_reason'] = self.last_exit_reason
+                        self.current_trade.pop('symbol', None)
                         self.record_trade(self.current_trade)
                         self.current_trade = None
                     self.last_exit_reason = None
@@ -120,7 +121,6 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                prev_rsi_val < self.params.get('rsi_entry_long_level', 40.0) and rsi_val > prev_rsi_val and \
                volume > vol_ma_val:
                 self.current_trade = {
-                    'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
                     'entry_time': self.data.datetime.datetime(0),
                     'entry_price': 'pending_long',
                     'atr_at_entry': atr_val, 'rsi_at_entry': rsi_val,

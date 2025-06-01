@@ -77,7 +77,7 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
                 self.trailing_stop = close - self.params.get('atr_mult', 2.0) * atr
                 self.position_type = 'long'
                 self.current_trade = {
-                    'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
+                    # 'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
                     'entry_time': self.data.datetime.datetime(0),
                     'entry_price': close,
                     'type': 'long',
@@ -141,7 +141,7 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
                     self.order = self.close()
                     if self.current_trade:
                         self.current_trade.update({
-                            'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
+                            # 'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
                             'exit_time': self.data.datetime.datetime(0),
                             'exit_price': close,
                             'exit_reason': self.last_exit_reason,
