@@ -81,20 +81,8 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         plt.rcParams['font.size'] = self.font_size
         
         # Read search space from config and convert to skopt space objects
-        self.space = self._build_skopt_space_from_config(config.get('search_space', []))
+        self.space = super()._build_skopt_space_from_config(config.get('search_space', []))
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
-    
-    def _build_skopt_space_from_config(self, search_space_config):
-        from skopt.space import Real, Integer, Categorical
-        skopt_space = []
-        for param in search_space_config:
-            if param['type'] == 'Integer':
-                skopt_space.append(Integer(param['low'], param['high'], name=param['name']))
-            elif param['type'] == 'Real':
-                skopt_space.append(Real(param['low'], param['high'], name=param['name']))
-            elif param['type'] == 'Categorical':
-                skopt_space.append(Categorical(param['categories'], name=param['name']))
-        return skopt_space
     
     def plot_results(self, data: Any, trades_df: Any, params: Dict[str, Any], data_file: str) -> Optional[str]:
         """

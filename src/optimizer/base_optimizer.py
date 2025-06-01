@@ -25,6 +25,7 @@ from ta.volatility import AverageTrueRange
 from src.notification.logger import _logger
 from skopt import gp_minimize
 from typing import Any, Dict, List, Optional, Union
+from skopt.space import Real, Integer, Categorical
 
 class BaseOptimizer:
     def __init__(self, config: dict):
@@ -731,3 +732,21 @@ class BaseOptimizer:
             metrics['calmar_ratio'] = 0
             metrics['omega_ratio'] = 0
         return metrics 
+
+    def _build_skopt_space_from_config(self, search_space_config):
+        """
+        Build a skopt search space from a config list of parameter dicts.
+        Args:
+            search_space_config: List of parameter dicts with keys 'type', 'name', and bounds/categories.
+        Returns:
+            List of skopt.space.Dimension objects (Integer, Real, Categorical)
+        """
+        skopt_space = []
+        for param in search_space_config:
+            if param['type'] == 'Integer':
+                skopt_space.append(Integer(param['low'], param['high'], name=param['name']))
+            elif param['type'] == 'Real':
+                skopt_space.append(Real(param['low'], param['high'], name=param['name']))
+            elif param['type'] == 'Categorical':
+                skopt_space.append(Categorical(param['categories'], name=param['name']))
+        return skopt_space 
