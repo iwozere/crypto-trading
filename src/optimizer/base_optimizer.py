@@ -411,6 +411,7 @@ class BaseOptimizer:
             metrics['rolling_sharpe'] = metrics.get('rolling_sharpe', []) or []
             # Compose results dict
             results_dict = {
+                'version': '1.0.0',
                 'timestamp': datetime.now().isoformat(),
                 'strategy_name': strategy_name,
                 'data_file': data_file,
@@ -543,6 +544,7 @@ class BaseOptimizer:
             return
 
         combined_results = {
+            'version': '1.0.0',
             'timestamp': datetime.now().isoformat(),
             'optimizer_class': self.__class__.__name__,
             'strategy_name': getattr(self, 'strategy_name', 'UnknownStrategy'),
@@ -610,21 +612,12 @@ class BaseOptimizer:
             if trades and len(trades) > 1:
                 trades_df = pd.DataFrame(trades)
                 returns = trades_df['pnl_comm'] / trades_df['entry_price']
-                print("[DEBUG] Returns for metrics:", returns.tolist())
-                print("Any NaN in returns:", returns.isna().any())
-                print("Any inf in returns:", np.isinf(returns).any())
-                print("Returns describe:", returns.describe())
                 sortino = BaseOptimizer.calculate_sortino(returns, risk_free_rate=self.risk_free_rate)
-                print(f"[DEBUG] Sortino: {sortino}")
                 max_dd = drawdown_analysis.get('max', {}).get('drawdown', 0)
                 calmar = BaseOptimizer.calculate_calmar(returns, max_dd)
-                print(f"[DEBUG] Calmar: {calmar}")
                 omega = BaseOptimizer.calculate_omega(returns, threshold=self.omega_threshold)
-                print(f"[DEBUG] Omega: {omega}")
                 rolling_sharpe = BaseOptimizer.calculate_rolling_sharpe(returns).tolist()
-                print(f"[DEBUG] Rolling Sharpe: {rolling_sharpe}")
         except Exception as e:
-            print(f"[DEBUG] Exception in risk metrics calculation: {e}")
             pass
 
         self.current_metrics = {

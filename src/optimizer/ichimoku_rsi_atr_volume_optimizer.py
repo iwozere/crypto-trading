@@ -123,7 +123,10 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
             senkou_span_b = ((high.rolling(senkou).max() + low.rolling(senkou).min()) / 2).shift(kijun)
             chikou_span = df['close'].shift(-kijun)
             return tenkan_sen, kijun_sen, senkou_span_a, senkou_span_b, chikou_span
-        tenkan_sen, kijun_sen, senkou_a, senkou_b, chikou = ichimoku_lines(data_df, params['ichimoku_tenkan'], params['ichimoku_kijun'], params['ichimoku_senkou'])
+        tenkan = int(round(params['ichimoku_tenkan']))
+        kijun = int(round(params['ichimoku_kijun']))
+        senkou = int(round(params['ichimoku_senkou']))
+        tenkan_sen, kijun_sen, senkou_a, senkou_b, chikou = ichimoku_lines(data_df, tenkan, kijun, senkou)
         ax1.plot(data_df.index, tenkan_sen, label='Tenkan-sen', color='orange', linewidth=1.5)
         ax1.plot(data_df.index, kijun_sen, label='Kijun-sen', color='blue', linewidth=1.5)
         ax1.plot(data_df.index, senkou_a, label='Senkou Span A', color='green', linewidth=1.2, alpha=0.7)
@@ -158,9 +161,10 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         ax3.legend(loc=self.legend_loc, fontsize=self.font_size)
 
         # Volume
+        vol_ma_window = int(round(params['ichimoku_senkou']))
         ax4.bar(data_df.index, data_df['volume'], label='Volume', color='blue', alpha=0.7)
-        vol_ma = data_df['volume'].rolling(window=params['ichimoku_senkou']).mean()
-        ax4.plot(data_df.index, vol_ma, label=f'Volume MA ({params["ichimoku_senkou"]})', color='yellow', linewidth=2)
+        vol_ma = data_df['volume'].rolling(window=vol_ma_window).mean()
+        ax4.plot(data_df.index, vol_ma, label=f'Volume MA ({vol_ma_window})', color='yellow', linewidth=2)
         ax4.set_ylabel('Volume', fontsize=self.font_size)
         ax4.legend(loc=self.legend_loc, fontsize=self.font_size)
 
