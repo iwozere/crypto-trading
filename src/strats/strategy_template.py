@@ -40,6 +40,7 @@ class StrategyTemplate(BaseStrategy):
         self.entry_price = None
         self.trade_active = False
         self.trades = []  # List to log trades
+        self.last_exit_reason = None
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -68,11 +69,13 @@ class StrategyTemplate(BaseStrategy):
             'direction': 'long',  # or 'short', customize as needed
             'exit_time': bt.num2date(trade.dtclose) if trade.dtclose else None,
             'exit_price': trade.history[-1].event.price if trade.history and trade.history[-1].event else None,
+            'exit_reason': self.last_exit_reason,
             'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
             'size': trade.size, 'value': trade.value,
             'commission': trade.commission
         }
         self.record_trade(trade_dict)
+        self.last_exit_reason = None
         self.trade_active = False
         self.entry_price = None
 
@@ -89,4 +92,5 @@ class StrategyTemplate(BaseStrategy):
         else:
             # Example: Exit if close < some threshold
             if close < 95:  # Replace with your exit condition
+                self.last_exit_reason = 'Example: Close < 95'
                 self.order = self.close() 

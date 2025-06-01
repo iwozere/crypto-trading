@@ -1,7 +1,8 @@
 from src.broker.binance_broker import BinanceBroker
 from src.broker.binance_paper_broker import BinancePaperBroker
 from src.broker.ibkr_broker import IBKRBroker
-from src.broker.base_broker import MockBroker
+from src.broker.mock_broker import MockBroker
+from config.donotshare.donotshare import BINANCE_KEY, BINANCE_SECRET, IBKR_HOST, IBKR_PORT, IBKR_CLIENT_ID, BINANCE_PAPER_KEY, BINANCE_PAPER_SECRET
 from typing import Any, Dict
 
 def get_broker(config: Dict[str, Any]):
@@ -11,11 +12,11 @@ def get_broker(config: Dict[str, Any]):
     """
     broker_type = config.get('type', 'mock').lower()
     if broker_type == 'binance':
-        return BinanceBroker(config['api_key'], config['api_secret'], config.get('cash', 1000.0))
+        return BinanceBroker(BINANCE_KEY, BINANCE_SECRET, config.get('cash', 1000.0))
     elif broker_type == 'binance_paper':
-        return BinancePaperBroker(config['api_key'], config['api_secret'], config.get('cash', 1000.0))
+        return BinancePaperBroker(BINANCE_PAPER_KEY, BINANCE_PAPER_SECRET, config.get('cash', 1000.0))
     elif broker_type == 'ibkr':
-        return IBKRBroker(config.get('host', '127.0.0.1'), config.get('port', 7497), config.get('client_id', 1), config.get('cash', 1000.0))
+        return IBKRBroker(IBKR_HOST, IBKR_PORT, IBKR_CLIENT_ID, config.get('cash', 1000.0))
     elif broker_type == 'mock':
         return MockBroker(config.get('cash', 1000.0))
     else:

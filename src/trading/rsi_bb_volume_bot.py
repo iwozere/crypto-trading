@@ -25,32 +25,24 @@ from typing import Any, Dict
 from src.data.binance_live_feed import BinanceLiveFeed
 from src.strats.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
 from src.broker.binance_paper_broker import BinancePaperBroker
+from src.notification.logger import _logger
 
 
 class RsiBbVolumeBot(BaseTradingBot):
     """
-    Trading bot for RSI, Bollinger Bands, and Volume strategies. Accepts any strategy and broker.
+    Trading bot for RSI, Bollinger Bands, and Volume strategies. Accepts any strategy class and parameters, and instantiates via Backtrader Cerebro.
     """
-    def __init__(self, config: Dict[str, Any], strategy: Any, broker: Any = None) -> None:
-        super().__init__(config, strategy, broker)
+    def __init__(self, config: Dict[str, Any], strategy_class: Any, parameters: Dict[str, Any], broker: Any = None) -> None:
+        super().__init__(config, strategy_class, parameters, broker)
 
     def run(self) -> None:
-        """Main bot loop."""
-        self.is_running = True
-        print(f"Starting bot for {self.trading_pair}")
-        while self.is_running:
-            try:
-                signals = self.strategy.get_signals(self.trading_pair)
-                for signal in signals:
-                    if signal['type'] == 'buy' and self.trading_pair not in self.active_positions:
-                        self.execute_trade('buy', signal['price'], signal['size'])
-                    elif signal['type'] == 'sell' and self.trading_pair in self.active_positions:
-                        self.execute_trade('sell', signal['price'], signal['size'])
-                self.update_positions()
-                time.sleep(1)
-            except Exception as e:
-                print(f"Error in bot loop: {str(e)}")
-                time.sleep(5)
+        """Main bot loop using Backtrader Cerebro."""
+        symbol = self.config.get('trading_pair', 'BTCUSDT')
+        interval = self.config.get('interval', '1m')
+        window = self.config.get('window', 200)
+        client = Client(BINANCE_PAPER_KEY, BINANCE_PAPER_SECRET)
+        data_feed = BinanceLiveFeed.from_binance(client, symbol=symbol, interval=interval, window=window)
+        self.run_backtrader_engine(data_feed)
 
     def execute_trade(self, trade_type, price, size):
         """Execute a trade and record it"""
@@ -103,12 +95,8 @@ class RsiBbVolumeBot(BaseTradingBot):
     def stop(self):
         """Stop the bot"""
         self.is_running = False
-        print(f"Stopping bot for {self.trading_pair}")
-        
-        # Close all open positions
-        for pair in list(self.active_positions.keys()):
-            current_price = self.strategy.get_current_price(pair)
-            self.execute_trade('sell', current_price, self.active_positions[pair]['size'])
+        _logger.info(f"Stopping bot for {self.trading_pair}")
+        # Optionally handle graceful shutdown
 
 if __name__ == "__main__":
     # Example config for standalone run

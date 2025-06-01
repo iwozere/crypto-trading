@@ -10,7 +10,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 import logging.config
 from datetime import datetime
 
-
+# Ensure log directory exists
+log_dir = os.path.join('logs', 'log')
+os.makedirs(log_dir, exist_ok=True)
 
 ####################################################################
 # Simple logger, which logs to console
@@ -78,12 +80,12 @@ LOG_CONFIG = {
             "propagate": False
         },
         "default": {
-            "handlers": ["console"],
+            "handlers": ["console", "file"],
             "level": "DEBUG"
         },
         "root": {
-            "handlers": ["console"],
-            "level": "WARNING"
+            "handlers": ["console", "file"],
+            "level": "DEBUG"
         }
     }
 }

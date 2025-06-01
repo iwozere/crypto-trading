@@ -80,6 +80,7 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         self.active_sl_price = None
         self.trades = []
         self.last_exit_price = None
+        self.last_exit_reason = None
         # self.notifier = create_notifier() # Temporarily commented out
 
     def notify_order(self, order):
@@ -160,6 +161,7 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
             'direction': direction,
             'exit_time': bt.num2date(trade.dtclose) if trade.dtclose else None,
             'exit_price': exit_price,
+            'exit_reason': self.last_exit_reason,
             'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
             'size': trade.size, 'value': trade.value,
             'commission': trade.commission,
@@ -176,6 +178,7 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         if 'pnl_comm' not in trade_dict or trade_dict['pnl_comm'] is None:
             trade_dict['pnl_comm'] = trade_dict['pnl']
         self.record_trade(trade_dict)
+        self.last_exit_reason = None
         self.trade_active = False
         self.entry_price = None
         self.active_tp_price = None
@@ -243,6 +246,7 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
                     exit_reason = f"Long Exit: Stop Loss hit at {self.active_sl_price:.2f}"
             # No short position/exit logic
             if exit_signal:
+                self.last_exit_reason = exit_reason
                 self.log(f'EXIT SIGNAL: {exit_reason}. Closing position.')
                 self.order = self.close() # Close position
                 # self.trade_active is reset in notify_order or notify_trade

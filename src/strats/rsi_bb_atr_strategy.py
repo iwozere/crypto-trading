@@ -76,6 +76,7 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
         self.last_exit_dt = None
         self.highest_close = None
         self.trailing_stop = None
+        self.last_exit_reason = None
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -143,6 +144,7 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
             'direction': 'long',
             'exit_time': getattr(self, 'last_exit_dt', bt.num2date(trade.dtclose) if trade.dtclose else None),
             'exit_price': getattr(self, 'last_exit_price', None),
+            'exit_reason': self.last_exit_reason,
             'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
             'size': trade.size,
             # Add indicator values
@@ -155,6 +157,7 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
         if 'pnl_comm' not in trade_dict or trade_dict['pnl_comm'] is None:
             trade_dict['pnl_comm'] = trade_dict['pnl']
         self.record_trade(trade_dict)
+        self.last_exit_reason = None
         self.last_exit_price = None
         self.last_exit_dt = None
         self.entry_price = None
@@ -201,6 +204,7 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
                     exit_signal = True
                     exit_reason = f"Long Exit: Stop Loss hit at {self.active_sl_price:.2f}"
             if exit_signal:
+                self.last_exit_reason = exit_reason
                 self.log(f'EXIT SIGNAL: {exit_reason}. Closing position.')
                 self.order = self.close()
 

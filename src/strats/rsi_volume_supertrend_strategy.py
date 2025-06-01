@@ -43,6 +43,7 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
         self.tp_price = None
         self.sl_price = None
         self.current_trade = None
+        self.last_exit_reason = None
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -67,8 +68,10 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                     if self.current_trade:
                         self.current_trade['exit_price'] = order.executed.price
                         self.current_trade['exit_time'] = self.data.datetime.datetime(0)
+                        self.current_trade['exit_reason'] = self.last_exit_reason
                         self.record_trade(self.current_trade)
                         self.current_trade = None
+                    self.last_exit_reason = None
                     self.entry_price = None
                     self.bar_executed = 0
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
@@ -98,6 +101,7 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                 elif self.sl_price and close <= self.sl_price: exit_reason = 'sl_long'
                 elif self.tp_price and close >= self.tp_price: exit_reason = 'tp_long'
                 if exit_reason:
+                    self.last_exit_reason = exit_reason
                     if self.current_trade:
                         self.current_trade['pnl'] = current_pnl_pct
                         self.current_trade['exit_type'] = exit_reason

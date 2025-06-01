@@ -42,10 +42,8 @@ def main(config_name : str):
         
     strategy_class = strat_info['class']
     _logger.info(f"Selected strategy: {strategy_type} ({strategy_class.__name__})")
-    strategy = strategy_class(parameters)
-
     _logger.info("Creating trading bot...")
-    bot = create_trading_bot(config, strategy)
+    bot = create_trading_bot(config, strategy_class, parameters)
     _logger.info("Bot created. Running bot...")
     try:
         bot.run()

@@ -27,24 +27,27 @@ import json
 
 class BaseTradingBot:
     """
-    Base class for trading bots. Handles config, strategy, broker, notifications, and state.
+    Base class for trading bots. Handles config, strategy class, parameters, broker, notifications, and state.
+    Subclasses should only override methods if custom logic is needed.
     """
-    def __init__(self, config: Dict[str, Any], strategy: Any, broker: Any = None, paper_trading: bool = True) -> None:
+    def __init__(self, config: Dict[str, Any], strategy_class: Any, parameters: Dict[str, Any], broker: Any = None, paper_trading: bool = True) -> None:
         """
         Initialize the trading bot with config, strategy, broker, and mode.
         Args:
             config: Configuration dictionary
-            strategy: Strategy instance
+            strategy_class: Strategy class
+            parameters: Strategy parameters
             broker: Broker instance (optional)
             paper_trading: Whether to use paper trading mode
         """
         self.config = config
         self.trading_pair = config.get('trading_pair', 'BTCUSDT')
         self.initial_balance = config.get('initial_balance', 1000.0)
+        self.strategy_class = strategy_class
+        self.parameters = parameters
         self.is_running = False
         self.active_positions = {}
         self.trade_history = []
-        self.strategy = strategy
         self.current_balance = self.initial_balance
         self.total_pnl = 0.0
         self.broker = broker
@@ -86,7 +89,7 @@ class BaseTradingBot:
         Returns:
             List of signal dictionaries
         """
-        return self.strategy.get_signals(self.trading_pair)
+        return self.strategy_class.get_signals(self.trading_pair)
 
     def process_signals(self, signals: List[Dict[str, Any]]) -> None:
         """
@@ -102,11 +105,7 @@ class BaseTradingBot:
 
     def execute_trade(self, trade_type: str, price: float, size: float) -> None:
         """
-        Execute a trade (buy/sell) using the broker or paper trading logic. Log and persist all trades and orders.
-        Args:
-            trade_type: 'buy' or 'sell'
-            price: Trade price
-            size: Trade size
+        Generic trade execution logic for buy/sell. Subclasses can override for custom behavior.
         """
         timestamp = datetime.now()
         order = None
@@ -265,8 +264,8 @@ class BaseTradingBot:
                 'side': side,
                 'entry_price': entry_price if entry_price is not None else price,
                 'exit_price': price if side == 'SELL' else None,
-                'tp_price': getattr(self.strategy, 'tp_atr_mult', None),
-                'sl_price': getattr(self.strategy, 'sl_atr_mult', None),
+                'tp_price': getattr(self.strategy_class, 'tp_atr_mult', None),
+                'sl_price': getattr(self.strategy_class, 'sl_atr_mult', None),
                 'quantity': size,
                 'timestamp': timestamp.isoformat(),
                 'pnl': pnl
@@ -290,26 +289,101 @@ class BaseTradingBot:
                 self.log_message(f"Failed to send email notification: {e}", level="error")
 
     def update_positions(self):
+        """
+        Generic position update logic for stop loss/take profit. Subclasses can override for custom behavior.
+        """
         for pair, position in list(self.active_positions.items()):
-            current_price = self.strategy.get_current_price(pair)
+            # Assumes the strategy instance is available and has get_current_price, sl_atr_mult, tp_atr_mult
+            # If running in Backtrader, you may need to adapt this for live/real-time bots
+            current_price = None
+            if hasattr(self, 'strategy') and self.strategy and hasattr(self.strategy, 'get_current_price'):
+                current_price = self.strategy.get_current_price(pair)
+            if current_price is None:
+                continue
             entry_price = position['entry_price']
             pnl = ((current_price - entry_price) / entry_price) * 100
             # Check stop loss
-            if pnl <= -self.strategy.sl_atr_mult * 100:
+            if hasattr(self.strategy, 'sl_atr_mult') and pnl <= -self.strategy.sl_atr_mult * 100:
                 self.execute_trade('sell', current_price, position['size'])
             # Check take profit
-            elif pnl >= self.strategy.tp_atr_mult * 100:
+            elif hasattr(self.strategy, 'tp_atr_mult') and pnl >= self.strategy.tp_atr_mult * 100:
                 self.execute_trade('sell', current_price, position['size'])
 
     def stop(self):
+        """
+        Generic stop logic: set is_running to False and close all open positions. Subclasses can override for custom behavior.
+        """
         self.is_running = False
         self.log_message(f"Stopping bot for {self.trading_pair}")
         for pair in list(self.active_positions.keys()):
-            current_price = self.strategy.get_current_price(pair)
-            self.execute_trade('sell', current_price, self.active_positions[pair]['size'])
+            current_price = None
+            if hasattr(self, 'strategy') and self.strategy and hasattr(self.strategy, 'get_current_price'):
+                current_price = self.strategy.get_current_price(pair)
+            if current_price is not None:
+                self.execute_trade('sell', current_price, self.active_positions[pair]['size'])
 
     def log_message(self, message, level="info"):
         if level == "error":
             _logger.error(message)
         else:
-            _logger.info(message) 
+            _logger.info(message)
+
+    def log_bot_event(self, event: str):
+        _logger.info(f"{event}: {self.__class__.__name__}")
+        _logger.info(f"Trading pair: {self.trading_pair}")
+        _logger.info(f"Initial balance: {self.initial_balance}")
+        _logger.info(f"Strategy class: {getattr(self, 'strategy_class', type(self.strategy_class).__name__)}")
+        _logger.info(f"Strategy parameters: {getattr(self, 'parameters', {})}")
+        _logger.info(f"Broker: {self.broker.__class__.__name__ if self.broker else 'None'}")
+
+    def notify_bot_event(self, event: str, emoji: str):
+        msg = (
+            f"{emoji} *Bot {event.lower()}*\n"
+            f"Class: `{self.__class__.__name__}`\n"
+            f"Pair: `{self.trading_pair}`\n"
+            f"Initial balance: `{self.initial_balance}`\n"
+            f"Strategy: `{getattr(self, 'strategy_class', type(self.strategy_class).__name__)}`\n"
+            f"Parameters: `{getattr(self, 'parameters', {})}`\n"
+            f"Broker: `{self.broker.__class__.__name__ if self.broker else 'None'}`"
+        )
+        try:
+            if hasattr(self, 'telegram_notifier') and self.telegram_notifier:
+                asyncio.run(self.telegram_notifier.send_trade_notification({'message': msg}))
+        except Exception as e:
+            _logger.error(f"Failed to send Telegram {event.lower()} notification: {e}")
+
+    def pre_run(self, data_feed):
+        """
+        Hook for custom logic before running the Backtrader engine.
+        Subclasses can override this to add analyzers, observers, or other setup.
+        Args:
+            data_feed: The data feed object that will be added to Cerebro.
+        """
+        pass
+
+    def post_run(self, data_feed):
+        """
+        Hook for custom logic after running the Backtrader engine.
+        Subclasses can override this to process results, save reports, etc.
+        Args:
+            data_feed: The data feed object that was used in Cerebro.
+        """
+        pass
+
+    def run_backtrader_engine(self, data_feed):
+        self.log_bot_event("started")
+        self.notify_bot_event("started", "🤖")
+        import backtrader as bt
+        cerebro = bt.Cerebro()
+        cerebro.adddata(data_feed)
+        _logger.info(f"Added data feed for {self.trading_pair}")
+        cerebro.broker.setcash(self.initial_balance)
+        if self.broker:
+            cerebro.setbroker(self.broker)
+        cerebro.addstrategy(getattr(self, 'strategy_class'), params=getattr(self, 'parameters', {}))
+        self.pre_run(data_feed)
+        _logger.info(f"Starting Backtrader engine for {self.trading_pair}")
+        cerebro.run()
+        self.post_run(data_feed)
+        self.log_bot_event("stopped")
+        self.notify_bot_event("stopped", "🛑") 

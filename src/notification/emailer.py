@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from notification.logger import _logger
+from src.notification.logger import _logger, setup_logger
 from config.donotshare.donotshare import SENDGRID_API_KEY as sgkey
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email
@@ -29,7 +29,7 @@ class EmailNotifier:
         Args:
             api_key (str): SendGrid API key
         """
-        self.logger = _logger.get_logger(__name__)
+        self.logger = setup_logger(__name__)
         self.api_key = api_key
         
         # Test connection on initialization

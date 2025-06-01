@@ -90,6 +90,7 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
         self.position_closed = True
         self.last_order_type = None
         self.notifier = create_notifier()
+        self.last_exit_reason = None
 
     def notify_order(self, order):
         if order.status == order.Completed:
@@ -149,6 +150,7 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
             self.highest_price = max(self.highest_price, close)
             trailing_sl = self.highest_price - self.params.get('sl_atr_mult', 1.5) * atr_value
             if close >= self.tp_price:
+                self.last_exit_reason = 'take profit'
                 self.order = self.close()
                 if self.current_trade:
                     self.current_trade.update({
@@ -156,6 +158,7 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                         'exit_time': self.data.datetime.datetime(0),
                         'exit_price': close,
                         'exit_type': 'tp',
+                        'exit_reason': self.last_exit_reason,
                         'pnl': (close - self.entry_price) / self.entry_price * 100,
                         'atr_at_exit': atr_value,
                         'rsi_at_exit': rsi_value,
@@ -169,7 +172,9 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                         self.current_trade['pnl_comm'] = self.current_trade['pnl']
                     self.record_trade(self.current_trade)
                     self.current_trade = None
+                self.last_exit_reason = None
             elif close <= trailing_sl:
+                self.last_exit_reason = 'stop loss'
                 self.order = self.close()
                 if self.current_trade:
                     self.current_trade.update({
@@ -177,6 +182,7 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                         'exit_time': self.data.datetime.datetime(0),
                         'exit_price': close,
                         'exit_type': 'sl',
+                        'exit_reason': self.last_exit_reason,
                         'pnl': (close - self.entry_price) / self.entry_price * 100,
                         'atr_at_exit': atr_value,
                         'rsi_at_exit': rsi_value,
@@ -190,6 +196,7 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                         self.current_trade['pnl_comm'] = self.current_trade['pnl']
                     self.record_trade(self.current_trade)
                     self.current_trade = None
+                self.last_exit_reason = None
 
     def on_trade_entry(self, trade):
         """Called when a new trade is entered"""

@@ -21,6 +21,24 @@ import time
 import backtrader as bt
 
 class BinanceLiveFeed(bt.feeds.PandasData):
+    params = (
+        ('datetime', None),
+        ('open', 'open'),
+        ('high', 'high'),
+        ('low', 'low'),
+        ('close', 'close'),
+        ('volume', 'volume'),
+        ('openinterest', None),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.client = None
+        self.symbol = None
+        self.interval = None
+        self.window = None
+        self.df = None
+
     @classmethod
     def from_binance(cls, client, symbol='BTCUSDT', interval='1m', window=200, **kwargs):
         bars = client.get_klines(symbol=symbol, interval=interval, limit=window)
@@ -32,13 +50,31 @@ class BinanceLiveFeed(bt.feeds.PandasData):
         df['datetime'] = pd.to_datetime(df['datetime'], unit='ms')
         df.set_index('datetime', inplace=True)
         df = df.astype(float)
-        return cls(dataname=df, **kwargs)
+        obj = cls(dataname=df, **kwargs)
+        obj.client = client
+        obj.symbol = symbol
+        obj.interval = interval
+        obj.window = window
+        obj.df = df
+        return obj
+
+    def fetch(self):
+        bars = self.client.get_klines(symbol=self.symbol, interval=self.interval, limit=2)
+        df = pd.DataFrame(bars, columns=[
+            'datetime', 'open', 'high', 'low', 'close', 'volume',
+            'close_time', 'quote_asset_volume', 'number_of_trades',
+            'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
+        ])
+        df['datetime'] = pd.to_datetime(df['datetime'], unit='ms')
+        df.set_index('datetime', inplace=True)
+        df = df.astype(float)
+        return df
 
     def _load(self):
         time.sleep(60)
         new_df = self.fetch()
-        if not new_df.equals(self.df):
-            self.df = new_df
+        if not new_df.index[-1] in self.df.index:
+            self.df = pd.concat([self.df, new_df.iloc[[-1]]])
             latest = self.df.iloc[-1]
             self.lines.datetime[0] = bt.date2num(self.df.index[-1])
             self.lines.open[0] = latest['open']

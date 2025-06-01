@@ -47,6 +47,7 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
         self.position_type = None
         self.current_trade = None
         self.notifier = create_notifier() if self.notify else None
+        self.last_exit_reason = None
 
     def next(self):
         if self.order:
@@ -136,13 +137,14 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
                     exit_signal = True
                     exit_reason = 'Trailing stop hit'
                 if exit_signal:
+                    self.last_exit_reason = exit_reason
                     self.order = self.close()
                     if self.current_trade:
                         self.current_trade.update({
                             'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
                             'exit_time': self.data.datetime.datetime(0),
                             'exit_price': close,
-                            'exit_reason': exit_reason,
+                            'exit_reason': self.last_exit_reason,
                             'pnl': (close - self.entry_price) / self.entry_price * 100,
                             'rsi_at_exit': rsi,
                             'atr_at_exit': atr,
@@ -160,6 +162,7 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
                             self.current_trade['pnl_comm'] = self.current_trade['pnl']
                         self.record_trade(self.current_trade)
                         self.current_trade = None
+                    self.last_exit_reason = None
                     self.log(f'LONG EXIT: {close:.2f} ({exit_reason})')
 #            elif self.position_type == 'short':
 #                new_stop = close + self.p.atr_mult * atr
