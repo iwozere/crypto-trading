@@ -33,10 +33,20 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
     def __init__(self, params: dict):
         super().__init__(params)
         self.notify = self.params.get('notify', False)
-        self.rsi = bt.indicators.RSI(period=self.params.get('rsi_period', 14))
-        self.st = SuperTrend(period=self.params.get('st_period', 10), multiplier=self.params.get('st_multiplier', 3.0))
-        self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.params.get('vol_ma_period', 10))
-        self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
+        use_talib = self.params.get('use_talib', False)
+        if use_talib:
+            self.rsi = bt.talib.RSI(timeperiod=self.params.get('rsi_period', 14))
+            self.vol_ma = bt.talib.SMA(timeperiod=self.params.get('vol_ma_period', 10))
+            self.atr = bt.talib.ATR(timeperiod=self.params.get('atr_period', 14))
+        else:
+            self.rsi = bt.indicators.RSI(period=self.params.get('rsi_period', 14))
+            self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.params.get('vol_ma_period', 10))
+            self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
+        self.st = SuperTrend(params={
+            'period': self.params.get('st_period', 10),
+            'multiplier': self.params.get('st_multiplier', 3.0),
+            'use_talib': use_talib
+        })
         self.order = None
         self.entry_price = None
         self.bar_executed = 0

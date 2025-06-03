@@ -12,12 +12,11 @@
   "omega_threshold": 0.0,
   "n_calls": 100,
   "random_state": 42,
+  "use_talib": true,
   "search_space": [
     {"type": "Integer", "name": "rsi_period", "low": 7, "high": 28},
     {"type": "Real", "name": "rsi_entry_long_level", "low": 20.0, "high": 40.0},
-    {"type": "Real", "name": "rsi_entry_short_level", "low": 60.0, "high": 80.0},
     {"type": "Real", "name": "rsi_exit_long_level", "low": 65.0, "high": 85.0},
-    {"type": "Real", "name": "rsi_exit_short_level", "low": 15.0, "high": 35.0},
     {"type": "Integer", "name": "st_period", "low": 5, "high": 100},
     {"type": "Real", "name": "st_multiplier", "low": 1.5, "high": 4.0},
     {"type": "Integer", "name": "vol_ma_period", "low": 5, "high": 30},
@@ -30,9 +29,7 @@
   "default_params": {
     "rsi_period": 14,
     "rsi_entry_long_level": 30.0,
-    "rsi_entry_short_level": 70.0,
     "rsi_exit_long_level": 80.0,
-    "rsi_exit_short_level": 20.0,
     "st_period": 10,
     "st_multiplier": 3.0,
     "vol_ma_period": 10,

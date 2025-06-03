@@ -36,5 +36,6 @@
   },
   "plot": true,
   "save_trades": true,
-  "plot_size": [60, 30]
+  "plot_size": [60, 30],
+  "use_talib": true
 } 

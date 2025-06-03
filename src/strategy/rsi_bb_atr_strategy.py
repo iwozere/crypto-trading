@@ -61,12 +61,18 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
     def __init__(self, params: dict):
         super().__init__(params)
         self.notify = self.params.get('notify', False)
-        self.boll = bt.indicators.BollingerBands(
-            period=self.params.get('bb_period', 20),
-            devfactor=self.params.get('bb_devfactor', 2.0)
-        )
-        self.rsi = bt.indicators.RSI(period=self.params.get('rsi_period', 14))
-        self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
+        use_talib = self.params.get('use_talib', False)
+        if use_talib:
+            self.boll = bt.talib.BBANDS(timeperiod=self.params.get('bb_period', 20), nbdevup=self.params.get('bb_devfactor', 2.0), nbdevdn=self.params.get('bb_devfactor', 2.0))
+            self.rsi = bt.talib.RSI(timeperiod=self.params.get('rsi_period', 14))
+            self.atr = bt.talib.ATR(timeperiod=self.params.get('atr_period', 14))
+        else:
+            self.boll = bt.indicators.BollingerBands(
+                period=self.params.get('bb_period', 20),
+                devfactor=self.params.get('bb_devfactor', 2.0)
+            )
+            self.rsi = bt.indicators.RSI(period=self.params.get('rsi_period', 14))
+            self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
         self.order = None
         self.entry_price = None
         self.entry_bar_idx = None

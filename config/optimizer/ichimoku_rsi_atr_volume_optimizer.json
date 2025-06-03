@@ -12,6 +12,7 @@
   "omega_threshold": 0.0,
   "n_calls": 100,
   "random_state": 42,
+  "use_talib": true,
   "search_space": [
     {"type": "Integer", "name": "rsi_period", "low": 7, "high": 30},
     {"type": "Real", "name": "rsi_oversold", "low": 20.0, "high": 40.0},

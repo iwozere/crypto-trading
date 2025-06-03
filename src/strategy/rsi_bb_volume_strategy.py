@@ -74,13 +74,20 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
     def __init__(self, params: dict):
         super().__init__(params)
         self.notify = self.params.get('notify', False)
-        self.rsi = bt.ind.RSI(period=self.params.get('rsi_period', 14))
-        self.boll = bt.ind.BollingerBands(
-            period=self.params.get('boll_period', 20),
-            devfactor=self.params.get('boll_devfactor', 2.0)
-        )
-        self.atr = bt.ind.ATR(period=self.params.get('atr_period', 14))
-        self.vol_ma = bt.ind.SMA(self.data.volume, period=self.params.get('vol_ma_period', 10))
+        use_talib = self.params.get('use_talib', False)
+        if use_talib:
+            self.rsi = bt.talib.RSI(timeperiod=self.params.get('rsi_period', 14))
+            self.boll = bt.talib.BBANDS(timeperiod=self.params.get('boll_period', 20), nbdevup=self.params.get('boll_devfactor', 2.0), nbdevdn=self.params.get('boll_devfactor', 2.0))
+            self.atr = bt.talib.ATR(timeperiod=self.params.get('atr_period', 14))
+            self.vol_ma = bt.talib.SMA(timeperiod=self.params.get('vol_ma_period', 10))
+        else:
+            self.rsi = bt.ind.RSI(period=self.params.get('rsi_period', 14))
+            self.boll = bt.ind.BollingerBands(
+                period=self.params.get('boll_period', 20),
+                devfactor=self.params.get('boll_devfactor', 2.0)
+            )
+            self.atr = bt.ind.ATR(period=self.params.get('atr_period', 14))
+            self.vol_ma = bt.ind.SMA(self.data.volume, period=self.params.get('vol_ma_period', 10))
         self.order = None
         self.entry_price = None
         self.highest_price = None
@@ -156,29 +163,6 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                         'exit_time': self.data.datetime.datetime(0),
                         'exit_price': close,
                         'exit_type': 'tp',
-                        'exit_reason': self.last_exit_reason,
-                        'pnl': (close - self.entry_price) / self.entry_price * 100,
-                        'atr_at_exit': atr_value,
-                        'rsi_at_exit': rsi_value,
-                        'volume_at_exit': volume,
-                        'vol_ma_at_exit': vol_ma_value,
-                        'bb_low_at_exit': bb_low,
-                        'bb_mid_at_exit': bb_mid,
-                        'bb_high_at_exit': bb_high
-                    })
-                    if 'pnl_comm' not in self.current_trade:
-                        self.current_trade['pnl_comm'] = self.current_trade['pnl']
-                    self.record_trade(self.current_trade)
-                    self.current_trade = None
-                self.last_exit_reason = None
-            elif close <= trailing_sl:
-                self.last_exit_reason = 'stop loss'
-                self.order = self.close()
-                if self.current_trade:
-                    self.current_trade.update({
-                        'exit_time': self.data.datetime.datetime(0),
-                        'exit_price': close,
-                        'exit_type': 'sl',
                         'exit_reason': self.last_exit_reason,
                         'pnl': (close - self.entry_price) / self.entry_price * 100,
                         'atr_at_exit': atr_value,

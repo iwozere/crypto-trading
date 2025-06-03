@@ -27,6 +27,7 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
     def __init__(self, params: dict):
         super().__init__(params)
         self.notify = self.params.get('notify', False)
+        use_talib = self.params.get('use_talib', False)
         self.ichimoku = bt.ind.Ichimoku(
             self.data,
             tenkan=params.get('tenkan_period', 9),
@@ -38,9 +39,14 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
         self.senkou_a = self.ichimoku.senkou_span_a
         self.senkou_b = self.ichimoku.senkou_span_b
         self.chikou = self.ichimoku.chikou_span
-        self.rsi = bt.ind.RSI(period=params.get('rsi_period', 14))
-        self.atr = bt.ind.ATR(period=params.get('atr_period', 14))
-        self.vol_ma = bt.ind.SMA(self.data.volume, period=params.get('vol_ma_period', 20))
+        if use_talib:
+            self.rsi = bt.talib.RSI(timeperiod=params.get('rsi_period', 14))
+            self.atr = bt.talib.ATR(timeperiod=params.get('atr_period', 14))
+            self.vol_ma = bt.talib.SMA(timeperiod=params.get('vol_ma_period', 20))
+        else:
+            self.rsi = bt.ind.RSI(period=params.get('rsi_period', 14))
+            self.atr = bt.ind.ATR(period=params.get('atr_period', 14))
+            self.vol_ma = bt.ind.SMA(self.data.volume, period=params.get('vol_ma_period', 20))
         self.order = None
         self.entry_price = None
         self.trailing_stop = None
@@ -65,7 +71,6 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
         cloud_top = max(senkou_a, senkou_b)
         cloud_bot = min(senkou_a, senkou_b)
         if not self.position:
-            #print(f"close={close}, cloud_top={cloud_top}, tenkan={tenkan}, kijun={kijun}, rsi={rsi}, volume={volume}, vol_ma={vol_ma}")
             if (
                 close > cloud_top and
                 tenkan > kijun and self.tenkan[-1] <= self.kijun[-1] and
@@ -77,7 +82,6 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
                 self.trailing_stop = close - self.params.get('atr_mult', 2.0) * atr
                 self.position_type = 'long'
                 self.current_trade = {
-                    # 'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
                     'entry_time': self.data.datetime.datetime(0),
                     'entry_price': close,
                     'type': 'long',
@@ -94,32 +98,6 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
                     'cloud_bot_at_entry': cloud_bot
                 }
                 self.log(f'LONG ENTRY: {close:.2f} (RSI {rsi:.2f}, Vol {volume:.0f} > MA {vol_ma:.0f})')
-           
-#            elif (
-#                close < cloud_bot and
-#                tenkan < kijun and self.tenkan[-1] >= self.kijun[-1] and
-#                rsi < self.p.rsi_entry and
-#                volume > vol_ma
-#            ):
-#                self.order = self.sell()
-#                self.entry_price = close
-#                self.trailing_stop = close + self.p.atr_mult * atr
-#                self.position_type = 'short'
-#                self.current_trade = {
-#                    'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
-#                    'entry_time': self.data.datetime.datetime(0),
-#                    'entry_price': close,
-#                    'type': 'short',
-#                    'rsi': rsi,
-#                    'volume': volume,
-#                    'vol_ma': vol_ma,
-#                    'tenkan': tenkan,
-#                    'kijun': kijun,
-#                    'cloud_top': cloud_top,
-#                    'cloud_bot': cloud_bot
-#                }
-#                self.log(f'SHORT ENTRY: {close:.2f} (RSI {rsi:.2f}, Vol {volume:.0f} > MA {vol_ma:.0f})')
-
         else:
             if self.position_type == 'long':
                 new_stop = close - self.params.get('atr_mult', 2.0) * atr
@@ -141,7 +119,6 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
                     self.order = self.close()
                     if self.current_trade:
                         self.current_trade.update({
-                            # 'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
                             'exit_time': self.data.datetime.datetime(0),
                             'exit_price': close,
                             'exit_reason': self.last_exit_reason,
@@ -164,34 +141,6 @@ class IchimokuRSIATRVolumeStrategy(BaseStrategy):
                         self.current_trade = None
                     self.last_exit_reason = None
                     self.log(f'LONG EXIT: {close:.2f} ({exit_reason})')
-#            elif self.position_type == 'short':
-#                new_stop = close + self.p.atr_mult * atr
-#                if new_stop < self.trailing_stop:
-#                    self.trailing_stop = new_stop
-#                exit_signal = False
-#                exit_reason = ''
-#                if tenkan > kijun and self.tenkan[-1] <= self.kijun[-1]:
-#                    exit_signal = True
-#                    exit_reason = 'Tenkan cross up'
-#                elif close > cloud_top:
-#                    exit_signal = True
-#                    exit_reason = 'Price above cloud'
-#                elif close > self.trailing_stop:
-#                    exit_signal = True
-#                    exit_reason = 'Trailing stop hit'
-#                if exit_signal:
-#                    self.order = self.close()
-#                    if self.current_trade:
-#                        self.current_trade.update({
-#                            'symbol': self.data._name if hasattr(self.data, '_name') else 'UNKNOWN',
-#                            'exit_time': self.data.datetime.datetime(0),
-#                            'exit_price': close,
-#                            'exit_reason': exit_reason,
-#                            'pnl': (self.entry_price - close) / self.entry_price * 100
-#                        })
-#                        self.record_trade(self.current_trade)
-#                        self.current_trade = None
-#                    self.log(f'SHORT EXIT: {close:.2f} ({exit_reason})')
 
     def notify_order(self, order):
         if order.status in [order.Completed, order.Canceled, order.Margin, order.Rejected]:

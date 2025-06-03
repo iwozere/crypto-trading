@@ -42,5 +42,6 @@
   "print_summary": true,
   "report_params": true,
   "report_filename_pattern": "{strategy}_{symbol}_{interval}_{date}.json",
-  "include_plots_in_report": true
+  "include_plots_in_report": true,
+  "use_talib": true
 } 

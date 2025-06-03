@@ -20,19 +20,30 @@ import math
 # Custom SuperTrend Indicator
 class SuperTrend(bt.Indicator):
     lines = ('supertrend', 'direction',) # supertrend line and direction (-1 for short, 1 for long)
-    params = (('period', 10), ('multiplier', 3.0),)
 
-    def __init__(self):
-        self.addminperiod(self.p.period + 1)
-        self.atr = bt.indicators.ATR(self.datas[0], period=self.p.period)
+    def __init__(self, params=None):
+        params = params or {}
+        self.period = params.get('period', 10)
+        self.multiplier = params.get('multiplier', 3.0)
+        self.use_talib = params.get('use_talib', False)
+        self.addminperiod(self.period + 1)
+        if self.use_talib:
+            try:
+                import talib
+                # Use TA-Lib ATR for calculation
+                self.atr = bt.talib.ATR(self.datas[0], timeperiod=self.period)
+            except ImportError:
+                self.atr = bt.indicators.ATR(self.datas[0], period=self.period)
+        else:
+            self.atr = bt.indicators.ATR(self.datas[0], period=self.period)
         self.final_ub_list = []
         self.final_lb_list = []
 
     def next(self):
         hl2 = (self.datas[0].high[0] + self.datas[0].low[0]) / 2
         atr = self.atr[0]
-        basic_ub = hl2 + self.p.multiplier * atr
-        basic_lb = hl2 - self.p.multiplier * atr
+        basic_ub = hl2 + self.multiplier * atr
+        basic_lb = hl2 - self.multiplier * atr
 
         # Calculate final upper/lower bands
         if len(self.final_ub_list) == 0:

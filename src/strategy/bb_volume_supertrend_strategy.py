@@ -61,17 +61,23 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
     def __init__(self, params: dict):
         super().__init__(params)
         self.notify = self.params.get('notify', False)
-        self.boll = bt.indicators.BollingerBands(
-            period=self.params.get('bb_period', 20),
-            devfactor=self.params.get('bb_devfactor', 2.0)
-        )
-        self.supertrend = SuperTrend(
-            self.datas[0],
-            period=self.params.get('st_period', 10),
-            multiplier=self.params.get('st_multiplier', 3.0)
-        )
-        self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
-        self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.params.get('vol_ma_period', 20))
+        use_talib = self.params.get('use_talib', False)
+        if use_talib:
+            self.boll = bt.talib.BBANDS(timeperiod=self.params.get('bb_period', 20), nbdevup=self.params.get('bb_devfactor', 2.0), nbdevdn=self.params.get('bb_devfactor', 2.0))
+            self.atr = bt.talib.ATR(timeperiod=self.params.get('atr_period', 14))
+            self.vol_ma = bt.talib.SMA(timeperiod=self.params.get('vol_ma_period', 20))
+        else:
+            self.boll = bt.indicators.BollingerBands(
+                period=self.params.get('bb_period', 20),
+                devfactor=self.params.get('bb_devfactor', 2.0)
+            )
+            self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
+            self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.params.get('vol_ma_period', 20))
+        self.supertrend = SuperTrend(params={
+            'period': self.params.get('st_period', 10),
+            'multiplier': self.params.get('st_multiplier', 3.0),
+            'use_talib': use_talib
+        })
         self.order = None
         self.entry_price = None
         self.trade_active = False
