@@ -22,7 +22,7 @@ from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
-from src.strats.rsi_bb_atr_strategy import MeanReversionRSBBATRStrategy
+from src.strategy.rsi_bb_atr_strategy import MeanReversionRSBBATRStrategy
 import matplotlib.gridspec as gridspec
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator

@@ -68,7 +68,7 @@ crypto-trading/
 │   │   ├── rsi_bb_volume_optimizer.py
 │   │   ├── bb_volume_supertrend_optimizer.py
 │   │   └── rsi_volume_supertrend_optimizer.py
-│   ├── strats/
+│   ├── strategy/
 │   │   ├── rsi_bb_atr_strategy.py
 │   │   ├── rsi_bb_volume_strategy.py
 │   │   ├── bb_volume_supertrend_strategy.py
@@ -98,7 +98,7 @@ crypto-trading/
 
 ```python
 import backtrader as bt
-from src.strats.base_strategy import BaseStrategy
+from src.strategy.base_strategy import BaseStrategy
 
 class MyCustomStrategy(BaseStrategy):
     """
@@ -171,11 +171,11 @@ class MyCustomStrategy(BaseStrategy):
 
 All strategies follow the conventions above. Example strategies include:
 
-- **MeanReversionRSBBATRStrategy** (`src/strats/rsi_bb_atr_strategy.py`)
-- **RSIBollVolumeATRStrategy** (`src/strats/rsi_bb_volume_strategy.py`)
-- **BBSuperTrendVolumeBreakoutStrategy** (`src/strats/bb_volume_supertrend_strategy.py`)
-- **RsiVolumeSuperTrendStrategy** (`src/strats/rsi_volume_supertrend_strategy.py`)
-- **IchimokuRSIATRVolumeStrategy** (`src/strats/ichimoku_rsi_atr_volume_strategy.py`)
+- **MeanReversionRSBBATRStrategy** (`src/strategy/rsi_bb_atr_strategy.py`)
+- **RSIBollVolumeATRStrategy** (`src/strategy/rsi_bb_volume_strategy.py`)
+- **BBSuperTrendVolumeBreakoutStrategy** (`src/strategy/bb_volume_supertrend_strategy.py`)
+- **RsiVolumeSuperTrendStrategy** (`src/strategy/rsi_volume_supertrend_strategy.py`)
+- **IchimokuRSIATRVolumeStrategy** (`src/strategy/ichimoku_rsi_atr_volume_strategy.py`)
 
 ## Optimizers
 
@@ -204,7 +204,7 @@ Here is a minimal example of how to run a Backtrader strategy using the new conv
 ```python
 import backtrader as bt
 import pandas as pd
-from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
+from src.strategy.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
 
 # Load your data (CSV with columns: datetime, open, high, low, close, volume)
 df = pd.read_csv('data/all/ETHUSDT_4h_20220101_20230101.csv', parse_dates=['datetime'], index_col='datetime')
@@ -225,7 +225,7 @@ cerebro.run()
 print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
 # Access trade logs from the strategy instance
-strategy_instance = cerebro.runstrats[0][0]
+strategy_instance = cerebro.runstrategy[0][0]
 import pandas as pd
 trades_df = pd.DataFrame(strategy_instance.trades)
 print(trades_df)

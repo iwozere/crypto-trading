@@ -1,6 +1,6 @@
 import backtrader as bt
 from src.notification.telegram_notifier import create_notifier
-from src.strats.base_strategy import BaseStrategy
+from src.strategy.base_strategy import BaseStrategy
 import datetime
 from typing import Any, Dict, Optional
 

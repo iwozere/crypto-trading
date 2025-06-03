@@ -12,6 +12,11 @@ from skopt.space import Real, Integer, Categorical
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, List, Optional
 
+from src.strategy.base_strategy import BaseStrategy
+class MyCustomStrategy(BaseStrategy):
+    pass
+ 
+
 class OptimizerTemplate(BaseOptimizer):
     """
     Brief description of the optimizer and the strategy it optimizes.

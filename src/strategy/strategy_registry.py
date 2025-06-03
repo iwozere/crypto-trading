@@ -5,11 +5,11 @@ Central registry for all available trading strategy classes, with metadata.
 Allows dynamic lookup and instantiation by name, and provides descriptions and default parameters.
 """
 
-from src.strats.rsi_bb_atr_strategy import MeanReversionRSBBATRStrategy
-from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
-from src.strats.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
-from src.strats.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
-from src.strats.ichimoku_rsi_atr_volume_strategy import IchimokuRSIATRVolumeStrategy
+from src.strategy.rsi_bb_atr_strategy import MeanReversionRSBBATRStrategy
+from src.strategy.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
+from src.strategy.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
+from src.strategy.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
+from src.strategy.ichimoku_rsi_atr_volume_strategy import IchimokuRSIATRVolumeStrategy
 
 STRATEGY_REGISTRY = {
     "rsi_bb_atr": {

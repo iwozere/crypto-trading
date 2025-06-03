@@ -33,11 +33,11 @@ pip install cbpro ib_insync python-binance
 
 ## 2. Running Backtests
 
-Backtests are run using strategy scripts in `src/strats/`.
+Backtests are run using strategy scripts in `src/strategy/`.
 
 ### Example: Run a Backtest
 ```bash
-python src/strats/bb_volume_supertrend_strategy.py
+python src/strategy/bb_volume_supertrend_strategy.py
 ```
 
 - You can modify the script or parameters as needed.
@@ -76,7 +76,7 @@ Live trading is managed by trading bots in `src/trading/`.
 ```python
 from src.trading.base_trading_bot import BaseTradingBot
 from src.trading.binance_broker import BinanceBroker
-from src.strats.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
+from src.strategy.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
 
 # Load your API keys securely
 api_key = 'your_binance_api_key'
@@ -113,7 +113,7 @@ bot.run()
 ---
 
 ## 6. Extending the Platform
-- Add new strategies using the template in `src/strats/strategy_template.py`.
+- Add new strategies using the template in `src/strategy/strategy_template.py`.
 - Add new optimizers using the template in `src/optimizer/optimizer_template.py`.
 - Add new broker adapters by subclassing `AbstractBroker` in `src/trading/`.
 

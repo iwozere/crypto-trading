@@ -22,7 +22,7 @@ import pandas as pd
 from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
 import warnings
-from src.strats.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
+from src.strategy.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
 import matplotlib.gridspec as gridspec
 from ta.volatility import BollingerBands
 from src.optimizer.base_optimizer import BaseOptimizer

@@ -7,8 +7,7 @@ Copy this file and fill in the specific logic for your strategy.
 """
 
 import backtrader as bt
-from src.strats.base_strategy import BaseStrategy
-import datetime
+from src.strategy.base_strategy import BaseStrategy
 from typing import Any, Dict, Optional
 
 class StrategyTemplate(BaseStrategy):

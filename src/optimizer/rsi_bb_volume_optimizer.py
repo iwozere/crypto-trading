@@ -21,7 +21,7 @@ from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
-from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
+from src.strategy.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
 import matplotlib.gridspec as gridspec
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator

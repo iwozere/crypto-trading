@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 import backtrader as bt
 import pandas as pd
 import numpy as np
-from src.strats.base_strategy import BaseStrategy
+from src.strategy.base_strategy import BaseStrategy
 import datetime
 from typing import Any, Dict, Optional
 
@@ -247,8 +247,8 @@ if __name__ == '__main__':
     print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
     # Access trades from the strategy instance if needed for analysis after run
-    # if cerebro.runstrats and cerebro.runstrats[0]:
-    #     strategy_instance = cerebro.runstrats[0][0]
+    # if cerebro.runstrategy and cerebro.runstrategy[0]:
+    #     strategy_instance = cerebro.runstrategy[0][0]
     #     final_trades_df = pd.DataFrame(strategy_instance.trades)
     #     if not final_trades_df.empty:
     #         print("\nFinal Trades Log:\n", final_trades_df.to_string())

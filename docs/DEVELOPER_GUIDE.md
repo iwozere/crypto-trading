@@ -7,7 +7,7 @@ This guide explains how to extend the platform by adding new strategies, indicat
 ## 1. Adding a New Strategy
 
 ### a. Use the Strategy Template
-- Copy `src/strats/strategy_template.py` to a new file, e.g. `src/strats/my_new_strategy.py`.
+- Copy `src/strategy/strategy_template.py` to a new file, e.g. `src/strategy/my_new_strategy.py`.
 
 ### b. Fill in the Template
 - Update the class name and docstrings.
@@ -18,7 +18,7 @@ This guide explains how to extend the platform by adding new strategies, indicat
 
 #### Example:
 ```python
-from src.strats.base_strategy import BaseStrategy
+from src.strategy.base_strategy import BaseStrategy
 import backtrader as bt
 
 class MyNewStrategy(BaseStrategy):
@@ -91,7 +91,7 @@ class MyNewOptimizer(BaseOptimizer):
 ---
 
 ## 4. Registering Your Strategy or Optimizer (Optional)
-- If you use a registry or factory pattern, add your new class to the registry in `src/strats/strategy_registry.py` or similar.
+- If you use a registry or factory pattern, add your new class to the registry in `src/strategy/strategy_registry.py` or similar.
 
 ---
 

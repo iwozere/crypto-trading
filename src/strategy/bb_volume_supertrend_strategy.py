@@ -6,7 +6,7 @@ import backtrader as bt
 import pandas as pd
 import numpy as np
 from src.indicator.super_trend import SuperTrend
-from src.strats.base_strategy import BaseStrategy
+from src.strategy.base_strategy import BaseStrategy
 # from src.notification.telegram import create_notifier # Temporarily commented out
 import datetime
 from typing import Any, Dict, Optional
@@ -291,7 +291,7 @@ if __name__ == '__main__':
     print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
     
     # Access trades from the strategy instance if needed
-    # strategy_instance = cerebro.runstrats[0][0] 
+    # strategy_instance = cerebro.runstrategy[0][0] 
     # print(pd.DataFrame(strategy_instance.trades))
 
 # Removed old BollVolumeSupertrendStrategy class and its remnants

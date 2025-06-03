@@ -83,7 +83,7 @@ Add:
 ```markdown
 # API Reference
 
-::: src.strats.base_strategy
+::: src.strategy.base_strategy
 ::: src.trading.base_trading_bot
 # (Add more modules/classes as needed)
 ```

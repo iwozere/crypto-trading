@@ -4,11 +4,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 
 import json
 from src.trading import create_trading_bot
-from src.strats.strategy_registry import STRATEGY_REGISTRY
+from src.strategy.strategy_registry import STRATEGY_REGISTRY
 from src.notification.logger import _logger
 
 # Example: You must implement or import your real strategy class here
-# from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
+# from src.strategy.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
 
 
 def main(config_name : str):

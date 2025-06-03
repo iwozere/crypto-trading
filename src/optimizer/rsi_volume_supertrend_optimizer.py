@@ -20,7 +20,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
 import warnings
-from src.strats.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
+from src.strategy.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
 import matplotlib.gridspec as gridspec
 from ta.momentum import RSIIndicator
 from src.optimizer.base_optimizer import BaseOptimizer

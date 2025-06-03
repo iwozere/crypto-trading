@@ -34,6 +34,7 @@ class BaseOptimizer:
         Args:
             config: Dictionary containing all optimizer parameters.
         """
+        self.config = config  # Store config for later use
         self.initial_capital = config.get('initial_capital', 1000.0)
         self.commission = config.get('commission', 0.001)
         self.notify = config.get('notify', False)
@@ -476,14 +477,21 @@ class BaseOptimizer:
             self.current_data = self.current_data.fillna(method='ffill').fillna(method='bfill')
         self.current_metrics = {}
         try:
+            # Read gp_minimize parameters from config, with defaults
+            n_calls = self.config.get('n_calls', 100)
+            n_random_starts = self.config.get('random_state', 20)
+            noise = self.config.get('noise', 0.01)
+            n_jobs = self.config.get('n_jobs', -1)
+            verbose = self.config.get('verbose', False)
+
             result = gp_minimize(
                 func=self.objective, 
                 dimensions=self.space,
-                n_calls=100, 
-                n_random_starts=20, 
-                noise=0.01, 
-                n_jobs=-1, 
-                verbose=False
+                n_calls=n_calls, 
+                n_random_starts=n_random_starts, 
+                noise=noise, 
+                n_jobs=n_jobs, 
+                verbose=verbose
             )
             self.log_message(f"\nOptimization completed for {data_file}", level='info')
             best_params = self.params_to_dict(result.x)

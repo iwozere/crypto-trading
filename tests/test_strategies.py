@@ -2,14 +2,14 @@ import pytest
 import pandas as pd
 import numpy as np
 import backtrader as bt
-from src.strats.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
-from src.strats.ichimoku_rsi_atr_volume_strategy import IchimokuRSIATRVolumeStrategy
-from src.strats.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
-from src.strats.rsi_bb_atr_strategy import MeanReversionRSBBATRStrategy
-from src.strats.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
+from src.strategy.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
+from src.strategy.ichimoku_rsi_atr_volume_strategy import IchimokuRSIATRVolumeStrategy
+from src.strategy.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
+from src.strategy.rsi_bb_atr_strategy import MeanReversionRSBBATRStrategy
+from src.strategy.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
 
 """
-Unit tests for all trading strategies in src/strats.
+Unit tests for all trading strategies in src/strategy.
 
 These tests ensure that each strategy can be instantiated, run on dummy data, and that it logs trades (or at least has a 'trades' attribute).
 The tests use pytest and Backtrader with randomly generated dummy data.
