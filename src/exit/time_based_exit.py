@@ -5,9 +5,9 @@ from src.exit.base_exit import BaseExitLogic
 import backtrader as bt
 
 class TimeBasedExit(BaseExitLogic):
-    def __init__(self, strategy, hold_bars=10):
+    def __init__(self, strategy, params=None):
         super().__init__(strategy)
-        self.hold_bars = hold_bars
+        self.hold_bars = params.get('time_period', 10) if params else 10
 
     def on_entry(self):
         super().on_entry()

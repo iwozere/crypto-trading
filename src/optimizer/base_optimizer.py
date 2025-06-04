@@ -472,6 +472,42 @@ class BaseOptimizer:
         )
         return result
 
+    def get_optuna_objective(self):
+        self.param_ranges = {p['name']: p for p in self.config.get('search_space', [])}
+        def objective(trial):
+            # --- Suggest strategy parameters (add as needed) ---
+            strategy_params = {}
+            # Suggest all strategy params that are not exit logic params
+            for pname, pinfo in self.param_ranges.items():
+                if pname == 'exit_logic_name' or pname in EXIT_PARAM_MAP:
+                    continue
+                if pinfo['type'] == 'Real':
+                    strategy_params[pname] = trial.suggest_float(pname, pinfo['low'], pinfo['high'])
+                elif pinfo['type'] == 'Integer':
+                    strategy_params[pname] = trial.suggest_int(pname, pinfo['low'], pinfo['high'])
+                elif pinfo['type'] == 'Categorical':
+                    strategy_params[pname] = trial.suggest_categorical(pname, pinfo['categories'])
+
+            # --- Exit logic selection ---
+            exit_logic_name = trial.suggest_categorical('exit_logic_name', list(EXIT_PARAM_MAP.keys()))
+            exit_params = {}
+            for param, pinfo in EXIT_PARAM_MAP[exit_logic_name].items():
+                if pinfo['type'] == 'Real':
+                    exit_params[param] = trial.suggest_float(param, pinfo['low'], pinfo['high'])
+                elif pinfo['type'] == 'Integer':
+                    exit_params[param] = trial.suggest_int(param, pinfo['low'], pinfo['high'])
+                elif pinfo['type'] == 'Categorical':
+                    exit_params[param] = trial.suggest_categorical(param, pinfo['categories'])
+
+            strategy_params['exit_logic_name'] = exit_logic_name
+            strategy_params['exit_params'] = exit_params
+
+            # --- Run backtest ---
+            results = self.run_backtest(self.current_data.copy(), strategy_params)
+            net_profit = results.get('trades', {}).get('pnl', {}).get('net', {}).get('total', 0.0) if results else 0.0
+            return -net_profit
+        return objective
+
     def optimize_single_file(self, data_file):
         """
         Generalized optimization routine for a single data file.
@@ -510,7 +546,7 @@ class BaseOptimizer:
                 best_score = result.fun
             elif opt_method == 'optuna':
                 study = optuna.create_study(direction='minimize')
-                study.optimize(lambda trial: self.optimize_with_optuna(n_trials=1)(trial), n_trials=n_trials)
+                study.optimize(self.get_optuna_objective(), n_trials=n_trials)
                 best_params = study.best_params
                 best_score = study.best_value
                 result = study
@@ -525,6 +561,16 @@ class BaseOptimizer:
                 trades_list = final_backtest_run['strategy'].trades
                 if trades_list:
                     trades_df = pd.DataFrame(trades_list)
+                    # Calculate metrics from trades
+                    self.current_metrics = self.calculate_metrics(trades_df)
+                    # Add trade-specific metrics
+                    self.current_metrics['total_trades'] = len(trades_list)
+                    winning_trades = [t for t in trades_list if t.get('pnl_comm', 0) > 0]
+                    self.current_metrics['win_rate'] = len(winning_trades) / len(trades_list) * 100 if trades_list else 0
+                    self.current_metrics['profit_factor'] = abs(sum(t.get('pnl_comm', 0) for t in winning_trades) / sum(t.get('pnl_comm', 0) for t in trades_list if t.get('pnl_comm', 0) <= 0)) if trades_list else 0
+                    self.current_metrics['net_profit'] = sum(t.get('pnl_comm', 0) for t in trades_list)
+                    self.current_metrics['portfolio_growth_pct'] = (self.current_metrics['net_profit'] / self.initial_capital) * 100 if self.initial_capital > 0 else 0
+                    self.current_metrics['final_value'] = self.initial_capital + self.current_metrics['net_profit']
             plot_path = None
             if hasattr(self, 'plot_results') and callable(self.plot_results):
                 plot_path = self.plot_results(self.current_data.copy(), trades_df, best_params, data_file)
@@ -596,20 +642,34 @@ class BaseOptimizer:
             self.log_message(f"Backtest failed for params {param_dict}, returning high penalty.")
             return 1000.0
 
-        # Extract metrics
+        # Process backtest results
         trades_analysis = backtest_results.get('trades', {})
-        sharpe_analysis = backtest_results.get('sharpe', {})
         drawdown_analysis = backtest_results.get('drawdown', {})
+        sharpe_analysis = backtest_results.get('sharpe', {})
         sqn_analysis = backtest_results.get('sqn', {})
+        annual_return_analysis = backtest_results.get('annual_return', {})
 
-        total_trades = trades_analysis.get('total', {}).get('total', 0)
-        net_profit = float(trades_analysis.get('pnl', {}).get('net', {}).get('total', 0.0))
-        max_drawdown_pct = float(drawdown_analysis.get('max', {}).get('drawdown', 100.0))
-        sharpe_ratio = float(sharpe_analysis.get('sharperatio', -5.0) if sharpe_analysis.get('sharperatio') is not None else -5.0)
-        sqn_val = float(sqn_analysis.get('sqn', -5.0) if sqn_analysis.get('sqn') is not None else -5.0)
-        final_value = backtest_results['strategy'].broker.getvalue()
-        portfolio_growth = ((final_value - self.initial_capital) / self.initial_capital) * 100 if final_value is not None else None
-        win_rate = trades_analysis.get('won', {}).get('total', 0) / total_trades if total_trades > 0 else 0
+        # Get trades from strategy instance and count them
+        trades = None
+        total_trades = 0
+        if 'strategy' in backtest_results and hasattr(backtest_results['strategy'], 'get_trades'):
+            trades = backtest_results['strategy'].get_trades()
+            total_trades = len(trades) if trades else 0
+            if total_trades == 0 and trades_analysis.get('total', {}).get('total', 0) > 0:
+                # If strategy.get_trades() returns empty but trades_analysis has trades,
+                # use the trades_analysis count as a fallback
+                total_trades = trades_analysis.get('total', {}).get('total', 0)
+
+        # Calculate metrics
+        final_value = self.broker.getvalue()
+        initial_value = self.initial_capital
+        net_profit = final_value - initial_value
+        portfolio_growth = (net_profit / initial_value) * 100 if initial_value > 0 else 0
+        max_drawdown = drawdown_analysis.get('max', {}).get('drawdown', 0)
+        sharpe_ratio = sharpe_analysis.get('sharperatio', 0)
+        sqn = sqn_analysis.get('sqn', 0)
+        annual_return = annual_return_analysis.get('rtot', 0)
+        win_rate = trades_analysis.get('won', {}).get('total', 0) / total_trades * 100 if total_trades > 0 else 0
         gross_profit = trades_analysis.get('won', {}).get('pnl', {}).get('total', 0)
         gross_loss = abs(trades_analysis.get('lost', {}).get('pnl', {}).get('total', 0))
         profit_factor_val = gross_profit / gross_loss if gross_loss > 0 else 0
@@ -618,16 +678,12 @@ class BaseOptimizer:
         sqn_pct = None
         cagr = None
         try:
-            trades = None
-            if 'strategy' in backtest_results and hasattr(backtest_results['strategy'], 'get_trades'):
-                trades = backtest_results['strategy'].get_trades()
-            if trades and len(trades) > 1:
-                trades_df = pd.DataFrame(trades)
-                sqn_pct = BaseOptimizer.calculate_sqn_pct(trades_df)
-                if 'entry_time' in trades_df.columns and 'exit_time' in trades_df.columns:
-                    trades_df = trades_df.dropna(subset=['entry_time', 'exit_time'])
-                    if not trades_df.empty:
-                        cagr = BaseOptimizer.calculate_cagr(self.initial_capital, final_value, trades_df['entry_time'].iloc[0], trades_df['exit_time'].iloc[-1])
+            trades_df = pd.DataFrame(trades)
+            sqn_pct = BaseOptimizer.calculate_sqn_pct(trades_df)
+            if 'entry_time' in trades_df.columns and 'exit_time' in trades_df.columns:
+                trades_df = trades_df.dropna(subset=['entry_time', 'exit_time'])
+                if not trades_df.empty:
+                    cagr = BaseOptimizer.calculate_cagr(self.initial_capital, final_value, trades_df['entry_time'].iloc[0], trades_df['exit_time'].iloc[-1])
         except Exception:
             pass
 
@@ -641,32 +697,42 @@ class BaseOptimizer:
                 trades_df = pd.DataFrame(trades)
                 returns = trades_df['pnl_comm'] / trades_df['entry_price']
                 sortino = BaseOptimizer.calculate_sortino(returns, risk_free_rate=self.risk_free_rate)
-                max_dd = drawdown_analysis.get('max', {}).get('drawdown', 0)
-                calmar = BaseOptimizer.calculate_calmar(returns, max_dd)
+                calmar = BaseOptimizer.calculate_calmar(returns, max_drawdown)
                 omega = BaseOptimizer.calculate_omega(returns, threshold=self.omega_threshold)
                 rolling_sharpe = BaseOptimizer.calculate_rolling_sharpe(returns).tolist()
         except Exception as e:
-            pass
+            self.log_message(f"Error calculating additional metrics: {e}", level='error')
 
-        self.current_metrics = {
+        metrics = {
             'total_trades': total_trades,
             'win_rate': win_rate,
             'profit_factor': profit_factor_val,
-            'max_drawdown_pct': max_drawdown_pct,
+            'max_drawdown_pct': max_drawdown,
             'sharpe_ratio': sharpe_ratio,
-            'sqn': sqn_val,
+            'sqn': sqn,
             'sqn_pct': sqn_pct,
             'cagr': cagr,
             'net_profit': net_profit,
             'portfolio_growth_pct': portfolio_growth,
             'final_value': final_value,
-            'sortino_ratio': sortino,
-            'calmar_ratio': calmar,
-            'omega_ratio': omega,
-            'rolling_sharpe': rolling_sharpe,
-            'params': param_dict,
+            'sortino_ratio': sortino if sortino is not None else 0.0,
+            'calmar_ratio': calmar if calmar is not None else 0.0,
+            'omega_ratio': omega if omega is not None else 0.0,
+            'rolling_sharpe': rolling_sharpe if rolling_sharpe is not None else []
         }
-        return self.score_objective(self.current_metrics)
+
+        # Save results
+        self.save_results(
+            data_file=self.current_data_file,
+            best_params=param_dict,
+            metrics=metrics,
+            trades_df=pd.DataFrame(trades) if trades else None,
+            optimization_result=self.optimization_result,
+            plot_path=self.plot_path,
+            strategy_name=self.strategy_name
+        )
+
+        return self.score_objective(metrics)
 
     def score_objective(self, metrics):
         """
@@ -777,48 +843,3 @@ class BaseOptimizer:
             elif param['type'] == 'Categorical':
                 skopt_space.append(Categorical(param['categories'], name=param['name']))
         return skopt_space 
-
-    def optimize_with_optuna(self, n_trials=100):
-        """
-        Run optimization using Optuna with conditional parameter spaces for exit logic.
-        Uses parameter ranges from the optimizer JSON config for strategy params, and from EXIT_PARAM_MAP for exit logic params.
-        """
-        self.param_ranges = {p['name']: p for p in self.config.get('search_space', [])}
-        def objective(trial):
-            # --- Suggest strategy parameters (add as needed) ---
-            strategy_params = {}
-            # Suggest all strategy params that are not exit logic params
-            for pname, pinfo in self.param_ranges.items():
-                if pname == 'exit_logic_name' or pname in EXIT_PARAM_MAP:
-                    continue
-                if pinfo['type'] == 'Real':
-                    strategy_params[pname] = trial.suggest_float(pname, pinfo['low'], pinfo['high'])
-                elif pinfo['type'] == 'Integer':
-                    strategy_params[pname] = trial.suggest_int(pname, pinfo['low'], pinfo['high'])
-                elif pinfo['type'] == 'Categorical':
-                    strategy_params[pname] = trial.suggest_categorical(pname, pinfo['categories'])
-
-            # --- Exit logic selection ---
-            exit_logic_name = trial.suggest_categorical('exit_logic_name', list(EXIT_PARAM_MAP.keys()))
-            exit_params = {}
-            for param, pinfo in EXIT_PARAM_MAP[exit_logic_name].items():
-                if pinfo['type'] == 'Real':
-                    exit_params[param] = trial.suggest_float(param, pinfo['low'], pinfo['high'])
-                elif pinfo['type'] == 'Integer':
-                    exit_params[param] = trial.suggest_int(param, pinfo['low'], pinfo['high'])
-                elif pinfo['type'] == 'Categorical':
-                    exit_params[param] = trial.suggest_categorical(param, pinfo['categories'])
-
-            strategy_params['exit_logic_name'] = exit_logic_name
-            strategy_params['exit_params'] = exit_params
-
-            # --- Run backtest ---
-            results = self.run_backtest(self.current_data.copy(), strategy_params)
-            net_profit = results.get('trades', {}).get('pnl', {}).get('net', {}).get('total', 0.0) if results else 0.0
-            return -net_profit
-
-        study = optuna.create_study(direction='minimize')
-        study.optimize(objective, n_trials=n_trials)
-        print('Best params:', study.best_params)
-        print('Best value:', study.best_value)
-        # Optionally, save best result or use it for further analysis 
