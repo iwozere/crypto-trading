@@ -159,7 +159,9 @@ class BaseOptimizer:
     @staticmethod
     def calculate_rolling_sharpe(returns: Union[List[float], pd.Series], window: int = 30) -> pd.Series:
         """
-        Calculate rolling Sharpe ratio (returns must be a pandas Series).
+        Calculate rolling Sharpe ratio using the basic formula:
+        Sharpe Ratio = (Portfolio Return - Risk-free Rate) / Portfolio Standard Deviation
+        
         Args:
             returns: List or Series of returns
             window: Rolling window size
@@ -168,8 +170,17 @@ class BaseOptimizer:
         """
         if not isinstance(returns, pd.Series):
             returns = pd.Series(returns)
+        
+        # Calculate rolling mean and std
         rolling = returns.rolling(window)
-        rolling_sharpe = rolling.mean() / rolling.std()
+        rolling_mean = rolling.mean()
+        rolling_std = rolling.std()
+        
+        # Calculate Sharpe ratio with proper handling of zero std
+        rolling_sharpe = pd.Series(index=returns.index, dtype='float64')
+        mask = rolling_std != 0
+        rolling_sharpe[mask] = rolling_mean[mask] / rolling_std[mask]
+        
         return rolling_sharpe
 
     def _calculate_supertrend_for_plot(self, data_df: pd.DataFrame, period: int, multiplier: float) -> pd.Series:
@@ -809,21 +820,28 @@ class BaseOptimizer:
         """
         metrics = {}
         if trades_df is not None and not trades_df.empty:
+            # Calculate returns from trades
             returns = trades_df['pnl_comm'] / trades_df['entry_price']
-            metrics['sharpe_ratio'] = self.calculate_rolling_sharpe(returns, window=30).mean() if len(returns) > 1 else 0
-            metrics['sortino_ratio'] = self.calculate_sortino(returns, self.risk_free_rate) if len(returns) > 1 else 0
+            
+            # Calculate Sharpe ratio
+            rolling_sharpe = self.calculate_rolling_sharpe(returns)
+            metrics['sharpe_ratio'] = rolling_sharpe.mean() if not rolling_sharpe.empty else 0.0
+            
+            # Calculate other metrics
+            metrics['sortino_ratio'] = self.calculate_sortino(returns, self.risk_free_rate) if len(returns) > 1 else 0.0
+            
             # Calculate max drawdown from equity curve if available
             if equity_curve is not None and not equity_curve.empty:
                 max_drawdown = (equity_curve / equity_curve.cummax() - 1).min()
             else:
                 max_drawdown = 0
-            metrics['calmar_ratio'] = self.calculate_calmar(returns, max_drawdown) if len(returns) > 1 and max_drawdown != 0 else 0
-            metrics['omega_ratio'] = self.calculate_omega(returns, self.omega_threshold) if len(returns) > 1 else 0
+            metrics['calmar_ratio'] = self.calculate_calmar(returns, max_drawdown) if len(returns) > 1 and max_drawdown != 0 else 0.0
+            metrics['omega_ratio'] = self.calculate_omega(returns, self.omega_threshold) if len(returns) > 1 else 0.0
         else:
-            metrics['sharpe_ratio'] = 0
-            metrics['sortino_ratio'] = 0
-            metrics['calmar_ratio'] = 0
-            metrics['omega_ratio'] = 0
+            metrics['sharpe_ratio'] = 0.0
+            metrics['sortino_ratio'] = 0.0
+            metrics['calmar_ratio'] = 0.0
+            metrics['omega_ratio'] = 0.0
         return metrics 
 
     def _build_skopt_space_from_config(self, search_space_config):
