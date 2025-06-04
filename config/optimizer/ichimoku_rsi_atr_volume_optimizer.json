@@ -10,8 +10,9 @@
   "commission": 0.001,
   "risk_free_rate": 0.01,
   "omega_threshold": 0.0,
-  "n_calls": 100,
-  "random_state": 42,
+  "optimization_method": "optuna",
+  "n_trials": 100,
+  "n_random_starts": 42,
   "use_talib": true,
   "search_space": [
     {"type": "Integer", "name": "rsi_period", "low": 7, "high": 30},

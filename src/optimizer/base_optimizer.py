@@ -344,23 +344,20 @@ class BaseOptimizer:
         # Extract strategy name
         if not strategy_name:
             strategy_name = getattr(self, 'strategy_name', 'Strategy')
-        # Extract symbol and interval from data_file
+        # Extract symbol, interval, and dates from data_file
         symbol = getattr(self, 'current_symbol', 'SYMBOL')
         interval = 'INTERVAL'
+        start_date = 'STARTDATE'
+        end_date = 'ENDDATE'
+        
         if '_' in data_file:
             parts = data_file.replace('.csv','').split('_')
-            if len(parts) >= 2:
+            if len(parts) >= 4:  # We expect at least symbol_interval_startdate_enddate
                 symbol = parts[0]
                 interval = parts[1]
-        # Get start and end date from current_data
-        if current_data is None:
-            current_data = getattr(self, 'current_data', None)
-        if current_data is not None and not getattr(current_data, 'empty', True):
-            start_date = str(current_data.index.min())[:10]
-            end_date = str(current_data.index.max())[:10]
-        else:
-            start_date = 'STARTDATE'
-            end_date = 'ENDDATE'
+                start_date = parts[2]
+                end_date = parts[3]
+        
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         return f"{strategy_name}_{symbol}_{interval}_{start_date}_{end_date}_{timestamp}{suffix}"
 
@@ -460,6 +457,21 @@ class BaseOptimizer:
             self.log_message(f"Full traceback: {traceback.format_exc()}", level='error')
             return None 
 
+    def optimize_with_skopt(self, n_trials=100, n_random_starts=42, noise=0.01, n_jobs=-1, verbose=False):
+        """
+        Run optimization using scikit-optimize's gp_minimize.
+        """
+        result = gp_minimize(
+            func=self.objective, 
+            dimensions=self.space,
+            n_calls=n_trials,  # Use n_trials for consistency
+            n_random_starts=n_random_starts, 
+            noise=noise, 
+            n_jobs=n_jobs, 
+            verbose=verbose
+        )
+        return result
+
     def optimize_single_file(self, data_file):
         """
         Generalized optimization routine for a single data file.
@@ -479,38 +491,43 @@ class BaseOptimizer:
             self.current_data = self.current_data.fillna(method='ffill').fillna(method='bfill')
         self.current_metrics = {}
         try:
-            # Read gp_minimize parameters from config, with defaults
-            n_calls = self.config.get('n_calls', 100)
-            n_random_starts = self.config.get('random_state', 20)
-            noise = self.config.get('noise', 0.01)
-            n_jobs = self.config.get('n_jobs', -1)
-            verbose = self.config.get('verbose', False)
-
-            result = gp_minimize(
-                func=self.objective, 
-                dimensions=self.space,
-                n_calls=n_calls, 
-                n_random_starts=n_random_starts, 
-                noise=noise, 
-                n_jobs=n_jobs, 
-                verbose=verbose
-            )
+            # Get optimization method from config
+            opt_method = self.config.get('optimization_method', 'skopt')  # Default to skopt for backward compatibility
+            n_trials = self.config.get('n_trials', 100)
+            n_random_starts = self.config.get('n_random_starts', 42)
+            if opt_method == 'skopt':
+                noise = self.config.get('noise', 0.01)
+                n_jobs = self.config.get('n_jobs', -1)
+                verbose = self.config.get('verbose', False)
+                result = self.optimize_with_skopt(
+                    n_trials=n_trials,
+                    n_random_starts=n_random_starts,
+                    noise=noise,
+                    n_jobs=n_jobs,
+                    verbose=verbose
+                )
+                best_params = self.params_to_dict(result.x)
+                best_score = result.fun
+            elif opt_method == 'optuna':
+                study = optuna.create_study(direction='minimize')
+                study.optimize(lambda trial: self.optimize_with_optuna(n_trials=1)(trial), n_trials=n_trials)
+                best_params = study.best_params
+                best_score = study.best_value
+                result = study
+            else:
+                raise ValueError(f"Unknown optimization method: {opt_method}")
             self.log_message(f"\nOptimization completed for {data_file}", level='info')
-            best_params = self.params_to_dict(result.x)
             self.log_message(f"Best params for {data_file}: {best_params}", level='info')
-            self.log_message(f"Best score: {result.fun:.2f}. Metrics: {self.current_metrics}", level='info')
+            self.log_message(f"Best score: {best_score:.2f}. Metrics: {self.current_metrics}", level='info')
             final_backtest_run = self.run_backtest(self.current_data.copy(), best_params)
             trades_df = pd.DataFrame()
             if final_backtest_run and hasattr(final_backtest_run.get('strategy', None), 'trades'):
                 trades_list = final_backtest_run['strategy'].trades
                 if trades_list:
                     trades_df = pd.DataFrame(trades_list)
-
             plot_path = None
-
             if hasattr(self, 'plot_results') and callable(self.plot_results):
                 plot_path = self.plot_results(self.current_data.copy(), trades_df, best_params, data_file)
-
             return self.save_results(
                 data_file=data_file,
                 best_params=best_params,
@@ -523,7 +540,7 @@ class BaseOptimizer:
         except Exception as e:
             self.log_message(f"Error during optimization for {data_file}: {str(e)}", level='error')
             self.log_message(traceback.format_exc(), level='error')
-            return None 
+            return None
 
     def run_optimization(self):
         """

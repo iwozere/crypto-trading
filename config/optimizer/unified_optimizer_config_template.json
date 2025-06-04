@@ -10,7 +10,8 @@
   "commission": 0.001,
   "risk_free_rate": 0.01,
   "omega_threshold": 0.0,
-  "n_calls": 100,
+  "optimization_method": "optuna",
+  "n_trials": 100,
   "random_state": 42,
   "search_space": [
     {"type": "Integer", "name": "example_param", "low": 1, "high": 10}
