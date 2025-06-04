@@ -21,7 +21,8 @@
     {"type": "Real", "name": "tp_atr_mult", "low": 1.5, "high": 4.0},
     {"type": "Real", "name": "sl_atr_mult", "low": 0.8, "high": 2.5},
     {"type": "Real", "name": "rsi_oversold", "low": 25, "high": 35},
-    {"type": "Real", "name": "rsi_overbought", "low": 65, "high": 75}
+    {"type": "Real", "name": "rsi_overbought", "low": 65, "high": 75},
+    {"type": "Categorical", "name": "exit_logic_name", "categories": ["atr_exit", "fixed_sl_tp_exit", "ma_crossover_exit", "time_based_exit", "trailing_stop_exit"]}
   ],
   "default_params": {
     "rsi_period": 14,

@@ -128,8 +128,9 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                     return
         else:
             if st_direction == 1 and \
-               prev_rsi_val < self.params.get('rsi_entry_long_level', 40.0) and rsi_val > prev_rsi_val and \
-               volume > vol_ma_val:
+                prev_rsi_val < self.params.get('rsi_entry_long_level', 40.0) and \
+                rsi_val > prev_rsi_val and \
+                volume > vol_ma_val:
                 self.current_trade = {
                     'entry_time': self.data.datetime.datetime(0),
                     'entry_price': 'pending_long',

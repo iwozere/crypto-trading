@@ -26,6 +26,8 @@ from src.notification.logger import _logger
 from skopt import gp_minimize
 from typing import Any, Dict, List, Optional, Union
 from skopt.space import Real, Integer, Categorical
+import optuna
+from src.exit.exit_registry import EXIT_PARAM_MAP
 
 class BaseOptimizer:
     def __init__(self, config: dict):
@@ -758,3 +760,48 @@ class BaseOptimizer:
             elif param['type'] == 'Categorical':
                 skopt_space.append(Categorical(param['categories'], name=param['name']))
         return skopt_space 
+
+    def optimize_with_optuna(self, n_trials=100):
+        """
+        Run optimization using Optuna with conditional parameter spaces for exit logic.
+        Uses parameter ranges from the optimizer JSON config for strategy params, and from EXIT_PARAM_MAP for exit logic params.
+        """
+        self.param_ranges = {p['name']: p for p in self.config.get('search_space', [])}
+        def objective(trial):
+            # --- Suggest strategy parameters (add as needed) ---
+            strategy_params = {}
+            # Suggest all strategy params that are not exit logic params
+            for pname, pinfo in self.param_ranges.items():
+                if pname == 'exit_logic_name' or pname in EXIT_PARAM_MAP:
+                    continue
+                if pinfo['type'] == 'Real':
+                    strategy_params[pname] = trial.suggest_float(pname, pinfo['low'], pinfo['high'])
+                elif pinfo['type'] == 'Integer':
+                    strategy_params[pname] = trial.suggest_int(pname, pinfo['low'], pinfo['high'])
+                elif pinfo['type'] == 'Categorical':
+                    strategy_params[pname] = trial.suggest_categorical(pname, pinfo['categories'])
+
+            # --- Exit logic selection ---
+            exit_logic_name = trial.suggest_categorical('exit_logic_name', list(EXIT_PARAM_MAP.keys()))
+            exit_params = {}
+            for param, pinfo in EXIT_PARAM_MAP[exit_logic_name].items():
+                if pinfo['type'] == 'Real':
+                    exit_params[param] = trial.suggest_float(param, pinfo['low'], pinfo['high'])
+                elif pinfo['type'] == 'Integer':
+                    exit_params[param] = trial.suggest_int(param, pinfo['low'], pinfo['high'])
+                elif pinfo['type'] == 'Categorical':
+                    exit_params[param] = trial.suggest_categorical(param, pinfo['categories'])
+
+            strategy_params['exit_logic_name'] = exit_logic_name
+            strategy_params['exit_params'] = exit_params
+
+            # --- Run backtest ---
+            results = self.run_backtest(self.current_data.copy(), strategy_params)
+            net_profit = results.get('trades', {}).get('pnl', {}).get('net', {}).get('total', 0.0) if results else 0.0
+            return -net_profit
+
+        study = optuna.create_study(direction='minimize')
+        study.optimize(objective, n_trials=n_trials)
+        print('Best params:', study.best_params)
+        print('Best value:', study.best_value)
+        # Optionally, save best result or use it for further analysis 

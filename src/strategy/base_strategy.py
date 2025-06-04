@@ -20,6 +20,7 @@ import os
 import json
 from typing import Any, Dict, Optional
 import datetime
+from src.exit.exit_registry import get_exit_class
 
 class BaseStrategy(bt.Strategy):
     """
@@ -31,6 +32,12 @@ class BaseStrategy(bt.Strategy):
         self.notify = self.params.get('notify', False)
         self.trades = []
         self.notifier = create_notifier() if self.notify else None
+        # Exit logic instantiation
+        exit_logic_name = self.params.get('exit_logic_name')
+        exit_params = self.params.get('exit_params', {})
+        self.exit_logic = None
+        if exit_logic_name:
+            self.exit_logic = get_exit_class(exit_logic_name)(self, params=exit_params)
 
     def log(self, txt: str, dt: Optional[datetime.datetime] = None, doprint: bool = False, level: str = "info") -> None:
         """

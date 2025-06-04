@@ -21,7 +21,8 @@
     {"type": "Real", "name": "vol_strength_mult", "low": 1.2, "high": 3.0},
     {"type": "Integer", "name": "atr_period", "low": 7, "high": 21},
     {"type": "Real", "name": "tp_atr_mult", "low": 1.0, "high": 5.0},
-    {"type": "Real", "name": "sl_atr_mult", "low": 0.5, "high": 3.0}
+    {"type": "Real", "name": "sl_atr_mult", "low": 0.5, "high": 3.0},
+    {"type": "Categorical", "name": "exit_logic_name", "categories": ["atr_exit", "fixed_sl_tp_exit", "ma_crossover_exit", "time_based_exit", "trailing_stop_exit"]}
   ],
   "default_params": {
     "bb_period": 20,

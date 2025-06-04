@@ -24,7 +24,8 @@
     {"type": "Real", "name": "tp_atr_mult", "low": 1.0, "high": 5.0},
     {"type": "Real", "name": "sl_atr_mult", "low": 0.5, "high": 3.0},
     {"type": "Integer", "name": "time_based_exit_period", "low": 3, "high": 15},
-    {"type": "Integer", "name": "check_rsi_slope", "low": 0, "high": 1}
+    {"type": "Integer", "name": "check_rsi_slope", "low": 0, "high": 1},
+    {"type": "Categorical", "name": "exit_logic_name", "categories": ["atr_exit", "fixed_sl_tp_exit", "ma_crossover_exit", "time_based_exit", "trailing_stop_exit"]}
   ],
   "default_params": {
     "rsi_period": 14,

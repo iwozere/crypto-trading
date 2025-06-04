@@ -6,7 +6,6 @@ import backtrader as bt
 import pandas as pd
 import numpy as np
 from src.strategy.base_strategy import BaseStrategy
-import datetime
 from typing import Any, Dict, Optional
 
 """
@@ -73,6 +72,7 @@ class MeanReversionRSBBATRStrategy(BaseStrategy):
             )
             self.rsi = bt.indicators.RSI(period=self.params.get('rsi_period', 14))
             self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
+            
         self.order = None
         self.entry_price = None
         self.entry_bar_idx = None
