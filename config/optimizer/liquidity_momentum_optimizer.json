@@ -1,0 +1,40 @@
+{
+  "data_dir": "data",
+  "results_dir": "results",
+  "strategy_name": "LiquidityMomentumStrategy",
+  "symbol": "BTCUSDT",
+  "interval": "4h",
+  "start_date": "2023-01-01",
+  "end_date": "2023-12-31",
+  "initial_capital": 1000.0,
+  "commission": 0.001,
+  "risk_free_rate": 0.01,
+  "omega_threshold": 0.0,
+  "optimization_method": "optuna",
+  "n_trials": 100,
+  "n_random_starts": 42,
+  "search_space": [
+    {"type": "Real", "name": "buy_thresh", "low": 0.1, "high": 1.0},
+    {"type": "Real", "name": "sell_thresh", "low": -1.0, "high": -0.1},
+    {"type": "Integer", "name": "lookback_period", "low": 100, "high": 500},
+    {"type": "Categorical", "name": "momentum_periods", "categories": [
+      [5, 10, 20],
+      [5, 10, 30],
+      [5, 15, 30],
+      [10, 20, 30],
+      [10, 20, 50],
+      [20, 50, 100]
+    ]},
+    {"type": "Categorical", "name": "exit_logic_name", "categories": ["trailing_stop", "fixed_stop", "atr_stop"]}
+  ],
+  "default_params": {
+    "buy_thresh": 0.5,
+    "sell_thresh": -0.5,
+    "lookback_period": 252,
+    "momentum_periods": [5, 10, 20],
+    "exit_logic_name": "trailing_stop"
+  },
+  "plot": true,
+  "save_trades": true,
+  "plot_size": [60, 30]
+} 

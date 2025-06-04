@@ -1,129 +1,186 @@
 """
-Optimal Crypto Trading Strategy Based on Liquidity and Momentum
-
-This script implements a strategy inspired by the paper
-"Optimal Bitcoin Trading Strategy Development Using Quantitative Models for the Current Market Regime".
-
-The strategy combines four key factors:
-1. Liquidity Ratio: Volume / Market Capitalization
-2. Momentum: 5-day, 10-day, and 20-day returns
-3. Position Score: The average of standardized (z-score) versions of the above factors
-4. Buy/Sell signals based on Position Score thresholds
-
-Optimization:
-- buy_thresh ∈ [0.1, 1.0]
-- sell_thresh ∈ [-1.0, -0.1]
-- gp_minimize is used to find thresholds that maximize cumulative strategy return
-
-Assets Supported:
-- BTC-USD, ETH-USD, LTC-USD (via CoinGecko API for circulating supply)
-
-Data:
-- Daily candles from Yahoo Finance
-- Evaluation from 2017 to mid-2024
-
-Usage:
-- Run main() to execute optimization and backtest
-- Output is a cumulative returns plot vs. the market
+Liquidity Momentum Optimizer
+---------------------------
+Optimizer for the LiquidityMomentumStrategy that combines liquidity ratio and momentum indicators.
+Uses the same optimization framework as other strategies but with specific parameter handling.
 """
 
-import yfinance as yf
-import pandas as pd
+import os
+import json
 import numpy as np
-import matplotlib.pyplot as plt
-from src.analyzer.tickers_list import get_circulating_supply
+import pandas as pd
+from datetime import datetime
+from src.optimizer.base_optimizer import BaseOptimizer
+from src.strategy.liquidity_momentum_strategy import LiquidityMomentumStrategy
+from src.notification.logger import _logger
 
-# -------------------------------
-# Load BTC data
-# -------------------------------
-import requests
+class LiquidityMomentumOptimizer(BaseOptimizer):
+    def __init__(self, config: dict):
+        """
+        Initialize the LiquidityMomentumOptimizer.
+        Args:
+            config: Dictionary containing all optimizer parameters.
+        """
+        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
+        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
+        self.strategy_name = 'LiquidityMomentumStrategy'
+        self.strategy_class = LiquidityMomentumStrategy
+        super().__init__(config)
+        
+        # Create results directory if it doesn't exist
+        os.makedirs(self.results_dir, exist_ok=True)
+        
+        # Set up search space from config
+        self.space = self._build_skopt_space_from_config(config.get('search_space', []))
+        
+        # Set default parameters
+        self.default_params = config.get('default_params', {})
+        
+        # Plot settings
+        self.plot_size = config.get('plot_size', [15, 10])
+        self.plot_style = config.get('plot_style', 'default')
+        self.font_size = config.get('font_size', 10)
+        self.plot_dpi = config.get('plot_dpi', 300)
+        self.show_grid = config.get('show_grid', True)
+        self.legend_loc = config.get('legend_loc', 'upper left')
+        self.save_plot = config.get('save_plot', True)
+        self.show_plot = config.get('show_plot', False)
+        self.plot_format = config.get('plot_format', 'png')
+        self.show_equity_curve = config.get('show_equity_curve', True)
+        self.show_indicators = config.get('show_indicators', True)
+        self.color_scheme = config.get('color_scheme', {})
+        
+        # Results settings
+        self.report_metrics = config.get('report_metrics', [])
+        self.save_trades = config.get('save_trades', True)
+        self.trades_csv_path = config.get('trades_csv_path', None)
+        self.save_metrics = config.get('save_metrics', True)
+        self.metrics_format = config.get('metrics_format', 'json')
+        self.print_summary = config.get('print_summary', True)
 
+    def customize_cerebro(self, cerebro):
+        """
+        Customize the Cerebro instance with additional analyzers specific to this strategy.
+        Args:
+            cerebro: Backtrader Cerebro instance
+        """
+        # Add any strategy-specific analyzers here
+        pass
 
-def load_data(ticker='BTC-USD'):
-    df = yf.download(ticker, start='2017-01-01', end='2024-06-30')
-    df = df[['Close', 'Volume']].dropna()
-    supply = get_circulating_supply(ticker)  # fallback
-    df['MarketCap'] = df['Close'] * supply  # Approx circulating BTC supply
-    df['Liquidity'] = df['Volume'] / df['MarketCap']
-    df['Return_5d'] = df['Close'].pct_change(5)
-    df['Return_10d'] = df['Close'].pct_change(10)
-    df['Return_20d'] = df['Close'].pct_change(20)
-    df.dropna(inplace=True)
-    return df
+    def plot_results(self, data: pd.DataFrame, trades_df: pd.DataFrame, params: dict, data_file: str) -> str:
+        """
+        Plot optimization results with strategy-specific visualizations.
+        Args:
+            data: Price data DataFrame
+            trades_df: Trades DataFrame
+            params: Strategy parameters
+            data_file: Name of the data file
+        Returns:
+            Path to the saved plot file
+        """
+        try:
+            import matplotlib.pyplot as plt
+            from matplotlib.dates import DateFormatter
+            
+            # Create figure with subplots
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=self.plot_size, gridspec_kw={'height_ratios': [3, 1, 1]})
+            
+            # Plot price and trades
+            ax1.plot(data.index, data['close'], label='Close Price', color='blue', alpha=0.6)
+            
+            # Plot buy/sell points
+            if not trades_df.empty:
+                buys = trades_df[trades_df['side'] == 'buy']
+                sells = trades_df[trades_df['side'] == 'sell']
+                
+                ax1.scatter(buys['entry_time'], buys['entry_price'], 
+                          marker='^', color='green', s=100, label='Buy')
+                ax1.scatter(sells['exit_time'], sells['exit_price'], 
+                          marker='v', color='red', s=100, label='Sell')
+            
+            # Plot liquidity ratio
+            liquidity_ratio = data['volume'] / data['market_cap']
+            ax2.plot(data.index, liquidity_ratio, label='Liquidity Ratio', color='purple')
+            ax2.axhline(y=params['buy_thresh'], color='g', linestyle='--', alpha=0.5)
+            ax2.axhline(y=params['sell_thresh'], color='r', linestyle='--', alpha=0.5)
+            
+            # Plot momentum indicators
+            for period in params['momentum_periods']:
+                returns = data['close'].pct_change(period)
+                ax3.plot(data.index, returns, label=f'{period}-period Returns', alpha=0.7)
+            
+            # Customize plots
+            ax1.set_title(f'Liquidity Momentum Strategy - {data_file}')
+            ax1.set_ylabel('Price')
+            ax1.legend()
+            ax1.grid(self.show_grid)
+            
+            ax2.set_ylabel('Liquidity Ratio')
+            ax2.legend()
+            ax2.grid(self.show_grid)
+            
+            ax3.set_ylabel('Returns')
+            ax3.legend()
+            ax3.grid(self.show_grid)
+            
+            # Format x-axis
+            for ax in [ax1, ax2, ax3]:
+                ax.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d'))
+                plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
+            
+            plt.tight_layout()
+            
+            # Save plot
+            plot_path = os.path.join(self.results_dir, f'{self.get_result_filename(data_file)}_plot.{self.plot_format}')
+            plt.savefig(plot_path, dpi=self.plot_dpi)
+            if self.show_plot:
+                plt.show()
+            plt.close()
+            
+            return plot_path
+            
+        except Exception as e:
+            _logger.error(f"Error plotting results: {str(e)}")
+            return None
 
-# -------------------------------
-# Compute Position Score
-# -------------------------------
-def compute_score(df):
-    for col in ['Return_5d', 'Return_10d', 'Return_20d', 'Liquidity']:
-        df[f'z_{col}'] = (df[col] - df[col].rolling(252).mean()) / df[col].rolling(252).std()
-    df['PositionScore'] = df[['z_Return_5d', 'z_Return_10d', 'z_Return_20d', 'z_Liquidity']].mean(axis=1)
-    return df.dropna()
+    def score_objective(self, metrics: dict) -> float:
+        """
+        Custom scoring function for the liquidity momentum strategy.
+        Combines multiple metrics to evaluate strategy performance.
+        Args:
+            metrics: Dictionary of strategy metrics
+        Returns:
+            Score to minimize (negative for maximization)
+        """
+        # Extract key metrics
+        sharpe = metrics.get('sharpe_ratio', 0)
+        sortino = metrics.get('sortino_ratio', 0)
+        calmar = metrics.get('calmar_ratio', 0)
+        win_rate = metrics.get('win_rate', 0)
+        profit_factor = metrics.get('profit_factor', 0)
+        max_drawdown = metrics.get('max_drawdown_pct', 0)
+        total_trades = metrics.get('total_trades', 0)
+        
+        # Penalize if not enough trades
+        if total_trades < 10:
+            return 1000.0
+        
+        # Calculate composite score
+        # Higher weights for risk-adjusted returns and win rate
+        score = (
+            -0.3 * sharpe +  # Risk-adjusted return
+            -0.2 * sortino +  # Downside risk-adjusted return
+            -0.2 * calmar +  # Drawdown-adjusted return
+            -0.15 * (win_rate / 100) +  # Win rate (normalized)
+            -0.1 * profit_factor +  # Profit factor
+            0.05 * (max_drawdown / 100)  # Drawdown penalty (normalized)
+        )
+        
+        return score
 
-# -------------------------------
-# Generate Buy/Sell Signals
-# -------------------------------
-def generate_signals(df, buy_thresh=0.5, sell_thresh=-0.5):
-    df['Signal'] = 0
-    df.loc[df['PositionScore'] > buy_thresh, 'Signal'] = 1
-    df.loc[df['PositionScore'] < sell_thresh, 'Signal'] = -1
-    return df
-
-# -------------------------------
-# Simulate Strategy
-# -------------------------------
-def backtest(df):
-    df['Position'] = df['Signal'].shift().fillna(0)
-    df['StrategyReturn'] = df['Position'] * df['Close'].pct_change()
-    df['CumulativeStrategy'] = (1 + df['StrategyReturn']).cumprod()
-    df['CumulativeMarket'] = (1 + df['Close'].pct_change()).cumprod()
-    return df
-
-# -------------------------------
-# Visualization
-# -------------------------------
-def plot_strategy(df):
-    plt.figure(figsize=(14, 6))
-    plt.plot(df.index, df['CumulativeStrategy'], label='Strategy')
-    plt.plot(df.index, df['CumulativeMarket'], label='Market', linestyle='--')
-    plt.title('Cumulative Returns')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-# -------------------------------
-# Optimization using gp_minimize
-# -------------------------------
-from skopt import gp_minimize
-from skopt.space import Real
-
-def evaluate_strategy(params):
-    buy_thresh, sell_thresh = params
-    df = load_data('LTC-USD')
-    df = compute_score(df)
-    df = generate_signals(df, buy_thresh=buy_thresh, sell_thresh=sell_thresh)
-    df = backtest(df)
-    final_value = df['CumulativeStrategy'].iloc[-1]
-    return -final_value  # Negative because we minimize
-
-def optimize_thresholds():
-    space = [
-        Real(0.1, 1.0, name='buy_thresh'),
-        Real(-1.0, -0.1, name='sell_thresh')
-    ]
-    res = gp_minimize(evaluate_strategy, space, n_calls=30, random_state=42)
-    print("Best buy threshold:", res.x[0])
-    print("Best sell threshold:", res.x[1])
-    return res.x
-
-def main():
-    best_buy, best_sell = optimize_thresholds()
-    df = load_data('LTC-USD')
-    df = compute_score(df)
-    df = generate_signals(df, buy_thresh=best_buy, sell_thresh=best_sell)
-    df = backtest(df)
-    plot_strategy(df)
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    import json
+    with open("config/optimizer/liquidity_momentum_optimizer.json") as f:
+        config = json.load(f)
+    optimizer = LiquidityMomentumOptimizer(config)
+    optimizer.run_optimization()

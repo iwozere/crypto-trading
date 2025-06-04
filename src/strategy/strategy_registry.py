@@ -10,6 +10,7 @@ from src.strategy.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
 from src.strategy.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
 from src.strategy.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
 from src.strategy.ichimoku_rsi_atr_volume_strategy import IchimokuRSIATRVolumeStrategy
+from src.strategy.liquidity_momentum_strategy import LiquidityMomentumStrategy
 
 STRATEGY_REGISTRY = {
     "rsi_bb_atr": {
@@ -97,6 +98,18 @@ STRATEGY_REGISTRY = {
             "atr_period": 14,
             "atr_mult": 2.0,
             "vol_ma_period": 20,
+            "printlog": False,
+            "notify": False
+        }
+    },
+    "liquidity_momentum": {
+        "class": LiquidityMomentumStrategy,
+        "description": "Strategy combining liquidity ratio and momentum indicators for trading signals.",
+        "default_params": {
+            "buy_thresh": 0.5,
+            "sell_thresh": -0.5,
+            "lookback_period": 252,
+            "momentum_periods": [5, 10, 20],
             "printlog": False,
             "notify": False
         }
