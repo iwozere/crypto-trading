@@ -38,6 +38,9 @@ class LiquidityMomentumStrategy(BaseStrategy):
     def __init__(self, params: dict):
         super().__init__(params)
         
+        # Set ticker from params (passed by optimizer)
+        self.ticker = self.params.get('ticker')  # Default to BTCUSDT if not provided
+        
         # Strategy parameters
         self.buy_thresh = self.params.get('buy_thresh', 0.5)
         self.sell_thresh = self.params.get('sell_thresh', -0.5)
@@ -50,7 +53,7 @@ class LiquidityMomentumStrategy(BaseStrategy):
         self.close = self.data.close
         
         # Calculate market cap (using circulating supply)
-        self.supply = get_circulating_supply(self.data._name)
+        self.supply = get_circulating_supply(self.ticker)
         self.market_cap = self.close * self.supply
         
         # Calculate liquidity ratio

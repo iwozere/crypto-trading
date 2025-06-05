@@ -776,6 +776,9 @@ class BaseOptimizer:
         cerebro.broker.set_checksubmit(False)
         
         params['notify'] = self.notify
+        # Extract ticker from data file name if not already present
+        if 'ticker' not in params and hasattr(self, 'current_data_file'):
+            params['ticker'] = self.current_data_file.split('_')[0]
         cerebro.addstrategy(self.strategy_class, params=params)
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.0, timeframe=bt.TimeFrame.Days, compression=1, annualize=True)
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
