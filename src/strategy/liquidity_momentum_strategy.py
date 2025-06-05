@@ -32,6 +32,7 @@ class LiquidityMomentumStrategy(BaseStrategy):
     - sell_thresh: Threshold for sell signals (default: -0.5)
     - lookback_period: Period for calculating z-scores (default: 252)
     - momentum_periods: List of periods for momentum calculation (default: [5, 10, 20])
+    - use_talib: Whether to use TA-Lib indicators (default: False)
     """
     
     def __init__(self, params: dict):
@@ -42,6 +43,7 @@ class LiquidityMomentumStrategy(BaseStrategy):
         self.sell_thresh = self.params.get('sell_thresh', -0.5)
         self.lookback_period = self.params.get('lookback_period', 252)
         self.momentum_periods = self.params.get('momentum_periods', [5, 10, 20])
+        self.use_talib = self.params.get('use_talib', False)
         
         # Initialize indicators
         self.volume = self.data.volume
@@ -54,8 +56,7 @@ class LiquidityMomentumStrategy(BaseStrategy):
         # Calculate liquidity ratio
         self.liquidity = bt.indicators.DivByZero(
             self.volume,
-            self.market_cap,
-            plot=False
+            self.market_cap
         )
         
         # Calculate momentum returns
@@ -80,24 +81,76 @@ class LiquidityMomentumStrategy(BaseStrategy):
         
     def compute_position_score(self):
         """Calculate the position score based on z-scores of liquidity and momentum."""
-        # Calculate z-scores for liquidity
-        liquidity_mean = bt.indicators.SMA(self.liquidity, period=self.lookback_period)
-        liquidity_std = bt.indicators.StandardDeviation(self.liquidity, period=self.lookback_period)
-        z_liquidity = (self.liquidity - liquidity_mean) / liquidity_std
-        
-        # Calculate z-scores for momentum returns
-        z_momentum = {}
-        for period in self.momentum_periods:
-            momentum_mean = bt.indicators.SMA(self.momentum_returns[period], period=self.lookback_period)
-            momentum_std = bt.indicators.StandardDeviation(self.momentum_returns[period], period=self.lookback_period)
-            z_momentum[period] = (self.momentum_returns[period] - momentum_mean) / momentum_std
-        
-        # Calculate average z-score
-        z_scores = [z_liquidity] + list(z_momentum.values())
-        self.position_score = bt.indicators.SMA(
-            bt.indicators.SumN(z_scores, period=1) / len(z_scores),
-            period=1
-        )
+        # Check if we have enough data points
+        if len(self.liquidity) < self.lookback_period:
+            return
+            
+        if not self.use_talib:
+            # Calculate z-scores using bt indicators
+            liquidity_mean = bt.indicators.SMA(self.liquidity, period=self.lookback_period)
+            liquidity_std = bt.indicators.StandardDeviation(self.liquidity, period=self.lookback_period)
+            
+            # Check if indicators have enough data
+            if len(liquidity_mean) < 1 or len(liquidity_std) < 1:
+                return
+                
+            # Check if we have valid values
+            if liquidity_std[0] == 0:
+                return
+                
+            z_liquidity = (self.liquidity - liquidity_mean) / liquidity_std
+            
+            # Calculate z-scores for momentum returns
+            z_momentum = {}
+            for period in self.momentum_periods:
+                if len(self.momentum_returns[period]) < self.lookback_period:
+                    return
+                    
+                momentum_mean = bt.indicators.SMA(self.momentum_returns[period], period=self.lookback_period)
+                momentum_std = bt.indicators.StandardDeviation(self.momentum_returns[period], period=self.lookback_period)
+                
+                # Check if indicators have enough data
+                if len(momentum_mean) < 1 or len(momentum_std) < 1:
+                    return
+                    
+                # Check if we have valid values
+                if momentum_std[0] == 0:
+                    return
+                    
+                z_momentum[period] = (self.momentum_returns[period] - momentum_mean) / momentum_std
+            
+            # Calculate average z-score using bt indicators
+            z_scores = [z_liquidity] + list(z_momentum.values())
+            self.position_score = bt.indicators.SMA(
+                bt.indicators.SumN(z_scores, period=1) / len(z_scores),
+                period=1
+            )
+        else:
+            # Calculate z-scores using pandas
+            liquidity_mean = self.liquidity.rolling(window=self.lookback_period).mean()
+            liquidity_std = self.liquidity.rolling(window=self.lookback_period).std()
+            
+            # Check if we have valid values
+            if liquidity_std.iloc[-1] == 0:
+                return
+                
+            z_liquidity = (self.liquidity - liquidity_mean) / liquidity_std
+            
+            # Calculate z-scores for momentum returns
+            z_momentum = {}
+            for period in self.momentum_periods:
+                momentum_mean = self.momentum_returns[period].rolling(window=self.lookback_period).mean()
+                momentum_std = self.momentum_returns[period].rolling(window=self.lookback_period).std()
+                
+                # Check if we have valid values
+                if momentum_std.iloc[-1] == 0:
+                    return
+                    
+                z_momentum[period] = (self.momentum_returns[period] - momentum_mean) / momentum_std
+            
+            # Calculate average z-score using pandas
+            z_scores = [z_liquidity] + list(z_momentum.values())
+            self.position_score = pd.concat(z_scores, axis=1).mean(axis=1)
     
     def next(self):
         """Main strategy logic."""
@@ -108,11 +161,14 @@ class LiquidityMomentumStrategy(BaseStrategy):
         # Compute position score
         self.compute_position_score()
         
+        # Get current position score
+        current_score = self.position_score[0] if not self.use_talib else self.position_score.iloc[-1]
+        
         # Check for entry/exit signals
         if not self.trade_active:
             # Entry logic
-            if self.position_score[0] > self.buy_thresh:
-                self.log(f'BUY CREATE, Price: {self.data.close[0]:.2f}, Score: {self.position_score[0]:.2f}')
+            if current_score > self.buy_thresh:
+                self.log(f'BUY CREATE, Price: {self.data.close[0]:.2f}, Score: {current_score:.2f}')
                 self.order = self.buy()
                 self.trade_active = True
                 self.entry_price = self.data.close[0]
@@ -121,18 +177,18 @@ class LiquidityMomentumStrategy(BaseStrategy):
                 trade_dict = {
                     'entry_time': self.data.datetime.datetime(),
                     'entry_price': self.entry_price,
-                    'position_score': self.position_score[0],
-                    'liquidity': self.liquidity[0],
-                    'momentum_5d': self.momentum_returns[5][0],
-                    'momentum_10d': self.momentum_returns[10][0],
-                    'momentum_20d': self.momentum_returns[20][0]
+                    'position_score': current_score,
+                    'liquidity': self.liquidity[0] if not self.use_talib else self.liquidity.iloc[-1],
+                    'momentum_5d': self.momentum_returns[5][0] if not self.use_talib else self.momentum_returns[5].iloc[-1],
+                    'momentum_10d': self.momentum_returns[10][0] if not self.use_talib else self.momentum_returns[10].iloc[-1],
+                    'momentum_20d': self.momentum_returns[20][0] if not self.use_talib else self.momentum_returns[20].iloc[-1]
                 }
                 self.record_trade(trade_dict)
                 
         else:
             # Exit logic
-            if self.position_score[0] < self.sell_thresh:
-                self.log(f'SELL CREATE, Price: {self.data.close[0]:.2f}, Score: {self.position_score[0]:.2f}')
+            if current_score < self.sell_thresh:
+                self.log(f'SELL CREATE, Price: {self.data.close[0]:.2f}, Score: {current_score:.2f}')
                 self.order = self.sell()
                 self.trade_active = False
                 
@@ -141,7 +197,7 @@ class LiquidityMomentumStrategy(BaseStrategy):
                     'exit_time': self.data.datetime.datetime(),
                     'exit_price': self.data.close[0],
                     'pnl': (self.data.close[0] - self.entry_price) / self.entry_price * 100,
-                    'position_score': self.position_score[0]
+                    'position_score': current_score
                 }
                 self.record_trade(trade_dict)
     

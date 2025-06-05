@@ -4,12 +4,12 @@ Liquidity Momentum Optimizer
 Optimizer for the LiquidityMomentumStrategy that combines liquidity ratio and momentum indicators.
 Uses the same optimization framework as other strategies but with specific parameter handling.
 """
-
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
 import json
-import numpy as np
 import pandas as pd
-from datetime import datetime
 from src.optimizer.base_optimizer import BaseOptimizer
 from src.strategy.liquidity_momentum_strategy import LiquidityMomentumStrategy
 from src.notification.logger import _logger
@@ -58,15 +58,6 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
         self.metrics_format = config.get('metrics_format', 'json')
         self.print_summary = config.get('print_summary', True)
 
-    def customize_cerebro(self, cerebro):
-        """
-        Customize the Cerebro instance with additional analyzers specific to this strategy.
-        Args:
-            cerebro: Backtrader Cerebro instance
-        """
-        # Add any strategy-specific analyzers here
-        pass
-
     def plot_results(self, data: pd.DataFrame, trades_df: pd.DataFrame, params: dict, data_file: str) -> str:
         """
         Plot optimization results with strategy-specific visualizations.
@@ -105,7 +96,8 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
             ax2.axhline(y=params['sell_thresh'], color='r', linestyle='--', alpha=0.5)
             
             # Plot momentum indicators
-            for period in params['momentum_periods']:
+            momentum_periods = [params['momentum_period_1'], params['momentum_period_2'], params['momentum_period_3']]
+            for period in momentum_periods:
                 returns = data['close'].pct_change(period)
                 ax3.plot(data.index, returns, label=f'{period}-period Returns', alpha=0.7)
             
@@ -143,7 +135,7 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
             _logger.error(f"Error plotting results: {str(e)}")
             return None
 
-    def score_objective(self, metrics: dict) -> float:
+    def NOT_USED_score_objective(self, metrics: dict) -> float:
         """
         Custom scoring function for the liquidity momentum strategy.
         Combines multiple metrics to evaluate strategy performance.

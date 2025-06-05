@@ -7,27 +7,46 @@ from typing import Any, Dict, Optional
 
 
 def get_circulating_supply(ticker):
+    """
+    Get the circulating supply for a cryptocurrency from CoinGecko.
+    Args:
+        ticker: The ticker symbol (e.g., 'BTCUSDT')
+    Returns:
+        float: The circulating supply or a default value if not found
+    """
+    # Map common tickers to CoinGecko IDs
     mapping = {
-        'BTC-USD': 'bitcoin',
-        'ETH-USD': 'ethereum',
-        'LTC-USD': 'litecoin',
-        'XRP-USD': 'xrp',
-        'BCH-USD': 'bitcoin-cash',
-        'XLM-USD': 'stellar',
-        'ADA-USD': 'cardano',
-        'DOT-USD': 'polkadot',
+        'BTC': 'bitcoin',
+        'ETH': 'ethereum',
+        'LTC': 'litecoin',
+        'XRP': 'xrp',
+        'BCH': 'bitcoin-cash',
+        'XLM': 'stellar',
+        'ADA': 'cardano',
+        'DOT': 'polkadot',
     }
-    coin_id = mapping.get(ticker)
+    
+    # Extract base symbol (remove USDT)
+    base_symbol = ticker.replace('USDT', '').replace('USDC', '').replace('USDC.e', '')
+    
+    # Try to get the CoinGecko ID from the mapping
+    coin_id = mapping.get(base_symbol)
     if coin_id is None:
-        coin_id = ticker
+        # If not found in mapping, try to use the base symbol
+        coin_id = base_symbol.lower()
+    
     url = f'https://api.coingecko.com/api/v3/coins/{coin_id}'
     try:
         response = requests.get(url)
-        data = response.json()
-        return data['market_data']['circulating_supply']
+        if response.status_code == 200:
+            data = response.json()
+            return data['market_data']['circulating_supply']
+        else:
+            print(f"Error fetching supply for {ticker}: HTTP {response.status_code}")
+            return 1e8  # Default value
     except Exception as e:
-        print(f"Error fetching supply: {e}")
-        return 1e8
+        print(f"Error fetching supply for {ticker}: {str(e)}")
+        return 1e8  # Default value
 
 # Download SIX ticker list
 def get_six_tickers():
