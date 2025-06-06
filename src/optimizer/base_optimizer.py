@@ -275,11 +275,16 @@ class BaseOptimizer:
         """
         Log a message using the configured logger.
         Args:
-            message: Message string
-            level: "info" (default) for normal messages, "error" for errors.
+            message: Message to log
+            level: Log level (info, warning, error)
         """
+        log_dir = os.path.join('logs', 'log')
+        os.makedirs(log_dir, exist_ok=True)
+        
         if level == "error":
             _logger.error(message)
+        elif level == "warning":
+            _logger.warning(message)
         else:
             _logger.info(message)
 
