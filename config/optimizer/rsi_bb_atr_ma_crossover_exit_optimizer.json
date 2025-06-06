@@ -13,6 +13,12 @@
   "optimization_method": "optuna",
   "n_trials": 100,
   "n_random_starts": 42,
+  "exit_logic": {
+    "name": "ma_crossover_exit",
+    "params": {
+      "ma_period": {"type": "Integer", "low": 10, "high": 50}
+    }
+  },
   "search_space": [
     {"type": "Integer", "name": "bb_period", "low": 10, "high": 50},
     {"type": "Real", "name": "bb_devfactor", "low": 1.5, "high": 3.5},
@@ -21,10 +27,7 @@
     {"type": "Real", "name": "rsi_overbought", "low": 60.0, "high": 80.0},
     {"type": "Real", "name": "rsi_mid_level", "low": 45.0, "high": 55.0},
     {"type": "Integer", "name": "atr_period", "low": 7, "high": 28},
-    {"type": "Real", "name": "tp_atr_mult", "low": 1.0, "high": 3.0},
-    {"type": "Real", "name": "sl_atr_mult", "low": 0.5, "high": 2.0},
-    {"type": "Integer", "name": "check_rsi_slope", "low": 0, "high": 1},
-    {"type": "Categorical", "name": "exit_logic_name", "categories": ["atr_exit", "fixed_sl_tp_exit", "ma_crossover_exit", "time_based_exit", "trailing_stop_exit"]}
+    {"type": "Integer", "name": "check_rsi_slope", "low": 0, "high": 1}
   ],
   "default_params": {
     "bb_period": 20,
@@ -34,8 +37,6 @@
     "rsi_overbought": 70.0,
     "rsi_mid_level": 50.0,
     "atr_period": 14,
-    "tp_atr_mult": 2.0,
-    "sl_atr_mult": 1.0,
     "check_rsi_slope": 0
   },
   "plot": true,

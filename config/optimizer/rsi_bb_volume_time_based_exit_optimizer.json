@@ -1,0 +1,48 @@
+{
+  "data_dir": "data",
+  "results_dir": "results",
+  "strategy_name": "RSIBollVolumeATRStrategy",
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "start_date": "2023-01-01",
+  "end_date": "2023-12-31",
+  "initial_capital": 1000.0,
+  "commission": 0.001,
+  "risk_free_rate": 0.01,
+  "omega_threshold": 0.0,
+  "optimization_method": "optuna",
+  "n_trials": 100,
+  "n_random_starts": 42,
+  
+  "exit_logic": {
+    "name": "time_based_exit",
+    "params": {
+      "time_period": {"type": "Integer", "low": 3, "high": 30}
+    }
+  },
+  
+  "search_space": [
+    {"type": "Integer", "name": "rsi_period", "low": 7, "high": 21},
+    {"type": "Integer", "name": "boll_period", "low": 15, "high": 40},
+    {"type": "Real", "name": "boll_devfactor", "low": 1.5, "high": 3.5},
+    {"type": "Integer", "name": "atr_period", "low": 10, "high": 25},
+    {"type": "Integer", "name": "vol_ma_period", "low": 15, "high": 40},
+    {"type": "Real", "name": "rsi_oversold", "low": 25, "high": 35},
+    {"type": "Real", "name": "rsi_overbought", "low": 65, "high": 75}
+  ],
+  
+  "default_params": {
+    "rsi_period": 14,
+    "boll_period": 20,
+    "boll_devfactor": 2.0,
+    "atr_period": 14,
+    "vol_ma_period": 20,
+    "rsi_oversold": 30.0,
+    "rsi_overbought": 70.0
+  },
+  
+  "plot": true,
+  "save_trades": true,
+  "plot_size": [60, 30],
+  "use_talib": true
+} 

@@ -14,6 +14,12 @@
   "n_trials": 100,
   "n_random_starts": 42,
   "use_talib": true,
+  "exit_logic": {
+    "name": "trailing_stop_exit",
+    "params": {
+      "trail_pct": {"type": "Real", "low": 0.01, "high": 0.05}
+    }
+  },
   "search_space": [
     {"type": "Integer", "name": "rsi_period", "low": 7, "high": 28},
     {"type": "Real", "name": "rsi_entry_long_level", "low": 20.0, "high": 40.0},
@@ -22,11 +28,8 @@
     {"type": "Real", "name": "st_multiplier", "low": 1.5, "high": 4.0},
     {"type": "Integer", "name": "vol_ma_period", "low": 5, "high": 30},
     {"type": "Integer", "name": "atr_period", "low": 7, "high": 21},
-    {"type": "Real", "name": "tp_atr_mult", "low": 1.0, "high": 5.0},
-    {"type": "Real", "name": "sl_atr_mult", "low": 0.5, "high": 3.0},
     {"type": "Integer", "name": "time_based_exit_period", "low": 3, "high": 15},
-    {"type": "Integer", "name": "check_rsi_slope", "low": 0, "high": 1},
-    {"type": "Categorical", "name": "exit_logic_name", "categories": ["atr_exit", "fixed_sl_tp_exit", "ma_crossover_exit", "time_based_exit", "trailing_stop_exit"]}
+    {"type": "Integer", "name": "check_rsi_slope", "low": 0, "high": 1}
   ],
   "default_params": {
     "rsi_period": 14,
@@ -36,8 +39,6 @@
     "st_multiplier": 3.0,
     "vol_ma_period": 10,
     "atr_period": 14,
-    "tp_atr_mult": 2.0,
-    "sl_atr_mult": 1.0,
     "time_based_exit_period": 5,
     "check_rsi_slope": 0
   },

@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional, Union
 from skopt.space import Real, Integer, Categorical
 import optuna
 from src.exit.exit_registry import EXIT_PARAM_MAP
+from functools import lru_cache
 
 class BaseOptimizer:
     def __init__(self, config: dict):
@@ -46,6 +47,8 @@ class BaseOptimizer:
         self.current_data = None
         self.current_symbol = None
         self.raw_data = {}
+        self.best_metrics = float('-inf')
+        self.metrics_cache = {}
         self.load_all_data()
 
     class DateTimeEncoder(json.JSONEncoder):
@@ -485,6 +488,10 @@ class BaseOptimizer:
 
     def get_optuna_objective(self):
         self.param_ranges = {p['name']: p for p in self.config.get('search_space', [])}
+        exit_logic_config = self.config.get('exit_logic', {})
+        exit_logic_name = exit_logic_config.get('name', 'atr_exit')
+        exit_params_config = exit_logic_config.get('params', {})
+        
         def objective(trial):
             # --- Suggest strategy parameters (add as needed) ---
             strategy_params = {}
@@ -499,10 +506,9 @@ class BaseOptimizer:
                 elif pinfo['type'] == 'Categorical':
                     strategy_params[pname] = trial.suggest_categorical(pname, pinfo['categories'])
 
-            # --- Exit logic selection ---
-            exit_logic_name = trial.suggest_categorical('exit_logic_name', list(EXIT_PARAM_MAP.keys()))
+            # --- Exit logic parameters ---
             exit_params = {}
-            for param, pinfo in EXIT_PARAM_MAP[exit_logic_name].items():
+            for param, pinfo in exit_params_config.items():
                 if pinfo['type'] == 'Real':
                     exit_params[param] = trial.suggest_float(param, pinfo['low'], pinfo['high'])
                 elif pinfo['type'] == 'Integer':
@@ -647,114 +653,6 @@ class BaseOptimizer:
         except Exception as e:
             self.log_message(f"Error saving combined JSON: {e}", level='error') 
 
-    def objective(self, params):
-        """
-        Generic objective function for optimization. Subclasses can override score_objective for custom penalty logic.
-        """
-        param_dict = self.params_to_dict(params)
-        backtest_results = self.run_backtest(self.current_data.copy(), param_dict)
-        if backtest_results is None:
-            self.log_message(f"Backtest failed for params {param_dict}, returning high penalty.")
-            return 1000.0
-
-        # Process backtest results
-        trades_analysis = backtest_results.get('trades', {})
-        drawdown_analysis = backtest_results.get('drawdown', {})
-        sharpe_analysis = backtest_results.get('sharpe', {})
-        sqn_analysis = backtest_results.get('sqn', {})
-        annual_return_analysis = backtest_results.get('annual_return', {})
-
-        # Get trades from strategy instance and count them
-        trades = None
-        total_trades = 0
-        if 'strategy' in backtest_results and hasattr(backtest_results['strategy'], 'get_trades'):
-            trades = backtest_results['strategy'].get_trades()
-            total_trades = len(trades) if trades else 0
-            if total_trades == 0 and trades_analysis.get('total', {}).get('total', 0) > 0:
-                # If strategy.get_trades() returns empty but trades_analysis has trades,
-                # use the trades_analysis count as a fallback
-                total_trades = trades_analysis.get('total', {}).get('total', 0)
-
-        # Calculate metrics
-        final_value = self.broker.getvalue()
-        initial_value = self.initial_capital
-        net_profit = final_value - initial_value
-        portfolio_growth = (net_profit / initial_value) * 100 if initial_value > 0 else 0
-        max_drawdown = drawdown_analysis.get('max', {}).get('drawdown', 0)
-        sharpe_ratio = sharpe_analysis.get('sharperatio', 0)
-        sqn = sqn_analysis.get('sqn', 0)
-        annual_return = annual_return_analysis.get('rtot', 0)
-        win_rate = trades_analysis.get('won', {}).get('total', 0) / total_trades * 100 if total_trades > 0 else 0
-        gross_profit = trades_analysis.get('won', {}).get('pnl', {}).get('total', 0)
-        gross_loss = abs(trades_analysis.get('lost', {}).get('pnl', {}).get('total', 0))
-        profit_factor_val = gross_profit / gross_loss if gross_loss > 0 else 0
-
-        # Calculate sqn_pct and cagr using BaseOptimizer utilities
-        sqn_pct = None
-        cagr = None
-        try:
-            trades_df = pd.DataFrame(trades)
-            sqn_pct = BaseOptimizer.calculate_sqn_pct(trades_df)
-            if 'entry_time' in trades_df.columns and 'exit_time' in trades_df.columns:
-                trades_df = trades_df.dropna(subset=['entry_time', 'exit_time'])
-                if not trades_df.empty:
-                    cagr = BaseOptimizer.calculate_cagr(self.initial_capital, final_value, trades_df['entry_time'].iloc[0], trades_df['exit_time'].iloc[-1])
-        except Exception:
-            pass
-
-        # Calculate additional metrics
-        sortino = None
-        calmar = None
-        omega = None
-        rolling_sharpe = None
-        try:
-            if trades and len(trades) > 1:
-                trades_df = pd.DataFrame(trades)
-                returns = trades_df['pnl_comm'] / trades_df['entry_price']
-                sortino = BaseOptimizer.calculate_sortino(returns, risk_free_rate=self.risk_free_rate)
-                calmar = BaseOptimizer.calculate_calmar(returns, max_drawdown)
-                omega = BaseOptimizer.calculate_omega(returns, threshold=self.omega_threshold)
-                rolling_sharpe = BaseOptimizer.calculate_rolling_sharpe(returns).tolist()
-        except Exception as e:
-            self.log_message(f"Error calculating additional metrics: {e}", level='error')
-
-        metrics = {
-            'total_trades': total_trades,
-            'win_rate': win_rate,
-            'profit_factor': profit_factor_val,
-            'max_drawdown_pct': max_drawdown,
-            'sharpe_ratio': sharpe_ratio,
-            'sqn': sqn,
-            'sqn_pct': sqn_pct,
-            'cagr': cagr,
-            'net_profit': net_profit,
-            'portfolio_growth_pct': portfolio_growth,
-            'final_value': final_value,
-            'sortino_ratio': sortino if sortino is not None else 0.0,
-            'calmar_ratio': calmar if calmar is not None else 0.0,
-            'omega_ratio': omega if omega is not None else 0.0,
-            'rolling_sharpe': rolling_sharpe if rolling_sharpe is not None else []
-        }
-
-        # Save results
-        self.save_results(
-            data_file=self.current_data_file,
-            best_params=param_dict,
-            metrics=metrics,
-            trades_df=pd.DataFrame(trades) if trades else None,
-            optimization_result=self.optimization_result,
-            plot_path=self.plot_path,
-            strategy_name=self.strategy_name
-        )
-
-        return self.score_objective(metrics)
-
-    def score_objective(self, metrics):
-        """
-        Default scoring: just return -net_profit. Subclasses can override for custom penalty logic.
-        """
-        return -metrics.get('net_profit', 0.0)
-
     def run_backtest(self, data, params):
         """
         Generic Backtrader backtest runner. Uses self.strategy_class for the strategy.
@@ -784,38 +682,34 @@ class BaseOptimizer:
         if 'ticker' not in params and hasattr(self, 'current_data_file'):
             params['ticker'] = self.current_data_file.split('_')[0]
         cerebro.addstrategy(self.strategy_class, params=params)
-        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.0, timeframe=bt.TimeFrame.Days, compression=1, annualize=True)
-        cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
+        
+        # Only add essential analyzers for optimization
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
-        cerebro.addanalyzer(bt.analyzers.SQN, _name='sqn')
-        cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annual_return')
+        cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
+        
         # Allow subclass customization
         if hasattr(self, 'customize_cerebro') and callable(self.customize_cerebro):
             self.customize_cerebro(cerebro)
+            
         try:
             results = cerebro.run()
             if not results:
                 self.log_message(f"Backtest with params {params} did not yield valid results object.")
                 return None
             strategy = results[0]
-            sharpe = strategy.analyzers.sharpe.get_analysis()
             drawdown = strategy.analyzers.drawdown.get_analysis()
             trades = strategy.analyzers.trades.get_analysis()
-            sqn = strategy.analyzers.sqn.get_analysis()
-            annual_return = strategy.analyzers.annual_return.get_analysis()
             return {
                 'strategy': strategy,
-                'sharpe': sharpe,
                 'drawdown': drawdown,
-                'sqn': sqn,
-                'annual_return': annual_return,
                 'trades': trades
             }
         except Exception as e:
             self.log_message(f"Error during backtest run for params {params}: {str(e)}")
             self.log_message(traceback.format_exc(), level='error')
-            return None 
+            return None
 
+    @lru_cache(maxsize=128)
     def calculate_metrics(self, trades_df: pd.DataFrame, equity_curve: pd.Series = None) -> Dict[str, Any]:
         """
         Calculate and return all relevant metrics, including sortino_ratio, calmar_ratio, omega_ratio, etc.
@@ -830,26 +724,75 @@ class BaseOptimizer:
             # Calculate returns from trades
             returns = trades_df['pnl_comm'] / trades_df['entry_price']
             
-            # Calculate Sharpe ratio
-            rolling_sharpe = self.calculate_rolling_sharpe(returns)
-            metrics['sharpe_ratio'] = rolling_sharpe.mean() if not rolling_sharpe.empty else 0.0
-            
-            # Calculate other metrics
-            metrics['sortino_ratio'] = self.calculate_sortino(returns, self.risk_free_rate) if len(returns) > 1 else 0.0
-            
             # Calculate max drawdown from equity curve if available
             if equity_curve is not None and not equity_curve.empty:
                 max_drawdown = (equity_curve / equity_curve.cummax() - 1).min()
             else:
                 max_drawdown = 0
-            metrics['calmar_ratio'] = self.calculate_calmar(returns, max_drawdown) if len(returns) > 1 and max_drawdown != 0 else 0.0
-            metrics['omega_ratio'] = self.calculate_omega(returns, self.omega_threshold) if len(returns) > 1 else 0.0
+                
+            # Calculate essential metrics only
+            metrics['max_drawdown'] = max_drawdown
+            metrics['total_trades'] = len(trades_df)
+            metrics['win_rate'] = len(trades_df[trades_df['pnl_comm'] > 0]) / len(trades_df) * 100 if len(trades_df) > 0 else 0
+            metrics['net_profit'] = trades_df['pnl_comm'].sum()
+            metrics['profit_factor'] = abs(trades_df[trades_df['pnl_comm'] > 0]['pnl_comm'].sum() / trades_df[trades_df['pnl_comm'] < 0]['pnl_comm'].sum()) if len(trades_df[trades_df['pnl_comm'] < 0]) > 0 else float('inf')
         else:
-            metrics['sharpe_ratio'] = 0.0
-            metrics['sortino_ratio'] = 0.0
-            metrics['calmar_ratio'] = 0.0
-            metrics['omega_ratio'] = 0.0
-        return metrics 
+            metrics['max_drawdown'] = 0
+            metrics['total_trades'] = 0
+            metrics['win_rate'] = 0
+            metrics['net_profit'] = 0
+            metrics['profit_factor'] = 0
+            
+        return metrics
+
+    def objective(self, params):
+        """
+        Objective function for optimization. Runs backtest and returns negative net profit.
+        """
+        param_dict = self.params_to_dict(params)
+        param_key = str(param_dict)  # Use string representation as cache key
+        
+        # Check cache first
+        if param_key in self.metrics_cache:
+            return -self.metrics_cache[param_key]['net_profit']
+            
+        backtest_results = self.run_backtest(self.current_data, param_dict)
+        if backtest_results is None:
+            return float('inf')
+            
+        trades = backtest_results['strategy'].get_trades()
+        if not trades:
+            return float('inf')
+            
+        trades_df = pd.DataFrame(trades)
+        
+        # Calculate only essential metrics for optimization
+        metrics = {
+            'net_profit': trades_df['pnl_comm'].sum(),
+            'total_trades': len(trades_df),
+            'win_rate': len(trades_df[trades_df['pnl_comm'] > 0]) / len(trades_df) * 100 if len(trades_df) > 0 else 0,
+            'max_drawdown': backtest_results['drawdown'].get('max', {}).get('drawdown', 0)
+        }
+        
+        # Cache the results
+        self.metrics_cache[param_key] = metrics
+        
+        # Only save results if they're better than previous best
+        if metrics['net_profit'] > self.best_metrics:
+            self.best_metrics = metrics['net_profit']
+            # Calculate additional metrics only for saving results
+            full_metrics = self.calculate_metrics(trades_df)
+            self.save_results(
+                data_file=self.current_data_file,
+                best_params=param_dict,
+                metrics=full_metrics,
+                trades_df=trades_df,
+                optimization_result=self.optimization_result,
+                plot_path=self.plot_path,
+                strategy_name=self.strategy_name
+            )
+            
+        return -metrics['net_profit']
 
     def _build_skopt_space_from_config(self, search_space_config):
         """

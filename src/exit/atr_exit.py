@@ -1,27 +1,36 @@
 """
-ATR-based exit logic for trading strategies. Sets stop-loss and take-profit based on ATR multiples.
+ATR-based exit logic for trading strategies. Exits a trade based on ATR-based take profit and stop loss levels.
 """
 from src.exit.base_exit import BaseExitLogic
-import backtrader as bt
 
 class ATRExit(BaseExitLogic):
-    def __init__(self, strategy, params=None):
-        super().__init__(strategy)
-        params = params or {}
-        atr_period = params.get('atr_period', 14)
-        self.sl_mult = params.get('sl_mult', 1.5)
-        self.tp_mult = params.get('tp_mult', 3.0)
-        self.atr = bt.ind.ATR(strategy.data, period=atr_period)
-        self.sl = None
-        self.tp = None
+    def __init__(self, params=None):
+        super().__init__(params)
+        self.sl_mult = self.params.get('sl_mult', 1.5)
+        self.tp_mult = self.params.get('tp_mult', 2.0)
+        self.tp_price = None
+        self.sl_price = None
 
-    def on_entry(self):
-        super().on_entry()
-        atr_val = self.atr[0]
-        self.sl = self.entry_price - self.sl_mult * atr_val
-        self.tp = self.entry_price + self.tp_mult * atr_val
+    def initialize(self, entry_price, atr_value):
+        """Initialize the exit logic with entry price and ATR value."""
+        super().initialize(entry_price, atr_value)
+        self.tp_price = self.entry_price + self.tp_mult * self.atr_value
+        self.sl_price = self.entry_price - self.sl_mult * self.atr_value
 
-    def check_exit(self):
-        price = self.strategy.data.close[0]
-        if price <= self.sl or price >= self.tp:
-            self.strategy.close()
+    def check_exit(self, current_price, highest_price, atr_value):
+        """
+        Check if price has hit take profit or stop loss levels.
+        
+        Args:
+            current_price (float): Current price
+            highest_price (float): Highest price since entry
+            atr_value (float): Current ATR value
+            
+        Returns:
+            tuple: (bool, str) - (should_exit, exit_reason)
+        """
+        if current_price >= self.tp_price:
+            return True, 'take profit'
+        elif current_price <= self.sl_price:
+            return True, 'stop loss'
+        return False, None

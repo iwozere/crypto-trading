@@ -14,26 +14,28 @@
   "n_trials": 100,
   "n_random_starts": 42,
   "use_talib": true,
+  "exit_logic": {
+    "name": "atr_exit",
+    "params": {
+      "sl_mult": {"type": "Real", "low": 0.5, "high": 2.0},
+      "tp_mult": {"type": "Real", "low": 1.0, "high": 3.0}
+    }
+  },
   "search_space": [
     {"type": "Integer", "name": "rsi_period", "low": 7, "high": 30},
     {"type": "Real", "name": "rsi_oversold", "low": 20.0, "high": 40.0},
     {"type": "Real", "name": "rsi_overbought", "low": 60.0, "high": 80.0},
     {"type": "Integer", "name": "atr_period", "low": 7, "high": 30},
-    {"type": "Real", "name": "tp_atr_mult", "low": 1.0, "high": 3.0},
-    {"type": "Real", "name": "sl_atr_mult", "low": 0.5, "high": 2.0},
     {"type": "Integer", "name": "ichimoku_tenkan", "low": 5, "high": 30},
     {"type": "Integer", "name": "ichimoku_kijun", "low": 20, "high": 60},
     {"type": "Integer", "name": "ichimoku_senkou", "low": 40, "high": 120},
-    {"type": "Integer", "name": "check_rsi_slope", "low": 0, "high": 1},
-    {"type": "Categorical", "name": "exit_logic_name", "categories": ["atr_exit", "fixed_sl_tp_exit", "ma_crossover_exit", "time_based_exit", "trailing_stop_exit"]}
+    {"type": "Integer", "name": "check_rsi_slope", "low": 0, "high": 1}
   ],
   "default_params": {
     "rsi_period": 14,
     "rsi_oversold": 30.0,
     "rsi_overbought": 70.0,
     "atr_period": 14,
-    "tp_atr_mult": 2.0,
-    "sl_atr_mult": 1.0,
     "ichimoku_tenkan": 9,
     "ichimoku_kijun": 26,
     "ichimoku_senkou": 52,

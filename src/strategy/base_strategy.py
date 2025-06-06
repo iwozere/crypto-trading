@@ -28,28 +28,32 @@ class BaseStrategy(bt.Strategy):
     The notify flag (self.notify) is set from params['notify'] if present.
     """
     def __init__(self, params: dict):
+        """
+        Initialize the strategy with parameters.
+        
+        Args:
+            params (dict): Dictionary of strategy parameters
+        """
         self.params = params
-        self.notify = self.params.get('notify', False)
+        self.notify = params.get('notify', False)
+        self.printlog = params.get('printlog', False)
         self.trades = []
         self.notifier = create_notifier() if self.notify else None
         # Exit logic instantiation
-        exit_logic_name = self.params.get('exit_logic_name')
-        exit_params = self.params.get('exit_params', {})
-        self.exit_logic = None
-        if exit_logic_name:
-            self.exit_logic = get_exit_class(exit_logic_name)(self, params=exit_params)
+        exit_logic_name = params.get('exit_logic_name', 'atr_exit')
+        exit_params = params.get('exit_params', {})
+        self.exit_logic = get_exit_class(exit_logic_name)(params=exit_params)
 
     def log(self, txt: str, dt: Optional[datetime.datetime] = None, doprint: bool = False, level: str = "info") -> None:
         """
         Log a message using the configured logger.
         - level: "info" (default) for normal messages, "error" for errors.
         """
-        if self.params.get('printlog', False) or doprint:
+        if self.printlog or doprint:
             if level == "error":
                 _logger.error(txt)
             else:
                 _logger.info(txt)
-
 
     def record_trade(self, trade_dict: Dict[str, Any]) -> None:
         self.trades.append(trade_dict)
@@ -110,11 +114,17 @@ class BaseStrategy(bt.Strategy):
             self.notifier.send_error_notification(str(error))
 
     def notify_trade(self, trade):
+        """
+        Handle trade notifications.
+        
+        Args:
+            trade: Trade object
+        """
         if not trade.isclosed:
             return
-        #print(f"TRADE CLOSED: PnL: {trade.pnl}, PnL Comm: {trade.pnlcomm}")
-        # Optionally, log or record the trade here as well
             
+        self.log(f'OPERATION PROFIT, GROSS {trade.pnl:.2f}, NET {trade.pnlcomm:.2f}')
+        
     def get_trades(self):
         """Return the list of recorded trades for this strategy instance."""
         return self.trades

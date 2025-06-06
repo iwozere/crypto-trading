@@ -1,0 +1,48 @@
+{
+  "data_dir": "data",
+  "results_dir": "results",
+  "strategy_name": "BBSuperTrendVolumeBreakoutStrategy",
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "start_date": "2023-01-01",
+  "end_date": "2023-12-31",
+  "initial_capital": 1000.0,
+  "commission": 0.001,
+  "risk_free_rate": 0.01,
+  "omega_threshold": 0.0,
+  "optimization_method": "optuna",
+  "n_trials": 100,
+  "n_random_starts": 42,
+  
+  "exit_logic": {
+    "name": "time_based_exit",
+    "params": {
+      "time_period": {"type": "Integer", "low": 3, "high": 30}
+    }
+  },
+  
+  "search_space": [
+    {"type": "Integer", "name": "bb_period", "low": 10, "high": 50},
+    {"type": "Real", "name": "bb_devfactor", "low": 1.5, "high": 3.5},
+    {"type": "Integer", "name": "st_period", "low": 7, "high": 100},
+    {"type": "Real", "name": "st_multiplier", "low": 1.0, "high": 4.0},
+    {"type": "Integer", "name": "vol_ma_period", "low": 10, "high": 50},
+    {"type": "Real", "name": "vol_strength_mult", "low": 1.2, "high": 3.0},
+    {"type": "Integer", "name": "atr_period", "low": 7, "high": 21}
+  ],
+  
+  "default_params": {
+    "bb_period": 20,
+    "bb_devfactor": 2.0,
+    "st_period": 10,
+    "st_multiplier": 3.0,
+    "vol_ma_period": 20,
+    "vol_strength_mult": 2.0,
+    "atr_period": 14
+  },
+  
+  "plot": true,
+  "save_trades": true,
+  "plot_size": [60, 30],
+  "use_talib": true
+} 

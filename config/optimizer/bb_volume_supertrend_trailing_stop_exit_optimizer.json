@@ -13,6 +13,14 @@
   "optimization_method": "optuna",
   "n_trials": 100,
   "n_random_starts": 42,
+  
+  "exit_logic": {
+    "name": "trailing_stop_exit",
+    "params": {
+      "trail_pct": {"type": "Real", "low": 0.01, "high": 0.05}
+    }
+  },
+  
   "search_space": [
     {"type": "Integer", "name": "bb_period", "low": 10, "high": 50},
     {"type": "Real", "name": "bb_devfactor", "low": 1.5, "high": 3.5},
@@ -20,11 +28,9 @@
     {"type": "Real", "name": "st_multiplier", "low": 1.0, "high": 4.0},
     {"type": "Integer", "name": "vol_ma_period", "low": 10, "high": 50},
     {"type": "Real", "name": "vol_strength_mult", "low": 1.2, "high": 3.0},
-    {"type": "Integer", "name": "atr_period", "low": 7, "high": 21},
-    {"type": "Real", "name": "tp_atr_mult", "low": 1.0, "high": 5.0},
-    {"type": "Real", "name": "sl_atr_mult", "low": 0.5, "high": 3.0},
-    {"type": "Categorical", "name": "exit_logic_name", "categories": ["atr_exit", "fixed_sl_tp_exit", "ma_crossover_exit", "time_based_exit", "trailing_stop_exit"]}
+    {"type": "Integer", "name": "atr_period", "low": 7, "high": 21}
   ],
+  
   "default_params": {
     "bb_period": 20,
     "bb_devfactor": 2.0,
@@ -32,10 +38,9 @@
     "st_multiplier": 3.0,
     "vol_ma_period": 20,
     "vol_strength_mult": 2.0,
-    "atr_period": 14,
-    "tp_atr_mult": 2.0,
-    "sl_atr_mult": 1.0
+    "atr_period": 14
   },
+  
   "plot": true,
   "save_trades": true,
   "plot_size": [60, 30],

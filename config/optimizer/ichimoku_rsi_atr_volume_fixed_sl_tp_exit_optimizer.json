@@ -1,0 +1,47 @@
+{
+  "data_dir": "data",
+  "results_dir": "results",
+  "strategy_name": "IchimokuRSIATRVolumeStrategy",
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "start_date": "2023-01-01",
+  "end_date": "2023-12-31",
+  "initial_capital": 1000.0,
+  "commission": 0.001,
+  "risk_free_rate": 0.01,
+  "omega_threshold": 0.0,
+  "optimization_method": "optuna",
+  "n_trials": 100,
+  "n_random_starts": 42,
+  "use_talib": true,
+  "exit_logic": {
+    "name": "fixed_sl_tp_exit",
+    "params": {
+      "rr": {"type": "Real", "low": 1.5, "high": 4.0},
+      "sl_pct": {"type": "Real", "low": 0.01, "high": 0.05}
+    }
+  },
+  "search_space": [
+    {"type": "Integer", "name": "rsi_period", "low": 7, "high": 30},
+    {"type": "Real", "name": "rsi_oversold", "low": 20.0, "high": 40.0},
+    {"type": "Real", "name": "rsi_overbought", "low": 60.0, "high": 80.0},
+    {"type": "Integer", "name": "atr_period", "low": 7, "high": 30},
+    {"type": "Integer", "name": "ichimoku_tenkan", "low": 5, "high": 30},
+    {"type": "Integer", "name": "ichimoku_kijun", "low": 20, "high": 60},
+    {"type": "Integer", "name": "ichimoku_senkou", "low": 40, "high": 120},
+    {"type": "Integer", "name": "check_rsi_slope", "low": 0, "high": 1}
+  ],
+  "default_params": {
+    "rsi_period": 14,
+    "rsi_oversold": 30.0,
+    "rsi_overbought": 70.0,
+    "atr_period": 14,
+    "ichimoku_tenkan": 9,
+    "ichimoku_kijun": 26,
+    "ichimoku_senkou": 52,
+    "check_rsi_slope": 0
+  },
+  "plot": true,
+  "save_trades": true,
+  "plot_size": [60, 30]
+} 

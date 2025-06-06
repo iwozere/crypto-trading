@@ -1,27 +1,43 @@
 """
-Moving average crossover exit logic for trading strategies. Exits when short MA crosses long MA.
+Moving Average crossover exit logic for trading strategies. Exits a trade when price crosses below a moving average.
 """
 from src.exit.base_exit import BaseExitLogic
-import backtrader as bt
+import numpy as np
 
 class MACrossoverExit(BaseExitLogic):
-    def __init__(self, strategy, params=None):
-        super().__init__(strategy)
-        params = params or {}
-        short_ma_period = params.get('short_ma_period', 20)
-        long_ma_period = params.get('long_ma_period', 50)
-        self.short_ma = bt.ind.SMA(strategy.data, period=short_ma_period)
-        self.long_ma = bt.ind.SMA(strategy.data, period=long_ma_period)
-        self.sl = None
-        self.tp = None
+    def __init__(self, params=None):
+        super().__init__(params)
+        self.ma_period = self.params.get('ma_period', 20)
+        self.prices = []
+        self.ma_values = []
 
-    def on_entry(self):
-        super().on_entry()
-        atr_val = self.atr[0]
-        self.sl = self.entry_price - self.sl_mult * atr_val
-        self.tp = self.entry_price + self.tp_mult * atr_val
+    def initialize(self, entry_price, atr_value):
+        """Initialize the exit logic with entry price and ATR value."""
+        super().initialize(entry_price, atr_value)
+        self.prices = [entry_price]
+        self.ma_values = [entry_price]
 
-    def check_exit(self):
-        # Example: exit if short MA crosses below long MA
-        if self.short_ma[0] < self.long_ma[0] and self.short_ma[-1] >= self.long_ma[-1]:
-            self.strategy.close()
+    def check_exit(self, current_price, highest_price, atr_value):
+        """
+        Check if price has crossed below the moving average.
+        
+        Args:
+            current_price (float): Current price
+            highest_price (float): Highest price since entry
+            atr_value (float): Current ATR value
+            
+        Returns:
+            tuple: (bool, str) - (should_exit, exit_reason)
+        """
+        self.prices.append(current_price)
+        if len(self.prices) > self.ma_period:
+            self.prices.pop(0)
+        
+        ma = np.mean(self.prices)
+        self.ma_values.append(ma)
+        
+        if len(self.ma_values) > 2:
+            prev_ma = self.ma_values[-2]
+            if current_price < ma and current_price > prev_ma:
+                return True, 'ma crossover'
+        return False, None
