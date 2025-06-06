@@ -578,7 +578,11 @@ class BaseOptimizer:
                     self.current_metrics['total_trades'] = len(trades_list)
                     winning_trades = [t for t in trades_list if t.get('pnl_comm', 0) > 0]
                     self.current_metrics['win_rate'] = len(winning_trades) / len(trades_list) * 100 if trades_list else 0
-                    self.current_metrics['profit_factor'] = abs(sum(t.get('pnl_comm', 0) for t in winning_trades) / sum(t.get('pnl_comm', 0) for t in trades_list if t.get('pnl_comm', 0) <= 0)) if trades_list else 0
+                    losing_trades_sum = sum(t.get('pnl_comm', 0) for t in trades_list if t.get('pnl_comm', 0) <= 0)
+                    if losing_trades_sum == 0:
+                        self.current_metrics['profit_factor'] = float('inf') if winning_trades else 0
+                    else:
+                        self.current_metrics['profit_factor'] = abs(sum(t.get('pnl_comm', 0) for t in winning_trades) / losing_trades_sum)
                     self.current_metrics['net_profit'] = sum(t.get('pnl_comm', 0) for t in trades_list)
                     self.current_metrics['portfolio_growth_pct'] = (self.current_metrics['net_profit'] / self.initial_capital) * 100 if self.initial_capital > 0 else 0
                     self.current_metrics['final_value'] = self.initial_capital + self.current_metrics['net_profit']
