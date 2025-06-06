@@ -75,19 +75,34 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
         super().__init__(params)
         self.notify = self.params.get('notify', False)
         use_talib = self.params.get('use_talib', False)
+        
+        # Initialize indicators based on use_talib flag
         if use_talib:
-            self.rsi = bt.talib.RSI(timeperiod=self.params.get('rsi_period', 14))
-            self.boll = bt.talib.BBANDS(timeperiod=self.params.get('boll_period', 20), nbdevup=self.params.get('boll_devfactor', 2.0), nbdevdn=self.params.get('boll_devfactor', 2.0))
-            self.atr = bt.talib.ATR(timeperiod=self.params.get('atr_period', 14))
-            self.vol_ma = bt.talib.SMA(timeperiod=self.params.get('vol_ma_period', 10))
-        else:
-            self.rsi = bt.ind.RSI(period=self.params.get('rsi_period', 14))
-            self.boll = bt.ind.BollingerBands(
-                period=self.params.get('boll_period', 20),
-                devfactor=self.params.get('boll_devfactor', 2.0)
+            # TA-Lib indicators
+            self.rsi = bt.talib.RSI(self.data.close, timeperiod=self.params['rsi_period'])
+            self.boll = bt.talib.BBANDS(
+                self.data.close,
+                timeperiod=self.params['boll_period'],
+                nbdevup=self.params['boll_devfactor'],
+                nbdevdn=self.params['boll_devfactor']
             )
-            self.atr = bt.ind.ATR(period=self.params.get('atr_period', 14))
-            self.vol_ma = bt.ind.SMA(self.data.volume, period=self.params.get('vol_ma_period', 10))
+            self.atr = bt.talib.ATR(
+                self.data.high,
+                self.data.low,
+                self.data.close,
+                timeperiod=self.params['atr_period']
+            )
+            self.vol_ma = bt.talib.SMA(self.data.volume, timeperiod=self.params['vol_ma_period'])
+        else:
+            # Backtrader built-in indicators
+            self.rsi = bt.ind.RSI(period=self.params['rsi_period'])
+            self.boll = bt.ind.BollingerBands(
+                period=self.params['boll_period'],
+                devfactor=self.params['boll_devfactor']
+            )
+            self.atr = bt.ind.ATR(period=self.params['atr_period'])
+            self.vol_ma = bt.ind.SMA(self.data.volume, period=self.params['vol_ma_period'])
+        
         self.order = None
         self.entry_price = None
         self.highest_price = None
@@ -117,21 +132,32 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
     def next(self):
         if self.order:
             return
+            
+        # Get indicator values
         rsi_value = self.rsi[0]
-        bb_low = self.boll.lines.bot[0]
-        bb_mid = self.boll.lines.mid[0]
-        bb_high = self.boll.lines.top[0]
+        if self.params.get('use_talib', False):
+            bb_low = self.boll[2][0]  # TA-Lib BBANDS returns [upper, middle, lower]
+            bb_mid = self.boll[1][0]
+            bb_high = self.boll[0][0]
+        else:
+            bb_low = self.boll.lines.bot[0]  # Backtrader BBANDS returns [bot, mid, top]
+            bb_mid = self.boll.lines.mid[0]
+            bb_high = self.boll.lines.top[0]
+            
         atr_value = self.atr[0]
         vol_ma_value = self.vol_ma[0]
         volume = self.data.volume[0]
         close = self.data.close[0]
+        
+        # Entry conditions
         if not self.position and self.position_closed and (self.last_order_type is None or self.last_order_type == 'sell'):
-            if (rsi_value < self.params.get('rsi_oversold', 30) and
+            if (rsi_value < self.params['rsi_oversold'] and
                 close < bb_low and
                 volume > vol_ma_value):
+                
                 self.entry_price = close
-                self.tp_price = self.entry_price + self.params.get('tp_atr_mult', 2.0) * atr_value
-                self.sl_price = self.entry_price - self.params.get('sl_atr_mult', 1.5) * atr_value
+                self.tp_price = self.entry_price + self.params['tp_atr_mult'] * atr_value
+                self.sl_price = self.entry_price - self.params['sl_atr_mult'] * atr_value
                 self.highest_price = self.entry_price
                 self.current_trade = {
                     'entry_time': self.data.datetime.datetime(0),
@@ -148,36 +174,54 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                 }
                 cash = self.broker.getcash()
                 value = self.broker.getvalue()
-                size = (value * 0.1) / close
+                size = (value * 0.1) / close  # Using 10% of portfolio
                 if cash >= (size * close * (1 + self.broker.comminfo[None].getcommission(size=size, price=close))):
                     self.order = self.buy(size=size)
                     self.position_closed = False
+                    self.log(f'BUY CREATE {size:.2f} @ {close:.2f}')
+        
+        # Exit conditions
         elif self.position:
             self.highest_price = max(self.highest_price, close)
-            trailing_sl = self.highest_price - self.params.get('sl_atr_mult', 1.5) * atr_value
+            trailing_sl = self.highest_price - self.params['sl_atr_mult'] * atr_value
+            
+            # Take profit exit
             if close >= self.tp_price:
                 self.last_exit_reason = 'take profit'
                 self.order = self.close()
+                self.log(f'SELL CREATE TP @ {close:.2f}')
                 if self.current_trade:
-                    self.current_trade.update({
-                        'exit_time': self.data.datetime.datetime(0),
-                        'exit_price': close,
-                        'exit_type': 'tp',
-                        'exit_reason': self.last_exit_reason,
-                        'pnl': (close - self.entry_price) / self.entry_price * 100,
-                        'atr_at_exit': atr_value,
-                        'rsi_at_exit': rsi_value,
-                        'volume_at_exit': volume,
-                        'vol_ma_at_exit': vol_ma_value,
-                        'bb_low_at_exit': bb_low,
-                        'bb_mid_at_exit': bb_mid,
-                        'bb_high_at_exit': bb_high
-                    })
-                    if 'pnl_comm' not in self.current_trade:
-                        self.current_trade['pnl_comm'] = self.current_trade['pnl']
-                    self.record_trade(self.current_trade)
-                    self.current_trade = None
-                self.last_exit_reason = None
+                    self._record_trade_exit(close, 'tp', atr_value, rsi_value, volume, vol_ma_value, bb_low, bb_mid, bb_high)
+            
+            # Stop loss exit
+            elif close <= trailing_sl:
+                self.last_exit_reason = 'stop loss'
+                self.order = self.close()
+                self.log(f'SELL CREATE SL @ {close:.2f}')
+                if self.current_trade:
+                    self._record_trade_exit(close, 'sl', atr_value, rsi_value, volume, vol_ma_value, bb_low, bb_mid, bb_high)
+
+    def _record_trade_exit(self, close, exit_type, atr_value, rsi_value, volume, vol_ma_value, bb_low, bb_mid, bb_high):
+        """Helper method to record trade exit details"""
+        self.current_trade.update({
+            'exit_time': self.data.datetime.datetime(0),
+            'exit_price': close,
+            'exit_type': exit_type,
+            'exit_reason': self.last_exit_reason,
+            'pnl': (close - self.entry_price) / self.entry_price * 100,
+            'atr_at_exit': atr_value,
+            'rsi_at_exit': rsi_value,
+            'volume_at_exit': volume,
+            'vol_ma_at_exit': vol_ma_value,
+            'bb_low_at_exit': bb_low,
+            'bb_mid_at_exit': bb_mid,
+            'bb_high_at_exit': bb_high
+        })
+        if 'pnl_comm' not in self.current_trade:
+            self.current_trade['pnl_comm'] = self.current_trade['pnl']
+        self.record_trade(self.current_trade)
+        self.current_trade = None
+        self.last_exit_reason = None
 
     def on_trade_entry(self, trade):
         """Called when a new trade is entered"""
