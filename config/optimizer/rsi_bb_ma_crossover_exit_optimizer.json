@@ -11,20 +11,17 @@
   "commission": 0.001,
   "risk_free_rate": 0.01,
   "omega_threshold": 0.0,
-  "optimization_method": "optuna",
-  "n_trials": 50,
-  "n_random_starts": 42,
-  "exit_logic": "ma_crossover_exit",
-  "parameters": {
-    "rsi_period": [14, 30],
-    "bb_period": [20, 50],
-    "bb_std": [1.5, 3.0],
-    "ma_fast_period": [5, 20],
-    "ma_slow_period": [20, 50]
-  },
   "optimization_settings": {
+    "optimization_method": "optuna",
+    "n_trials": 50,
     "n_jobs": -1,
     "random_state": 42
+  },  
+  "exit_logic": {
+    "name": "ma_crossover_exit",
+    "params": {
+      "ma_period": {"type": "Integer", "low": 10, "high": 50}
+    }
   },
   "search_space": [
     {"type": "Integer", "name": "bb_period", "low": 10, "high": 50},

@@ -2,6 +2,7 @@
   "data_dir": "data",
   "results_dir": "results",
   "strategy_name": "RsiVolumeSuperTrendStrategy",
+  "optimizer_name": "RsiVolumeSuperTrendOptimizer",
   "symbol": "BTCUSDT",
   "interval": "1h",
   "start_date": "2023-01-01",
@@ -10,10 +11,12 @@
   "commission": 0.001,
   "risk_free_rate": 0.01,
   "omega_threshold": 0.0,
-  "optimization_method": "optuna",
-  "n_trials": 100,
-  "n_random_starts": 42,
-  "use_talib": true,
+  "optimization_settings": {
+    "optimization_method": "optuna",
+    "n_trials": 50,
+    "n_jobs": -1,
+    "random_state": 42
+  },
   "exit_logic": {
     "name": "ma_crossover_exit",
     "params": {
@@ -42,7 +45,10 @@
     "time_based_exit_period": 5,
     "check_rsi_slope": 0
   },
-  "plot": true,
-  "save_trades": true,
-  "plot_size": [60, 30]
+  "visualization_settings": {
+    "plot": true,
+    "save_trades": true,
+    "plot_size": [60, 30],
+    "use_talib": true
+  }
 } 
