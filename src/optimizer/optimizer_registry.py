@@ -8,25 +8,22 @@ from datetime import datetime
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(project_root)
 
-from src.optimizer.bb_volume_supertrend_optimizer import \
-    BBSuperTrendVolumeBreakoutOptimizer
-from src.optimizer.ichimoku_rsi_volume_optimizer import \
-    IchimokuRSIATRVolumeOptimizer
-from src.optimizer.rsi_bb_optimizer import MeanReversionRSBBATROptimizer
-from src.optimizer.rsi_bb_volume_optimizer import RsiBBVolumeOptimizer
-from src.optimizer.rsi_volume_supertrend_optimizer import \
-    RsiVolumeSuperTrendOptimizer
+from src.optimizer.bb_volume_supertrend_optimizer import BBSuperTrendVolumeBreakoutOptimizer
+from src.optimizer.ichimoku_rsi_volume_optimizer import IchimokuRsiVolumeOptimizer
+from src.optimizer.rsi_bb_optimizer import RsiBbOptimizer
+from src.optimizer.rsi_bb_volume_optimizer import RsiBollVolumeOptimizer
+from src.optimizer.rsi_volume_supertrend_optimizer import RsiVolumeSuperTrendOptimizer
 
 # Define optimizer classes and their corresponding config patterns
 OPTIMIZER_CONFIGS = {
-    "RSI BB Volume": {
-        "class": RsiBBVolumeOptimizer,
+    "RSI Bollinger Volume": {
+        "class": RsiBollVolumeOptimizer,
         "configs": [
-            "rsi_bb_volume_atr_exit_optimizer.json",
-            "rsi_bb_volume_fixed_sl_tp_exit_optimizer.json",
-            "rsi_bb_volume_ma_crossover_exit_optimizer.json",
-            "rsi_bb_volume_time_based_exit_optimizer.json",
-            "rsi_bb_volume_trailing_stop_exit_optimizer.json",
+            "rsi_boll_volume_atr_exit_optimizer.json",
+            "rsi_boll_volume_fixed_sl_tp_exit_optimizer.json",
+            "rsi_boll_volume_ma_crossover_exit_optimizer.json",
+            "rsi_boll_volume_time_based_exit_optimizer.json",
+            "rsi_boll_volume_trailing_stop_exit_optimizer.json",
         ],
     },
     "BB Volume Supertrend": {
@@ -39,24 +36,24 @@ OPTIMIZER_CONFIGS = {
             "bb_volume_supertrend_trailing_stop_exit_optimizer.json",
         ],
     },
-    "Ichimoku RSI ATR Volume": {
-        "class": IchimokuRSIATRVolumeOptimizer,
+    "Ichimoku RSI Volume": {
+        "class": IchimokuRsiVolumeOptimizer,
         "configs": [
-            "ichimoku_rsi_atr_volume_atr_exit_optimizer.json",
-            "ichimoku_rsi_atr_volume_fixed_sl_tp_exit_optimizer.json",
-            "ichimoku_rsi_atr_volume_ma_crossover_exit_optimizer.json",
-            "ichimoku_rsi_atr_volume_time_based_exit_optimizer.json",
-            "ichimoku_rsi_atr_volume_trailing_stop_exit_optimizer.json",
+            "ichimoku_rsi_volume_atr_exit_optimizer.json",
+            "ichimoku_rsi_volume_fixed_sl_tp_exit_optimizer.json",
+            "ichimoku_rsi_volume_ma_crossover_exit_optimizer.json",
+            "ichimoku_rsi_volume_time_based_exit_optimizer.json",
+            "ichimoku_rsi_volume_trailing_stop_exit_optimizer.json",
         ],
     },
-    "RSI BB ATR": {
-        "class": MeanReversionRSBBATROptimizer,
+    "RSI BB": {
+        "class": RsiBbOptimizer,
         "configs": [
-            "rsi_bb_atr_atr_exit_optimizer.json",
-            "rsi_bb_atr_fixed_sl_tp_exit_optimizer.json",
-            "rsi_bb_atr_ma_crossover_exit_optimizer.json",
-            "rsi_bb_atr_time_based_exit_optimizer.json",
-            "rsi_bb_atr_trailing_stop_exit_optimizer.json",
+            "rsi_bb_atr_exit_optimizer.json",
+            "rsi_bb_fixed_sl_tp_exit_optimizer.json",
+            "rsi_bb_ma_crossover_exit_optimizer.json",
+            "rsi_bb_time_based_exit_optimizer.json",
+            "rsi_bb_trailing_stop_exit_optimizer.json",
         ],
     },
     "RSI Volume Supertrend": {

@@ -15,7 +15,7 @@ from src.strategy.rsi_volume_supertrend_strategy import \
     RsiVolumeSuperTrendStrategy
 
 STRATEGY_REGISTRY = {
-    "rsi_bb": {
+    "MeanReversionRsiBbStrategy": {
         "class": MeanReversionRsiBbStrategy,
         "description": "RSI + Bollinger Bands mean reversion strategy for ranging/sideways markets.",
         "default_params": {
@@ -34,7 +34,7 @@ STRATEGY_REGISTRY = {
             "notify": False,
         },
     },
-    "rsi_bb_volume": {
+    "RsiBollVolumeStrategy": {
         "class": RsiBollVolumeStrategy,
         "description": "RSI + Bollinger Bands + Volume mean reversion strategy with pluggable exit logic.",
         "default_params": {
@@ -48,7 +48,7 @@ STRATEGY_REGISTRY = {
             "notify": False,
         },
     },
-    "bb_volume_supertrend": {
+    "BBSuperTrendVolumeBreakoutStrategy": {
         "class": BBSuperTrendVolumeBreakoutStrategy,
         "description": "Bollinger Bands + SuperTrend + Volume breakout strategy for volatile markets.",
         "default_params": {
@@ -65,7 +65,7 @@ STRATEGY_REGISTRY = {
             "notify": False,
         },
     },
-    "rsi_volume_supertrend": {
+    "RsiVolumeSuperTrendStrategy": {
         "class": RsiVolumeSuperTrendStrategy,
         "description": "SuperTrend + RSI + Volume trend-following strategy with ATR-based exits.",
         "default_params": {
@@ -85,7 +85,7 @@ STRATEGY_REGISTRY = {
             "notify": False,
         },
     },
-    "ichimoku_rsi_volume": {
+    "IchimokuRsiVolumeStrategy": {
         "class": IchimokuRsiVolumeStrategy,
         "description": "Ichimoku Cloud + RSI + Volume strategy for trend and volume confirmation.",
         "default_params": {
@@ -101,7 +101,7 @@ STRATEGY_REGISTRY = {
             "notify": False,
         },
     },
-    "liquidity_momentum": {
+    "LiquidityMomentumStrategy": {
         "class": LiquidityMomentumStrategy,
         "description": "Momentum-based strategy using volume profile and liquidity analysis.",
         "default_params": {

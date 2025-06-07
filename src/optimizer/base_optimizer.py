@@ -40,6 +40,7 @@ from skopt import gp_minimize
 from skopt.space import Categorical, Integer, Real
 from src.exit.exit_registry import EXIT_PARAM_MAP
 from src.notification.logger import _logger
+from src.strategy.strategy_registry import get_strategy_info
 
 
 class BaseOptimizer:
@@ -48,51 +49,94 @@ class BaseOptimizer:
     Provides common functionality for parameter optimization, backtesting, and result visualization.
     """
 
-    def __init__(self, config: dict):
+    def _load_config(self, config_path: str) -> dict:
         """
-        Initialize the optimizer with a configuration dictionary.
+        Load configuration from a JSON file.
+        
         Args:
-            config: Dictionary containing all optimizer parameters.
+            config_path (str): Path to the configuration file
+            
+        Returns:
+            dict: Configuration dictionary
         """
-        self.data_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data"
-        )
-        self.results_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "results"
-        )
-        self.strategy_name = config.get("strategy_name", "")
-        self.strategy_class = config.get("strategy_class", None)
-        self.initial_capital = config.get("initial_capital", 10000.0)
-        self.commission = config.get("commission", 0.001)
-        self.plot_size = config.get("plot_size", [15, 10])
-        plt.style.use("dark_background")
-        self.plot_style = config.get("plot_style", "default")
-        self.font_size = config.get("font_size", 10)
-        self.plot_dpi = config.get("plot_dpi", 300)
-        self.show_grid = config.get("show_grid", True)
-        self.legend_loc = config.get("legend_loc", "upper left")
-        self.save_plot = config.get("save_plot", True)
-        self.show_plot = config.get("show_plot", False)
-        self.plot_format = config.get("plot_format", "png")
-        self.show_equity_curve = config.get("show_equity_curve", True)
-        self.show_indicators = config.get("show_indicators", True)
-        self.color_scheme = config.get("color_scheme", {})
-        self.report_metrics = config.get("report_metrics", [])
-        self.save_trades = config.get("save_trades", True)
-        self.trades_csv_path = config.get("trades_csv_path", None)
-        self.save_metrics = config.get("save_metrics", True)
-        self.metrics_format = config.get("metrics_format", "json")
-        self.print_summary = config.get("print_summary", True)
-        self.report_params = config.get("report_params", True)
-        self.report_filename_pattern = config.get("report_filename_pattern", None)
-        self.include_plots_in_report = config.get("include_plots_in_report", True)
+        try:
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+            return config
+        except Exception as e:
+            raise ValueError(f"Failed to load configuration from {config_path}: {e}")
+
+    def _get_strategy_class(self):
+        """Get the strategy class based on the strategy name in config."""
+        strategy_name = self.config.get("strategy_name")
+        if not strategy_name:
+            raise ValueError("Strategy name not specified in config")
+            
+        strategy_info = get_strategy_info(strategy_name)
+        if not strategy_info:
+            raise ValueError(f"Unknown strategy: {strategy_name}")
+            
+        return strategy_info["class"]
+
+    def __init__(self, config_path: Union[str, dict]):
+        """Initialize the optimizer with configuration."""
+        if isinstance(config_path, str):
+            self.config = self._load_config(config_path)
+        else:
+            self.config = config_path
+            
+        self.strategy_class = self._get_strategy_class()
+        self.data_dir = self.config["data_dir"]
+        self.results_dir = self.config["results_dir"]
+        self.symbol = self.config["symbol"]
+        self.interval = self.config["interval"]
+        self.start_date = self.config["start_date"]
+        self.end_date = self.config["end_date"]
+        self.initial_capital = self.config["initial_capital"]
+        self.commission = self.config["commission"]
+        self.risk_free_rate = self.config["risk_free_rate"]
+        self.omega_threshold = self.config["omega_threshold"]
+        self.optimization_method = self.config["optimization_method"]
+        self.n_trials = self.config["n_trials"]
+        self.n_random_starts = self.config["n_random_starts"]
+        self.exit_logic = self.config["exit_logic"]
+        self.parameters = self.config.get("parameters", {})  # Initialize parameters
+        self.optimization_settings = self.config["optimization_settings"]
+        self.search_space = self.config["search_space"]
+        self.default_params = self.config["default_params"]
+        self.plot = self.config["plot"]
+        self.save_trades = self.config["save_trades"]
+        self.plot_size = self.config["plot_size"]
+        self.use_talib = self.config["use_talib"]
+        
+        # Create a single notifier instance if notifications are enabled
+        self.notifier = None
+        if self.config.get("notify", False):
+            from src.notification.telegram_notifier import create_notifier
+            self.notifier = create_notifier()
+
+        self.strategy_name = self.config.get("strategy_name", "")
+        self.plot_style = self.config.get("plot_style", "default")
+        self.font_size = self.config.get("font_size", 10)
+        self.plot_dpi = self.config.get("plot_dpi", 300)
+        self.show_grid = self.config.get("show_grid", True)
+        self.legend_loc = self.config.get("legend_loc", "upper left")
+        self.save_plot = self.config.get("save_plot", True)
+        self.show_plot = self.config.get("show_plot", False)
+        self.plot_format = self.config.get("plot_format", "png")
+        self.show_equity_curve = self.config.get("show_equity_curve", True)
+        self.show_indicators = self.config.get("show_indicators", True)
+        self.color_scheme = self.config.get("color_scheme", {})
+        self.report_metrics = self.config.get("report_metrics", [])
+        self.trades_csv_path = self.config.get("trades_csv_path", None)
+        self.save_metrics = self.config.get("save_metrics", True)
+        self.metrics_format = self.config.get("metrics_format", "json")
+        self.print_summary = self.config.get("print_summary", True)
+        self.report_params = self.config.get("report_params", True)
+        self.report_filename_pattern = self.config.get("report_filename_pattern", None)
+        self.include_plots_in_report = self.config.get("include_plots_in_report", True)
         warnings.filterwarnings("ignore", category=UserWarning, module="skopt")
         warnings.filterwarnings("ignore", category=RuntimeWarning)
-        self.config = config  # Store config for later use
-        self.initial_capital = config.get("initial_capital", 1000.0)
-        self.notify = config.get("notify", False)
-        self.risk_free_rate = config.get("risk_free_rate", 0.0)
-        self.omega_threshold = config.get("omega_threshold", 0.0)
         self.current_metrics = {}
         self.current_data = None
         self.current_symbol = None
@@ -103,7 +147,7 @@ class BaseOptimizer:
 
     class DateTimeEncoder(json.JSONEncoder):
         def default(self, obj: Any) -> Any:
-            if isinstance(obj, (pd.Timestamp, datetime)):
+            if isinstance(obj, (pd.Timestamp, datetime.datetime)):
                 return obj.isoformat()
             if isinstance(obj, np.integer):
                 return int(obj)
@@ -138,8 +182,8 @@ class BaseOptimizer:
     def calculate_cagr(
         initial_value: float,
         final_value: float,
-        start_date: Union[str, datetime],
-        end_date: Union[str, datetime],
+        start_date: Union[str, datetime.datetime],
+        end_date: Union[str, datetime.datetime],
     ) -> Optional[float]:
         """
         Calculate CAGR given initial/final value and start/end date (datetime or str).
@@ -525,8 +569,12 @@ class BaseOptimizer:
     def get_optuna_objective(self):
         self.param_ranges = {p["name"]: p for p in self.config.get("search_space", [])}
         exit_logic_config = self.config.get("exit_logic", {})
-        exit_logic_name = exit_logic_config.get("name", "atr_exit")
-        exit_params_config = exit_logic_config.get("params", {})
+        if isinstance(exit_logic_config, dict):
+            exit_logic_name = exit_logic_config.get("name", "atr_exit")
+            exit_params_config = exit_logic_config.get("params", {})
+        else:
+            exit_logic_name = "atr_exit"
+            exit_params_config = {}
 
         def objective(trial):
             # --- Suggest strategy parameters (add as needed) ---
@@ -769,66 +817,33 @@ class BaseOptimizer:
         except Exception as e:
             self.log_message(f"Error saving combined JSON: {e}", level="error")
 
-    def run_backtest(self, data, params):
-        """
-        Generic Backtrader backtest runner. Uses self.strategy_class for the strategy.
-        Subclasses can override customize_cerebro(self, cerebro) for custom analyzers or broker setup.
-        """
+    def run_backtest(self, params):
+        """Run a single backtest with the given parameters."""
         cerebro = bt.Cerebro()
-        if not isinstance(data.index, pd.DatetimeIndex):
-            self.log_message("Error: Data for backtest must have a DatetimeIndex.")
-            return None
-        expected_cols = ["open", "high", "low", "close", "volume"]
-        if not all(col in data.columns for col in expected_cols):
-            self.log_message(
-                f"Error: Data missing one of required columns: {expected_cols}"
-            )
-            return None
 
-        data_feed = bt.feeds.PandasData(
-            dataname=data,
-            datetime=None,
-            open="open",
-            high="high",
-            low="low",
-            close="close",
-            volume="volume",
-            openinterest=-1,
-        )
-        cerebro.adddata(data_feed)
+        # Add data
+        data = self._load_data()
+        cerebro.adddata(data)
+
+        # Add strategy with parameters
+        strategy_params = self._prepare_strategy_params(params)
+        if self.notifier:
+            strategy_params["notifier"] = self.notifier
+        cerebro.addstrategy(self.strategy_class, **strategy_params)
+
+        # Add analyzers
+        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")
+        cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
+        cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")
+        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trades")
+
+        # Set broker parameters
         cerebro.broker.setcash(self.initial_capital)
         cerebro.broker.setcommission(commission=self.commission)
-        cerebro.broker.set_checksubmit(False)
 
-        params["notify"] = self.notify
-        # Extract ticker from data file name if not already present
-        if "ticker" not in params and hasattr(self, "current_data_file"):
-            params["ticker"] = self.current_data_file.split("_")[0]
-        cerebro.addstrategy(self.strategy_class, params=params)
-
-        # Only add essential analyzers for optimization
-        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trades")
-        cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
-
-        # Allow subclass customization
-        if hasattr(self, "customize_cerebro") and callable(self.customize_cerebro):
-            self.customize_cerebro(cerebro)
-
-        try:
-            results = cerebro.run()
-            if not results:
-                self.log_message(
-                    f"Backtest with params {params} did not yield valid results object."
-                )
-                return None
-            strategy = results[0]
-            drawdown = strategy.analyzers.drawdown.get_analysis()
-            trades = strategy.analyzers.trades.get_analysis()
-            return {"strategy": strategy, "drawdown": drawdown, "trades": trades}
-        except Exception as e:
-            self.log_message(f"Error during backtest run for params {params}: {str(e)}")
-            self.log_message(traceback.format_exc(), level="error")
-            return None
+        # Run backtest
+        results = cerebro.run()
+        return results[0]
 
     @staticmethod
     def calculate_metrics(

@@ -54,6 +54,7 @@ class RsiBollVolumeStrategy(BaseStrategy):
         exit_logic_name (str): Name of the exit logic to use (default: 'atr_exit')
         exit_params (dict): Parameters for the selected exit logic
         printlog (bool): Whether to print trade logs (default: False)
+        risk_per_trade (float): Risk per trade as a percentage of portfolio value (default: 0.02)
 
     Trade Tracking:
         - Records entry/exit prices, times, and PnL
@@ -69,10 +70,24 @@ class RsiBollVolumeStrategy(BaseStrategy):
         - Technical indicators at entry
     """
 
+    params = (
+        ("rsi_period", 14),
+        ("rsi_oversold", 30),
+        ("boll_period", 20),
+        ("boll_devfactor", 2),
+        ("vol_ma_period", 20),
+        ("atr_period", 14),
+        ("use_talib", False),
+        ("notify", False),
+        ("risk_per_trade", 0.02),  # 2% risk per trade
+    )
+
     def __init__(self, params: dict):
         super().__init__(params)
         self.notify = self.params.get("notify", False)
         use_talib = self.params.get("use_talib", False)
+        self.risk_per_trade = self.params.get("risk_per_trade", 0.02)  # Default to 2% if not specified
+        self.notifier = self.params.get("notifier", None)  # Get notifier from params
 
         # Initialize indicators based on use_talib flag
         if use_talib:
@@ -89,6 +104,12 @@ class RsiBollVolumeStrategy(BaseStrategy):
             self.vol_ma = bt.talib.SMA(
                 self.data.volume, timeperiod=self.params["vol_ma_period"]
             )
+            self.atr = bt.talib.ATR(
+                self.data.high,
+                self.data.low,
+                self.data.close,
+                timeperiod=self.params["atr_period"],
+            )
         else:
             # Backtrader built-in indicators
             self.rsi = bt.ind.RSI(period=self.params["rsi_period"])
@@ -99,6 +120,7 @@ class RsiBollVolumeStrategy(BaseStrategy):
             self.vol_ma = bt.ind.SMA(
                 self.data.volume, period=self.params["vol_ma_period"]
             )
+            self.atr = bt.ind.ATR(period=self.params["atr_period"])
 
         # Initialize exit logic
         exit_logic_name = self.params.get("exit_logic_name", "atr_exit")
@@ -112,7 +134,6 @@ class RsiBollVolumeStrategy(BaseStrategy):
         self.current_trade = None
         self.position_closed = True
         self.last_order_type = None
-        self.notifier = create_notifier()
         self.last_exit_reason = None
 
     def notify_order(self, order):
@@ -122,8 +143,9 @@ class RsiBollVolumeStrategy(BaseStrategy):
                 self.highest_price = order.executed.price
                 self.last_order_type = "buy"
 
-                # Initialize exit logic with entry price
-                self.exit_logic.initialize(self.entry_price)
+                # Initialize exit logic with entry price and ATR value
+                atr_value = self.atr[0]
+                self.exit_logic.initialize(self.entry_price, atr_value)
             else:
                 self.position_closed = True
                 self.last_order_type = "sell"
@@ -151,6 +173,7 @@ class RsiBollVolumeStrategy(BaseStrategy):
         vol_ma_value = self.vol_ma[0]
         volume = self.data.volume[0]
         close = self.data.close[0]
+        atr_value = self.atr[0]
 
         # Entry conditions
         if (
@@ -163,12 +186,11 @@ class RsiBollVolumeStrategy(BaseStrategy):
                 and close < bb_low
                 and volume > vol_ma_value
             ):
-
                 self.entry_price = close
                 self.highest_price = self.entry_price
 
-                # Initialize exit logic with entry price
-                self.exit_logic.initialize(self.entry_price)
+                # Initialize exit logic with entry price and ATR value
+                self.exit_logic.initialize(self.entry_price, atr_value)
 
                 self.current_trade = {
                     "entry_time": self.data.datetime.datetime(0),
@@ -179,48 +201,41 @@ class RsiBollVolumeStrategy(BaseStrategy):
                     "bb_low_at_entry": bb_low,
                     "bb_mid_at_entry": bb_mid,
                     "bb_high_at_entry": bb_high,
+                    "atr_at_entry": atr_value,
                 }
+
+                # Calculate position size based on risk per trade
                 cash = self.broker.getcash()
-                value = self.broker.getvalue()
-                size = (value * 0.1) / close  # Using 10% of portfolio
-                if cash >= (
-                    size
-                    * close
-                    * (
-                        1
-                        + self.broker.comminfo[None].getcommission(
-                            size=size, price=close
-                        )
-                    )
-                ):
+                risk_amount = cash * self.risk_per_trade
+                stop_loss = self.exit_logic.sl_price  # Access stop loss price directly
+                risk_per_share = self.entry_price - stop_loss
+                if risk_per_share > 0:
+                    size = risk_amount / risk_per_share
                     self.order = self.buy(size=size)
                     self.position_closed = False
-                    self.log(f"BUY CREATE {size:.2f} @ {close:.2f}")
+                    if self.notify and self.notifier:
+                        self.notifier.send_notification(
+                            f"Buy Signal - Price: {close:.2f}, RSI: {rsi_value:.2f}, Volume: {volume:.2f}"
+                        )
 
         # Exit conditions
-        elif self.position:
-            self.highest_price = max(self.highest_price, close)
-
-            # Check exit conditions using the configured exit logic
+        elif self.position and not self.position_closed:
+            # Check exit logic
             exit_signal, exit_reason = self.exit_logic.check_exit(
-                close, self.highest_price
+                close, self.highest_price, atr_value
             )
-
             if exit_signal:
+                self.order = self.sell()
+                self.position_closed = True
                 self.last_exit_reason = exit_reason
-                self.order = self.close()
-                self.log(f"SELL CREATE {exit_reason} @ {close:.2f}")
-                if self.current_trade:
-                    self._record_trade_exit(
-                        close,
-                        exit_reason,
-                        rsi_value,
-                        volume,
-                        vol_ma_value,
-                        bb_low,
-                        bb_mid,
-                        bb_high,
+                if self.notify and self.notifier:
+                    self.notifier.send_notification(
+                        f"Exit Signal - Price: {close:.2f}, Reason: {exit_reason}"
                     )
+
+            # Update highest price
+            if close > self.highest_price:
+                self.highest_price = close
 
     def _record_trade_exit(
         self, close, exit_type, rsi_value, volume, vol_ma_value, bb_low, bb_mid, bb_high

@@ -74,9 +74,9 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
             # TA-Lib indicators
             self.boll = bt.talib.BBANDS(
                 self.data.close,
-                timeperiod=self.params["boll_period"],
-                nbdevup=self.params["boll_devfactor"],
-                nbdevdn=self.params["boll_devfactor"],
+                timeperiod=self.params["bb_period"],
+                nbdevup=self.params["bb_devfactor"],
+                nbdevdn=self.params["bb_devfactor"],
             )
             self.atr = bt.talib.ATR(
                 self.data.high,
@@ -90,13 +90,22 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         else:
             # Backtrader built-in indicators
             self.boll = bt.ind.BollingerBands(
-                period=self.params["boll_period"],
-                devfactor=self.params["boll_devfactor"],
+                period=self.params["bb_period"],
+                devfactor=self.params["bb_devfactor"],
             )
             self.atr = bt.ind.ATR(period=self.params["atr_period"])
             self.vol_ma = bt.ind.SMA(
                 self.data.volume, period=self.params["vol_ma_period"]
             )
+
+        # Initialize SuperTrend indicator
+        self.st = SuperTrend(
+            self.data,
+            params={
+                "period": self.params["st_period"],
+                "multiplier": self.params["st_multiplier"],
+            }
+        )
 
         # Initialize exit logic
         exit_logic_name = self.params.get("exit_logic_name", "atr_exit")

@@ -68,21 +68,21 @@ OPTIMIZER_CONFIGS = {
     "Ichimoku RSI Volume": {
         "class": IchimokuRsiVolumeOptimizer,
         "configs": [
-            "ichimoku_rsi_atr_volume_atr_exit_optimizer.json",
-            "ichimoku_rsi_atr_volume_fixed_sl_tp_exit_optimizer.json",
-            "ichimoku_rsi_atr_volume_ma_crossover_exit_optimizer.json",
-            "ichimoku_rsi_atr_volume_time_based_exit_optimizer.json",
-            "ichimoku_rsi_atr_volume_trailing_stop_exit_optimizer.json",
+            "ichimoku_rsi_volume_atr_exit_optimizer.json",
+            "ichimoku_rsi_volume_fixed_sl_tp_exit_optimizer.json",
+            "ichimoku_rsi_volume_ma_crossover_exit_optimizer.json",
+            "ichimoku_rsi_volume_time_based_exit_optimizer.json",
+            "ichimoku_rsi_volume_trailing_stop_exit_optimizer.json",
         ],
     },
     "RSI BB": {
         "class": RsiBbOptimizer,
         "configs": [
-            "rsi_bb_atr_atr_exit_optimizer.json",
-            "rsi_bb_atr_fixed_sl_tp_exit_optimizer.json",
-            "rsi_bb_atr_ma_crossover_exit_optimizer.json",
-            "rsi_bb_atr_time_based_exit_optimizer.json",
-            "rsi_bb_atr_trailing_stop_exit_optimizer.json",
+            "rsi_bb_exit_optimizer.json",
+            "rsi_bb_fixed_sl_tp_exit_optimizer.json",
+            "rsi_bb_ma_crossover_exit_optimizer.json",
+            "rsi_bb_time_based_exit_optimizer.json",
+            "rsi_bb_trailing_stop_exit_optimizer.json",
         ],
     },
     "RSI Volume Supertrend": {

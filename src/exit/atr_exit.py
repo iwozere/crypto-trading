@@ -19,6 +19,10 @@ class ATRExit(BaseExitLogic):
         self.tp_price = self.entry_price + self.tp_mult * self.atr_value
         self.sl_price = self.entry_price - self.sl_mult * self.atr_value
 
+    def get_stop_loss(self):
+        """Get the current stop loss price."""
+        return self.sl_price
+
     def check_exit(self, current_price, highest_price, atr_value):
         """
         Check if price has hit take profit or stop loss levels.
