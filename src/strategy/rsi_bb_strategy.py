@@ -72,14 +72,12 @@ class MeanReversionRsiBbStrategy(BaseStrategy):
         if use_talib:
             self.boll = bt.talib.BBANDS(timeperiod=self.params.get('bb_period', 20), nbdevup=self.params.get('bb_devfactor', 2.0), nbdevdn=self.params.get('bb_devfactor', 2.0))
             self.rsi = bt.talib.RSI(timeperiod=self.params.get('rsi_period', 14))
-            self.atr = bt.talib.ATR(timeperiod=self.params.get('atr_period', 14))
         else:
             self.boll = bt.indicators.BollingerBands(
                 period=self.params.get('bb_period', 20),
                 devfactor=self.params.get('bb_devfactor', 2.0)
             )
             self.rsi = bt.indicators.RSI(period=self.params.get('rsi_period', 14))
-            self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
             
         # Initialize exit logic
         exit_logic_name = self.params.get('exit_logic_name', 'atr_exit')
@@ -103,9 +101,8 @@ class MeanReversionRsiBbStrategy(BaseStrategy):
                 self.entry_price = order.executed.price
                 self.highest_price = self.entry_price
                 
-                # Initialize exit logic with entry price and ATR
-                atr_value = self.atr[0]
-                self.exit_logic.initialize(self.entry_price, atr_value)
+                # Initialize exit logic with entry price
+                self.exit_logic.initialize(self.entry_price)
                 
                 if self.current_trade:
                     self.current_trade['entry_price'] = self.entry_price
@@ -133,13 +130,11 @@ class MeanReversionRsiBbStrategy(BaseStrategy):
         close = self.data.close[0]
         rsi_val = self.rsi[0]
         if (len(self.rsi.lines.rsi) < self.params.get('rsi_period', 14) or
-            len(self.boll.lines.bot) < self.params.get('bb_period', 20) or
-            len(self.atr.lines.atr) < self.params.get('atr_period', 14)):
+            len(self.boll.lines.bot) < self.params.get('bb_period', 20)):
             self.log("Indicators not ready yet.")
             return
         bb_lower = self.boll.lines.bot[0]
         bb_middle = self.boll.lines.mid[0]
-        atr_value = self.atr[0]
         
         if not self.position:
             rsi_is_rising = self.rsi[0] > self.rsi[-1] if len(self.rsi.lines.rsi) > 1 else False
@@ -152,7 +147,6 @@ class MeanReversionRsiBbStrategy(BaseStrategy):
                 self.current_trade = {
                     'entry_time': self.data.datetime.datetime(0),
                     'entry_price': 'pending_long',
-                    'atr_at_entry': atr_value,
                     'rsi_at_entry': rsi_val,
                     'bb_lower_at_entry': bb_lower,
                     'bb_middle_at_entry': bb_middle,
@@ -166,7 +160,7 @@ class MeanReversionRsiBbStrategy(BaseStrategy):
                 self.highest_price = max(self.highest_price, close)
                 
                 # Check exit conditions using the configured exit logic
-                exit_signal, exit_reason = self.exit_logic.check_exit(close, self.highest_price, atr_value)
+                exit_signal, exit_reason = self.exit_logic.check_exit(close, self.highest_price)
                 
                 if exit_signal:
                     self.last_exit_reason = exit_reason
@@ -177,7 +171,6 @@ class MeanReversionRsiBbStrategy(BaseStrategy):
                             'exit_time': self.data.datetime.datetime(0),
                             'exit_price': close,
                             'exit_reason': exit_reason,
-                            'atr_at_exit': atr_value,
                             'rsi_at_exit': rsi_val,
                             'bb_lower_at_exit': bb_lower,
                             'bb_middle_at_exit': bb_middle

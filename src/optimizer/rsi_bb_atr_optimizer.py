@@ -2,16 +2,16 @@
 RSI BB ATR Optimizer Module
 --------------------------
 
-This module implements the optimizer for the MeanReversionRSBBATRStrategy. It uses Bayesian optimization to tune parameters for mean-reversion strategies that combine Bollinger Bands, RSI, and ATR. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
+This module implements the optimizer for the MeanReversionRsiBbStrategy. It uses Bayesian optimization to tune parameters for mean-reversion strategies that combine Bollinger Bands, RSI, and ATR. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
 
 Main Features:
 - Bayesian optimization of strategy parameters
 - Backtesting and performance evaluation
 - Result visualization and reporting
-- Designed for use with MeanReversionRSBBATRStrategy
+- Designed for use with MeanReversionRsiBbStrategy
 
 Classes:
-- MeanReversionRSBBATROptimizer: Optimizer for the MeanReversionRSBBATRStrategy
+- RsiBbAtrOptimizer: Optimizer for the MeanReversionRsiBbStrategy
 """
 import os
 import sys
@@ -22,18 +22,18 @@ from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
-from src.strategy.rsi_bb_atr_strategy import MeanReversionRSBBATRStrategy
+from src.strategy.rsi_bb_strategy import MeanReversionRsiBbStrategy
 import matplotlib.gridspec as gridspec
-from ta.volatility import BollingerBands
-from ta.momentum import RSIIndicator
+import backtrader as bt
+import talib
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
 import datetime
 import json
 
-class MeanReversionRSBBATROptimizer(BaseOptimizer):
+class RsiBbAtrOptimizer(BaseOptimizer):
     """
-    Optimizer for the MeanReversionRSBBATRStrategy.
+    Optimizer for the MeanReversionRsiBbStrategy.
     
     This optimizer uses Bayesian optimization (skopt) to tune parameters for a mean-reversion strategy
     that combines Bollinger Bands, RSI, and ATR. It is designed for ranging or sideways markets (e.g., forex pairs, altcoins)
@@ -51,8 +51,8 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         """
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
-        self.strategy_name = 'MeanReversionRSBBATRStrategy'
-        self.strategy_class = MeanReversionRSBBATRStrategy
+        self.strategy_name = 'MeanReversionRsiBbStrategy'
+        self.strategy_class = MeanReversionRsiBbStrategy
         super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
         
@@ -91,11 +91,20 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         ax1.plot(data_df.index, data_df['close'], label='Price', color='white', linewidth=2)
         bb_period = params.get('bb_period', 20)
         bb_devfactor = params.get('bb_devfactor', 2.0)
-        bb_indicator = BollingerBands(close=data_df['close'], window=bb_period, window_dev=bb_devfactor, fillna=False)
-        ax1.plot(data_df.index, bb_indicator.bollinger_hband(), label=f'BB Top ({bb_period},{bb_devfactor})', color='cyan', linestyle='--', alpha=0.7, linewidth=1)
-        ax1.plot(data_df.index, bb_indicator.bollinger_lband(), label=f'BB Low ({bb_period},{bb_devfactor})', color='cyan', linestyle='--', alpha=0.7, linewidth=1)
-        ax1.plot(data_df.index, bb_indicator.bollinger_mavg(), label=f'BB Mid ({bb_period})', color='blue', linestyle=':', alpha=0.6, linewidth=1)
-        ax1.fill_between(data_df.index, bb_indicator.bollinger_lband(), bb_indicator.bollinger_hband(), color='cyan', alpha=0.1)
+        
+        # Calculate Bollinger Bands using TA-Lib
+        upper, middle, lower = talib.BBANDS(
+            data_df['close'].values,
+            timeperiod=bb_period,
+            nbdevup=bb_devfactor,
+            nbdevdn=bb_devfactor,
+            matype=0
+        )
+        
+        ax1.plot(data_df.index, upper, label=f'BB Top ({bb_period},{bb_devfactor})', color='cyan', linestyle='--', alpha=0.7, linewidth=1)
+        ax1.plot(data_df.index, lower, label=f'BB Low ({bb_period},{bb_devfactor})', color='cyan', linestyle='--', alpha=0.7, linewidth=1)
+        ax1.plot(data_df.index, middle, label=f'BB Mid ({bb_period})', color='blue', linestyle=':', alpha=0.6, linewidth=1)
+        ax1.fill_between(data_df.index, lower, upper, color='cyan', alpha=0.1)
 
         # Plot only long trades
         if not trades_df.empty:
@@ -115,8 +124,11 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
         rsi_oversold = params.get('rsi_oversold', 30)
         rsi_overbought = params.get('rsi_overbought', 70)
         rsi_mid_level = params.get('rsi_mid_level', 50)
-        rsi_indicator = RSIIndicator(close=data_df['close'], window=rsi_period, fillna=False).rsi()
-        ax2.plot(data_df.index, rsi_indicator, label=f'RSI ({rsi_period})', color='cyan', linewidth=2)
+        
+        # Calculate RSI using TA-Lib
+        rsi = talib.RSI(data_df['close'].values, timeperiod=rsi_period)
+        
+        ax2.plot(data_df.index, rsi, label=f'RSI ({rsi_period})', color='cyan', linewidth=2)
         ax2.axhline(y=rsi_overbought, color='red', linestyle='--', alpha=0.7, label=f'Overbought ({rsi_overbought})')
         ax2.axhline(y=rsi_mid_level, color='gray', linestyle=':', alpha=0.7, label=f'Mid Level ({rsi_mid_level})')
         ax2.axhline(y=rsi_oversold, color='green', linestyle='--', alpha=0.7, label=f'Oversold ({rsi_oversold})')
@@ -154,5 +166,5 @@ class MeanReversionRSBBATROptimizer(BaseOptimizer):
 if __name__ == "__main__":
     with open("config/optimizer/rsi_bb_atr_optimizer.json") as f:
         config = json.load(f)
-    optimizer = MeanReversionRSBBATROptimizer(config)
+    optimizer = RsiBbAtrOptimizer(config)
     optimizer.run_optimization()

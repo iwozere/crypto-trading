@@ -17,16 +17,11 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
-import seaborn as sns
 import warnings
 from src.strategy.rsi_bb_volume_strategy import RsiBollVolumeStrategy
 import matplotlib.gridspec as gridspec
 import backtrader as bt
-import pandas as pd
-import numpy as np
-from datetime import datetime
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
 

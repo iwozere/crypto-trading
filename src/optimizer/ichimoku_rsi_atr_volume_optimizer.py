@@ -2,16 +2,16 @@
 Ichimoku RSI ATR Volume Optimizer Module
 ---------------------------------------
 
-This module implements the optimizer for the IchimokuRSIATRVolumeStrategy. It uses Bayesian optimization to tune parameters for strategies that combine Ichimoku Cloud, RSI, ATR, and Volume. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
+This module implements the optimizer for the IchimokuRsiVolumeStrategy. It uses Bayesian optimization to tune parameters for strategies that combine Ichimoku Cloud, RSI, and Volume. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
 
 Main Features:
 - Bayesian optimization of strategy parameters
 - Backtesting and performance evaluation
 - Result visualization and reporting
-- Designed for use with IchimokuRSIATRVolumeStrategy
+- Designed for use with IchimokuRsiVolumeStrategy
 
 Classes:
-- IchimokuRSIATRVolumeOptimizer: Optimizer for the IchimokuRSIATRVolumeStrategy
+- IchimokuRSIATRVolumeOptimizer: Optimizer for the IchimokuRsiVolumeStrategy
 """
 import os
 import sys
@@ -21,7 +21,7 @@ from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
-from src.strategy.ichimoku_rsi_atr_volume_strategy import IchimokuRSIATRVolumeStrategy
+from src.strategy.ichimoku_rsi_volume_strategy import IchimokuRsiVolumeStrategy
 import matplotlib.gridspec as gridspec
 from ta.momentum import RSIIndicator
 from ta.volatility import AverageTrueRange
@@ -43,8 +43,8 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         """
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
-        self.strategy_name = 'IchimokuRSIATRVolumeStrategy'
-        self.strategy_class = IchimokuRSIATRVolumeStrategy
+        self.strategy_name = 'IchimokuRsiVolumeStrategy'
+        self.strategy_class = IchimokuRsiVolumeStrategy
         super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
         self.plot_size = config.get('plot_size', [15, 10])

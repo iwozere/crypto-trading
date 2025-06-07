@@ -22,14 +22,29 @@ import matplotlib.pyplot as plt
 import warnings
 from src.strategy.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
 import matplotlib.gridspec as gridspec
+import backtrader as bt
+import talib
+import numpy as np
 from ta.momentum import RSIIndicator
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
 import datetime
+import json
+import seaborn as sns
+import pandas as pd
 
 class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
     """
     Optimizer for the RsiVolumeSuperTrendStrategy.
+    
+    This optimizer uses Bayesian optimization (skopt) to tune parameters for a strategy
+    that combines RSI, Volume, and SuperTrend. It is designed for trending markets and
+    works on various timeframes. The optimizer seeks to maximize net profit while
+    penalizing high drawdown and low Sharpe ratio.
+    
+    Use Case:
+        - Trending markets
+        - Finds optimal parameters for the strategy to maximize risk-adjusted returns
     """
     def __init__(self, config: dict):
         """
@@ -43,43 +58,61 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         self.strategy_class = RsiVolumeSuperTrendStrategy
         super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
+        
         self.plot_size = config.get('plot_size', [15, 10])
         plt.style.use('dark_background')
-        self.plot_style = config.get('plot_style', 'default')
-        self.font_size = config.get('font_size', 10)
-        self.plot_dpi = config.get('plot_dpi', 300)
-        self.show_grid = config.get('show_grid', True)
-        self.legend_loc = config.get('legend_loc', 'upper left')
-        self.save_plot = config.get('save_plot', True)
-        self.show_plot = config.get('show_plot', False)
-        self.plot_format = config.get('plot_format', 'png')
-        self.show_equity_curve = config.get('show_equity_curve', True)
-        self.show_indicators = config.get('show_indicators', True)
-        self.color_scheme = config.get('color_scheme', {})
-        self.report_metrics = config.get('report_metrics', [])
-        self.save_trades = config.get('save_trades', True)
-        self.trades_csv_path = config.get('trades_csv_path', None)
-        self.save_metrics = config.get('save_metrics', True)
-        self.metrics_format = config.get('metrics_format', 'json')
-        self.print_summary = config.get('print_summary', True)
-        self.report_params = config.get('report_params', True)
-        self.report_filename_pattern = config.get('report_filename_pattern', None)
-        self.include_plots_in_report = config.get('include_plots_in_report', True)
+        sns.set_theme(style="darkgrid")
         plt.rcParams['figure.figsize'] = self.plot_size
-        plt.rcParams['font.size'] = self.font_size
+        plt.rcParams['font.size'] = 10
+        
         # Read search space from config and convert to skopt space objects
         self.space = super()._build_skopt_space_from_config(config.get('search_space', []))
+        
         warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
         warnings.filterwarnings('ignore', category=RuntimeWarning)
     
-    def plot_results(self, data: Any, trades_df: Any, params: Dict[str, Any], data_file: str) -> Optional[str]:
+    def calculate_supertrend(self, data_df: pd.DataFrame, period: int, multiplier: float) -> tuple:
+        """
+        Calculate SuperTrend indicator using TA-Lib.
+        """
+        high = data_df['high'].values
+        low = data_df['low'].values
+        close = data_df['close'].values
+        
+        # Calculate ATR
+        atr = talib.ATR(high, low, close, timeperiod=period)
+        
+        # Calculate SuperTrend
+        hl2 = (high + low) / 2
+        upperband = hl2 + (multiplier * atr)
+        lowerband = hl2 - (multiplier * atr)
+        
+        supertrend = np.zeros_like(close)
+        direction = np.zeros_like(close)
+        
+        for i in range(1, len(close)):
+            if close[i] > upperband[i-1]:
+                direction[i] = 1
+            elif close[i] < lowerband[i-1]:
+                direction[i] = -1
+            else:
+                direction[i] = direction[i-1]
+                
+            if direction[i] == 1:
+                supertrend[i] = lowerband[i]
+            else:
+                supertrend[i] = upperband[i]
+        
+        return supertrend, direction
+    
+    def plot_results(self, data_df: Any, trades_df: Any, params: Dict[str, Any], data_file_name: str) -> Optional[str]:
         """
         Plot the results of the strategy, including price, indicators, trades, and equity curve.
         Args:
-            data: DataFrame with OHLCV data
-            trades_df: DataFrame with trade records (must include 'type', 'entry_time', 'entry_price', 'exit_time', 'exit_price')
+            data_df: DataFrame with OHLCV data
+            trades_df: DataFrame with trade records (must include 'direction', 'entry_time', 'entry_price', 'exit_time', 'exit_price')
             params: Dictionary of strategy parameters
-            data_file: Name of the data file (for plot title and saving)
+            data_file_name: Name of the data file (for plot title and saving)
         Returns:
             Path to the saved plot image, or None if plotting fails
         """
@@ -90,67 +123,78 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         ax2 = plt.subplot(gs[1], sharex=ax1)
         ax3 = plt.subplot(gs[2], sharex=ax1)
         ax4 = plt.subplot(gs[3], sharex=ax1)
-        for ax in [ax1, ax2, ax3, ax4]:
-            ax.grid(self.show_grid)
+
+        # Price and SuperTrend
+        ax1.plot(data_df.index, data_df['close'], label='Price', color='white', linewidth=2)
         
-        ax1.plot(data.index, data['close'], label='Price', color='white', linewidth=2)
+        # Calculate SuperTrend
+        supertrend, direction = self.calculate_supertrend(
+            data_df,
+            period=params.get('supertrend_period', 10),
+            multiplier=params.get('supertrend_multiplier', 3.0)
+        )
         
-        # Plot SuperTrend using the helper method
-        st_period = params.get('st_period', 10)
-        st_multiplier = params.get('st_multiplier', 3.0)
-        supertrend_plot_values = self._calculate_supertrend_for_plot(data, st_period, st_multiplier)
-        ax1.plot(data.index, supertrend_plot_values, label=f'SuperTrend ({st_period},{st_multiplier})', color='orange', linestyle='--', alpha=0.8)
+        # Plot SuperTrend
+        ax1.plot(data_df.index, supertrend, label='SuperTrend', color='cyan', linewidth=1.5)
         
+        # Plot trades
         if not trades_df.empty:
-            long_trades = trades_df[trades_df['type'] == 'long']
-            short_trades = trades_df[trades_df['type'] == 'short']
+            trades_df_plot = trades_df.copy()
+            if 'entry_time' in trades_df_plot.columns: trades_df_plot['entry_time'] = pd.to_datetime(trades_df_plot['entry_time'])
+            if 'exit_time' in trades_df_plot.columns: trades_df_plot['exit_time'] = pd.to_datetime(trades_df_plot['exit_time'])
+            long_trades = trades_df_plot[trades_df_plot['direction'] == 'long']
             if not long_trades.empty:
                 ax1.scatter(long_trades['entry_time'], long_trades['entry_price'], color='lime', marker='^', s=200, label='Long Entry', zorder=5)
-                ax1.scatter(long_trades['exit_time'], long_trades['exit_price'], color='red', marker='v', s=200, label='Long Exit', zorder=5)
-            if not short_trades.empty:
-                ax1.scatter(short_trades['entry_time'], short_trades['entry_price'], color='fuchsia', marker='v', s=200, label='Short Entry', zorder=5)
-                ax1.scatter(short_trades['exit_time'], short_trades['exit_price'], color='aqua', marker='^', s=200, label='Short Exit', zorder=5)
-        
+                valid_exits = long_trades.dropna(subset=['exit_time', 'exit_price'])
+                if not valid_exits.empty:
+                    ax1.scatter(valid_exits['exit_time'], valid_exits['exit_price'], color='red', marker='v', s=200, label='Long Exit', zorder=5)
+        ax1.set_ylabel('Price / SuperTrend', fontsize=12)
+
+        # RSI
         rsi_period = params.get('rsi_period', 14)
-        rsi = RSIIndicator(close=data['close'], window=rsi_period).rsi()
-        ax2.plot(data.index, rsi, label=f'RSI ({rsi_period})', color='cyan', linewidth=2)
-        ax2.axhline(y=params['rsi_exit_long_level'], color='lime', linestyle='--', alpha=0.5, label=f'RSI Long Exit ({params["rsi_exit_long_level"]})')
-        ax2.axhline(y=params['rsi_entry_long_level'], color='lightgreen', linestyle=':', alpha=0.5, label=f'RSI Long Entry ({params["rsi_entry_long_level"]})')
+        rsi_oversold = params.get('rsi_oversold', 30)
+        rsi_overbought = params.get('rsi_overbought', 70)
+        rsi_mid_level = params.get('rsi_mid_level', 50)
         
-        vol_ma_period = params.get('vol_ma_period', 10)
-        ax3.bar(data.index, data['volume'], label='Volume', color='blue', alpha=0.7)
-        vol_ma = data['volume'].rolling(window=vol_ma_period).mean()
-        ax3.plot(data.index, vol_ma, label=f'Volume MA ({vol_ma_period})', color='yellow', linewidth=2)
+        # Calculate RSI using TA-Lib
+        rsi = talib.RSI(data_df['close'].values, timeperiod=rsi_period)
         
-        if not trades_df.empty:
-            trades_df['returns'] = trades_df['pnl'] / 100
-            cumulative_returns = (1 + trades_df['returns']).cumprod()
-            initial_equity = self.initial_capital
-            equity_curve = initial_equity * cumulative_returns
-            ax4.plot(trades_df['exit_time'], equity_curve, label='Equity Curve', color='green', linewidth=2)
-            rolling_max = equity_curve.expanding().max()
-            drawdown_pct = (equity_curve - rolling_max) / rolling_max * 100 # Percentage drawdown
-            ax4.fill_between(trades_df['exit_time'], equity_curve, equity_curve + (drawdown_pct/100 * equity_curve) , color='red', alpha=0.3, label='Drawdown From Peak Equity')
-            ax4.axhline(y=initial_equity, color='white', linestyle='--', alpha=0.5, label='Initial Capital')
-        
-        ax1.set_title(f'Trading Results - {data_file} - Params: {params}', fontsize=self.font_size)
-        ax1.set_ylabel('Price', fontsize=self.font_size); ax2.set_ylabel('RSI', fontsize=self.font_size)
-        ax3.set_ylabel('Volume', fontsize=self.font_size); ax4.set_ylabel('Equity', fontsize=self.font_size)
-        ax4.set_xlabel('Date', fontsize=self.font_size)
-        for ax in [ax1, ax2, ax3, ax4]:
-            ax.legend(loc=self.legend_loc, fontsize=self.font_size)
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file, suffix='_plot.'+self.plot_format, current_data=data))
-        if self.save_plot:
-            plt.savefig(plot_path, dpi=self.plot_dpi, bbox_inches='tight', format=self.plot_format)
-        if self.show_plot:
-            plt.show()
-        plt.close()
+        ax2.plot(data_df.index, rsi, label=f'RSI ({rsi_period})', color='cyan', linewidth=2)
+        ax2.axhline(y=rsi_overbought, color='red', linestyle='--', alpha=0.7, label=f'Overbought ({rsi_overbought})')
+        ax2.axhline(y=rsi_mid_level, color='gray', linestyle=':', alpha=0.7, label=f'Mid Level ({rsi_mid_level})')
+        ax2.axhline(y=rsi_oversold, color='green', linestyle='--', alpha=0.7, label=f'Oversold ({rsi_oversold})')
+        ax2.set_ylabel('RSI', fontsize=12)
+        ax2.set_ylim(0, 100)
+
+        # Volume
+        vol_ma_period = params.get('volume_ma_period', 20)
+        ax3.bar(data_df.index, data_df['volume'], label='Volume', color='blue', alpha=0.7)
+        vol_ma = data_df['volume'].rolling(window=vol_ma_period).mean()
+        ax3.plot(data_df.index, vol_ma, label=f'Volume MA ({vol_ma_period})', color='yellow', linewidth=2)
+        ax3.set_ylabel('Volume', fontsize=12)
+
+        # Equity Curve
+        if not trades_df.empty and 'pnl_comm' in trades_df.columns and 'exit_time' in trades_df.columns:
+            trades_df_sorted = trades_df_plot.dropna(subset=['exit_time']).sort_values(by='exit_time').copy()
+            if not trades_df_sorted.empty:
+                trades_df_sorted['cumulative_pnl'] = trades_df_sorted['pnl_comm'].cumsum()
+                equity_curve = self.initial_capital + trades_df_sorted['cumulative_pnl']
+                ax4.plot(trades_df_sorted['exit_time'], equity_curve, label='Equity Curve', color='green', linewidth=2)
+                rolling_max_equity = equity_curve.expanding().max()
+                ax4.fill_between(trades_df_sorted['exit_time'], equity_curve, rolling_max_equity, where=equity_curve < rolling_max_equity, color='red', alpha=0.3, label='Drawdown')
+        ax4.axhline(y=self.initial_capital, color='white', linestyle='--', alpha=0.7, label='Initial Capital')
+        ax4.set_ylabel('Equity', fontsize=12)
+        ax4.set_xlabel('Date', fontsize=12)
+
+        # Titles and legends
+        ax1.set_title(f'Trading Results - {data_file_name} - Params: {params}', fontsize=16)
+        for ax in [ax1, ax2, ax3, ax4]: ax.legend(loc='upper left', fontsize=10)
+        plt.xticks(rotation=45); plt.tight_layout()
+        plot_path = os.path.join(self.results_dir, self.get_result_filename(data_file_name, suffix='_plot.png', current_data=data_df))
+        plt.savefig(plot_path, dpi=300, bbox_inches='tight'); plt.close()
         return plot_path
 
 if __name__ == "__main__":
-    import json
     with open("config/optimizer/rsi_volume_supertrend_optimizer.json") as f:
         config = json.load(f)
     optimizer = RsiVolumeSuperTrendOptimizer(config)
