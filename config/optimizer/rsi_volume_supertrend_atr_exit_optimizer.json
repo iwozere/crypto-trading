@@ -11,6 +11,7 @@
   "commission": 0.001,
   "risk_free_rate": 0.01,
   "omega_threshold": 0.0,
+  "use_talib": true,
   "optimization_settings": {
     "optimization_method": "optuna",
     "n_trials": 50,
@@ -49,7 +50,6 @@
   "visualization_settings": {
     "plot": true,
     "save_trades": true,
-    "plot_size": [60, 30],
-    "use_talib": true
+    "plot_size": [60, 30]
   }
 } 
