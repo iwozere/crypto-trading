@@ -23,16 +23,17 @@ import seaborn as sns
 import warnings
 from src.strategy.ichimoku_rsi_volume_strategy import IchimokuRsiVolumeStrategy
 import matplotlib.gridspec as gridspec
-from ta.momentum import RSIIndicator
-from ta.volatility import AverageTrueRange
-from src.optimizer.base_optimizer import BaseOptimizer
 import backtrader as bt
-import pandas as pd
+import talib
+import numpy as np
+from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
+import datetime
+import json
 
-class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
+class IchimokuRsiVolumeOptimizer(BaseOptimizer):
     """
-    Optimizer for the IchimokuRSIATRVolumeStrategy.
+    Optimizer for the IchimokuRsiVolumeStrategy.
     Uses Bayesian optimization to tune Ichimoku, RSI, ATR, and volume parameters.
     """
     def __init__(self, config: dict):
@@ -135,7 +136,7 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
                 ax1.scatter(short_trades['exit_time'], short_trades['exit_price'], color='aqua', marker='^', s=200, label='Short Exit', zorder=5)
 
         # RSI
-        rsi = RSIIndicator(close=data_df['close'], window=params['rsi_period']).rsi()
+        rsi = talib.RSI(data_df['close'], timeperiod=params['rsi_period'])
         ax2.plot(data_df.index, rsi, label=f'RSI ({params["rsi_period"]})', color='cyan', linewidth=2)
         ax2.axhline(y=params['rsi_oversold'], color='yellow', linestyle='--', alpha=0.7, label=f'RSI Oversold ({params["rsi_oversold"]})')
         ax2.axhline(y=params['rsi_overbought'], color='red', linestyle='--', alpha=0.7, label=f'RSI Overbought ({params["rsi_overbought"]})')
@@ -143,7 +144,7 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
         ax2.legend(loc=self.legend_loc, fontsize=self.font_size)
 
         # ATR (for trailing stop)
-        atr = AverageTrueRange(high=data_df['high'], low=data_df['low'], close=data_df['close'], window=params['atr_period']).average_true_range()
+        atr = talib.ATR(data_df['high'], data_df['low'], data_df['close'], timeperiod=params['atr_period'])
         ax3.plot(data_df.index, atr, label=f'ATR ({params["atr_period"]})', color='orange', linewidth=1.5)
         ax3.set_ylabel('ATR', fontsize=self.font_size)
         ax3.legend(loc=self.legend_loc, fontsize=self.font_size)
@@ -187,7 +188,7 @@ class IchimokuRSIATRVolumeOptimizer(BaseOptimizer):
 
 if __name__ == "__main__":
     import json
-    with open("config/optimizer/ichimoku_rsi_atr_volume_optimizer.json") as f:
+    with open("config/optimizer/ichimoku_rsi_volume_optimizer.json") as f:
         config = json.load(f)
-    optimizer = IchimokuRSIATRVolumeOptimizer(config)
+    optimizer = IchimokuRsiVolumeOptimizer(config)
     optimizer.run_optimization() 

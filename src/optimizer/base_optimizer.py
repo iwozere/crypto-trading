@@ -14,32 +14,74 @@ Main Features:
 Classes:
 - BaseOptimizer: Abstract base class for trading strategy optimizers
 """
+import warnings
 import os
-import json
-import numpy as np
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
 import pandas as pd
-import traceback
+from skopt.space import Real, Integer
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+import matplotlib.gridspec as gridspec
 import backtrader as bt
-from datetime import datetime
-from ta.volatility import AverageTrueRange
+import talib
+import numpy as np
+from typing import Any, Dict, Optional, Union, List
+import datetime
+import json
+import traceback
 from src.notification.logger import _logger
 from skopt import gp_minimize
-from typing import Any, Dict, List, Optional, Union
-from skopt.space import Real, Integer, Categorical
+from skopt.space import Categorical
 import optuna
 from src.exit.exit_registry import EXIT_PARAM_MAP
 from functools import lru_cache
 
 class BaseOptimizer:
+    """
+    Base class for all optimizers.
+    Provides common functionality for parameter optimization, backtesting, and result visualization.
+    """
     def __init__(self, config: dict):
         """
-        Initialize the base optimizer with a configuration dictionary.
+        Initialize the optimizer with a configuration dictionary.
         Args:
             config: Dictionary containing all optimizer parameters.
         """
+        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
+        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
+        self.strategy_name = config.get('strategy_name', '')
+        self.strategy_class = config.get('strategy_class', None)
+        self.initial_capital = config.get('initial_capital', 10000.0)
+        self.commission = config.get('commission', 0.001)
+        self.plot_size = config.get('plot_size', [15, 10])
+        plt.style.use('dark_background')
+        self.plot_style = config.get('plot_style', 'default')
+        self.font_size = config.get('font_size', 10)
+        self.plot_dpi = config.get('plot_dpi', 300)
+        self.show_grid = config.get('show_grid', True)
+        self.legend_loc = config.get('legend_loc', 'upper left')
+        self.save_plot = config.get('save_plot', True)
+        self.show_plot = config.get('show_plot', False)
+        self.plot_format = config.get('plot_format', 'png')
+        self.show_equity_curve = config.get('show_equity_curve', True)
+        self.show_indicators = config.get('show_indicators', True)
+        self.color_scheme = config.get('color_scheme', {})
+        self.report_metrics = config.get('report_metrics', [])
+        self.save_trades = config.get('save_trades', True)
+        self.trades_csv_path = config.get('trades_csv_path', None)
+        self.save_metrics = config.get('save_metrics', True)
+        self.metrics_format = config.get('metrics_format', 'json')
+        self.print_summary = config.get('print_summary', True)
+        self.report_params = config.get('report_params', True)
+        self.report_filename_pattern = config.get('report_filename_pattern', None)
+        self.include_plots_in_report = config.get('include_plots_in_report', True)
+        warnings.filterwarnings('ignore', category=UserWarning, module='skopt')
+        warnings.filterwarnings('ignore', category=RuntimeWarning)
         self.config = config  # Store config for later use
         self.initial_capital = config.get('initial_capital', 1000.0)
-        self.commission = config.get('commission', 0.001)
         self.notify = config.get('notify', False)
         self.risk_free_rate = config.get('risk_free_rate', 0.0)
         self.omega_threshold = config.get('omega_threshold', 0.0)
@@ -188,7 +230,7 @@ class BaseOptimizer:
 
     def _calculate_supertrend_for_plot(self, data_df: pd.DataFrame, period: int, multiplier: float) -> pd.Series:
         """
-        Helper to calculate SuperTrend for plotting, using ta library for ATR.
+        Helper to calculate SuperTrend for plotting, using TA-Lib for ATR.
         Args:
             data_df: DataFrame with OHLC data
             period: ATR/SuperTrend period
@@ -200,75 +242,37 @@ class BaseOptimizer:
             self.log_message("Warning: Dataframe for SuperTrend calculation must contain 'high', 'low', 'close' columns.")
             return pd.Series(index=data_df.index, dtype='float64')
 
-        atr_calculator = AverageTrueRange(high=data_df['high'], low=data_df['low'], close=data_df['close'], window=period, fillna=False)
-        atr = atr_calculator.average_true_range()
+        # Calculate ATR using TA-Lib
+        atr = talib.ATR(data_df['high'].values, data_df['low'].values, data_df['close'].values, timeperiod=period)
 
-        if atr is None or atr.empty or atr.isnull().all():
+        if atr is None or len(atr) == 0 or np.isnan(atr).all():
             self.log_message(f"ATR calculation failed or all NaN for ST plot. Period: {period}")
             return pd.Series(index=data_df.index, dtype='float64')
-        atr = atr.reindex(data_df.index)
 
+        # Convert to pandas Series for easier manipulation
+        atr = pd.Series(atr, index=data_df.index)
+
+        # Calculate SuperTrend
         hl2 = (data_df['high'] + data_df['low']) / 2
-        basic_upperband = hl2 + multiplier * atr
-        basic_lowerband = hl2 - multiplier * atr
+        upperband = hl2 + (multiplier * atr)
+        lowerband = hl2 - (multiplier * atr)
 
-        final_upperband = pd.Series(index=data_df.index, dtype='float64')
-        final_lowerband = pd.Series(index=data_df.index, dtype='float64')
         supertrend = pd.Series(index=data_df.index, dtype='float64')
+        direction = pd.Series(index=data_df.index, dtype='float64')
 
-        final_upperband.iloc[0] = basic_upperband.iloc[0] if not pd.isna(basic_upperband.iloc[0]) else np.nan
-        final_lowerband.iloc[0] = basic_lowerband.iloc[0] if not pd.isna(basic_lowerband.iloc[0]) else np.nan
-        trend = 0
-
-        first_valid_idx = atr.first_valid_index()
-        if first_valid_idx is None:
-            self.log_message("No valid ATR values to start SuperTrend calculation for plot.")
-            return supertrend
-        start_loc = data_df.index.get_loc(first_valid_idx)
-
-        if data_df['close'].iloc[start_loc] > basic_upperband.iloc[start_loc]:
-            trend = 1
-            supertrend.iloc[start_loc] = basic_lowerband.iloc[start_loc]
-        elif data_df['close'].iloc[start_loc] < basic_lowerband.iloc[start_loc]:
-            trend = -1
-            supertrend.iloc[start_loc] = basic_upperband.iloc[start_loc]
-        else:
-            supertrend.iloc[start_loc] = np.nan
-            trend = 0 
-        final_upperband.iloc[start_loc] = basic_upperband.iloc[start_loc]
-        final_lowerband.iloc[start_loc] = basic_lowerband.iloc[start_loc]
-
-        for i in range(start_loc + 1, len(data_df)):
-            if pd.isna(atr.iloc[i]):
-                final_upperband.iloc[i] = final_upperband.iloc[i-1]
-                final_lowerband.iloc[i] = final_lowerband.iloc[i-1]
-                supertrend.iloc[i] = supertrend.iloc[i-1]
-                continue
-            close = data_df['close'].iloc[i]
-            prev_close = data_df['close'].iloc[i-1]
-            if basic_upperband.iloc[i] < final_upperband.iloc[i-1] or prev_close > final_upperband.iloc[i-1]:
-                final_upperband.iloc[i] = basic_upperband.iloc[i]
+        for i in range(1, len(data_df)):
+            if data_df['close'][i] > upperband[i-1]:
+                direction[i] = 1
+            elif data_df['close'][i] < lowerband[i-1]:
+                direction[i] = -1
             else:
-                final_upperband.iloc[i] = final_upperband.iloc[i-1]
-            if basic_lowerband.iloc[i] > final_lowerband.iloc[i-1] or prev_close < final_lowerband.iloc[i-1]:
-                final_lowerband.iloc[i] = basic_lowerband.iloc[i]
+                direction[i] = direction[i-1]
+
+            if direction[i] == 1:
+                supertrend[i] = lowerband[i]
             else:
-                final_lowerband.iloc[i] = final_lowerband.iloc[i-1]
-            if trend == 1 and close < final_lowerband.iloc[i]:
-                trend = -1
-            elif trend == -1 and close > final_upperband.iloc[i]:
-                trend = 1
-            elif trend == 0:
-                if close > basic_upperband.iloc[i]:
-                    trend = 1
-                elif close < basic_lowerband.iloc[i]:
-                    trend = -1
-            if trend == 1:
-                supertrend.iloc[i] = final_lowerband.iloc[i]
-            elif trend == -1:
-                supertrend.iloc[i] = final_upperband.iloc[i]
-            else:
-                supertrend.iloc[i] = np.nan
+                supertrend[i] = upperband[i]
+
         return supertrend
 
     def log_message(self, message: str, level: str = "info") -> None:

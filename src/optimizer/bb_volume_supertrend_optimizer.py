@@ -24,10 +24,11 @@ import matplotlib.pyplot as plt
 import warnings
 from src.strategy.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
 import matplotlib.gridspec as gridspec
-from ta.volatility import BollingerBands
+import backtrader as bt
+import talib
+import numpy as np
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
-import datetime
 
 class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
     """
@@ -102,13 +103,21 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         
         ax1.plot(data_df.index, data_df['close'], label='Price', color='lightgray', linewidth=1.5)
         
+        # Calculate Bollinger Bands using TA-Lib
         bb_period = params.get('bb_period', 20)
         bb_devfactor = params.get('bb_devfactor', 2.0)
-        bb_indicator = BollingerBands(close=data_df['close'], window=bb_period, window_dev=bb_devfactor, fillna=False)
-        ax1.plot(data_df.index, bb_indicator.bollinger_hband(), label=f'BB Top ({bb_period},{bb_devfactor})', color='cyan', linestyle='--', alpha=0.7, linewidth=1)
-        ax1.plot(data_df.index, bb_indicator.bollinger_lband(), label=f'BB Low ({bb_period},{bb_devfactor})', color='cyan', linestyle='--', alpha=0.7, linewidth=1)
-        ax1.plot(data_df.index, bb_indicator.bollinger_mavg(), label=f'BB Mid ({bb_period})', color='blue', linestyle=':', alpha=0.6, linewidth=1)
-        ax1.fill_between(data_df.index, bb_indicator.bollinger_lband(), bb_indicator.bollinger_hband(), color='cyan', alpha=0.1)
+        upper, middle, lower = talib.BBANDS(
+            data_df['close'].values,
+            timeperiod=bb_period,
+            nbdevup=bb_devfactor,
+            nbdevdn=bb_devfactor,
+            matype=0
+        )
+        
+        ax1.plot(data_df.index, upper, label=f'BB Top ({bb_period},{bb_devfactor})', color='cyan', linestyle='--', alpha=0.7, linewidth=1)
+        ax1.plot(data_df.index, lower, label=f'BB Low ({bb_period},{bb_devfactor})', color='cyan', linestyle='--', alpha=0.7, linewidth=1)
+        ax1.plot(data_df.index, middle, label=f'BB Mid ({bb_period})', color='blue', linestyle=':', alpha=0.6, linewidth=1)
+        ax1.fill_between(data_df.index, lower, upper, color='cyan', alpha=0.1)
 
         st_period = params.get('st_period', 10)
         st_multiplier = params.get('st_multiplier', 3.0)

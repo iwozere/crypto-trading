@@ -84,7 +84,7 @@ from src.management.webgui.config_manager import ConfigManager
 from config.donotshare.donotshare import WEBGUI_LOGIN, WEBGUI_PASSWORD, WEBGUI_PORT
 from src.analyzer.ticker_analyzer import TickerAnalyzer
 from src.management.bot_manager import start_bot, stop_bot, get_status, get_trades, get_running_bots
-from src.optimizer import bb_volume_supertrend_optimizer, rsi_bb_volume_optimizer, ichimoku_rsi_atr_volume_optimizer
+from src.optimizer import bb_volume_supertrend_optimizer, ichimoku_rsi_volume_optimizer, rsi_bb_volume_optimizer
 from src.notification.logger import _logger
 from src.notification.emailer import send_email_alert
 from src.notification.telegram_notifier import send_telegram_alert
@@ -253,7 +253,7 @@ def ticker_analyze():
 optimizers = {
     'bb_volume_supertrend': bb_volume_supertrend_optimizer.BBSuperTrendVolumeBreakoutOptimizer,
     'rsi_bb_volume': rsi_bb_volume_optimizer.RsiBBVolumeOptimizer,
-    'ichimoku_rsi_atr_volume': ichimoku_rsi_atr_volume_optimizer.IchimokuRSIATRVolumeOptimizer,
+    'ichimoku_rsi_atr_volume': ichimoku_rsi_volume_optimizer.IchimokuRSIATRVolumeOptimizer,
 }
 
 running_optimizers = {}

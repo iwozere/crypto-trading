@@ -25,7 +25,6 @@ import matplotlib.gridspec as gridspec
 import backtrader as bt
 import talib
 import numpy as np
-from ta.momentum import RSIIndicator
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
 import datetime

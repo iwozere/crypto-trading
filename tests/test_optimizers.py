@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from src.optimizer.rsi_volume_supertrend_optimizer import RsiVolumeSuperTrendOptimizer
 from src.optimizer.rsi_bb_volume_optimizer import RsiBBVolumeOptimizer
-from src.optimizer.ichimoku_rsi_atr_volume_optimizer import IchimokuRSIATRVolumeOptimizer
+from src.optimizer.ichimoku_rsi_volume_optimizer import IchimokuRSIATRVolumeOptimizer
 from src.optimizer.bb_volume_supertrend_optimizer import BBSuperTrendVolumeBreakoutOptimizer
 from src.optimizer.rsi_bb_optimizer import MeanReversionRSBBATROptimizer
 
