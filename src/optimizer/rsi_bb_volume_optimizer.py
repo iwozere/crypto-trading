@@ -2,16 +2,16 @@
 RSI BB Volume Optimizer Module
 -----------------------------
 
-This module implements the optimizer for the RSIBollVolumeATRStrategy. It uses Bayesian optimization to tune parameters for mean-reversion strategies that combine RSI, Bollinger Bands, and Volume with ATR-based position management. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
+This module implements the optimizer for the RsiBollVolumeStrategy. It uses Bayesian optimization to tune parameters for mean-reversion strategies that combine RSI, Bollinger Bands, and Volume with position management. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
 
 Main Features:
 - Bayesian optimization of strategy parameters
 - Backtesting and performance evaluation
 - Result visualization and reporting
-- Designed for use with RSIBollVolumeATRStrategy
+- Designed for use with RsiBollVolumeStrategy
 
 Classes:
-- RsiBBVolumeOptimizer: Optimizer for the RSIBollVolumeATRStrategy
+- RsiBBVolumeOptimizer: Optimizer for the RsiBollVolumeStrategy
 """
 import os
 import sys
@@ -21,21 +21,21 @@ from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
-from src.strategy.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
+from src.strategy.rsi_bb_volume_strategy import RsiBollVolumeStrategy
 import matplotlib.gridspec as gridspec
-from ta.volatility import BollingerBands
-from ta.momentum import RSIIndicator
+import backtrader as bt
+import pandas as pd
+import numpy as np
 from datetime import datetime
 from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, Optional
-import numpy as np
 
 class RsiBBVolumeOptimizer(BaseOptimizer):
     """
-    Optimizer for the RSIBollVolumeATRStrategy.
+    Optimizer for the RsiBollVolumeStrategy.
     
     This optimizer uses Bayesian optimization to tune parameters for a mean-reversion strategy
-    that combines RSI, Bollinger Bands, and Volume with ATR-based position management. It is suitable for assets
+    that combines RSI, Bollinger Bands, and Volume with position management. It is suitable for assets
     that exhibit mean-reverting behavior with volume spikes, such as certain crypto pairs or stocks.
     
     Use Case:
@@ -50,8 +50,8 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         """
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'results')
-        self.strategy_name = 'RSIBollVolumeATRStrategy'
-        self.strategy_class = RSIBollVolumeATRStrategy
+        self.strategy_name = 'RsiBollVolumeStrategy'
+        self.strategy_class = RsiBollVolumeStrategy
         super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
         
@@ -108,11 +108,42 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         for ax in [ax1, ax2, ax3, ax4]:
             ax.grid(self.show_grid)
         
-        # Calculate Bollinger Bands
-        bb = BollingerBands(close=data['close'], window=params['boll_period'], window_dev=params['boll_devfactor'])
-        bb_high = bb.bollinger_hband()
-        bb_mid = bb.bollinger_mavg()
-        bb_low = bb.bollinger_lband()
+        # Calculate indicators using the same implementation as the strategy
+        use_talib = params.get('use_talib', False)
+        
+        if use_talib:
+            # TA-Lib indicators
+            bb_high = bt.talib.BBANDS(
+                data['close'],
+                timeperiod=params['boll_period'],
+                nbdevup=params['boll_devfactor'],
+                nbdevdn=params['boll_devfactor']
+            )[0]  # Upper band
+            bb_mid = bt.talib.BBANDS(
+                data['close'],
+                timeperiod=params['boll_period'],
+                nbdevup=params['boll_devfactor'],
+                nbdevdn=params['boll_devfactor']
+            )[1]  # Middle band
+            bb_low = bt.talib.BBANDS(
+                data['close'],
+                timeperiod=params['boll_period'],
+                nbdevup=params['boll_devfactor'],
+                nbdevdn=params['boll_devfactor']
+            )[2]  # Lower band
+            rsi = bt.talib.RSI(data['close'], timeperiod=params['rsi_period'])
+            vol_ma = bt.talib.SMA(data['volume'], timeperiod=params['vol_ma_period'])
+        else:
+            # Backtrader built-in indicators
+            bb = bt.ind.BollingerBands(
+                period=params['boll_period'],
+                devfactor=params['boll_devfactor']
+            )
+            bb_high = bb.lines.top
+            bb_mid = bb.lines.mid
+            bb_low = bb.lines.bot
+            rsi = bt.ind.RSI(period=params['rsi_period'])
+            vol_ma = bt.ind.SMA(data['volume'], period=params['vol_ma_period'])
         
         # Plot price and Bollinger Bands
         ax1.plot(data.index, data['close'], label='Price', color='white', linewidth=2)
@@ -128,7 +159,6 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
             ax1.scatter(trades_df['exit_time'], trades_df['exit_price'], color='red', marker='v', s=200, label='Sell')
         
         # Plot RSI
-        rsi = RSIIndicator(close=data['close'], window=params['rsi_period']).rsi()
         ax2.plot(data.index, rsi, label=f'RSI ({params["rsi_period"]})', color='cyan', linewidth=2)
         ax2.axhline(y=params['rsi_overbought'], color='red', linestyle='--', alpha=0.5)
         ax2.axhline(y=params['rsi_oversold'], color='green', linestyle='--', alpha=0.5)
@@ -137,7 +167,6 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         
         # Plot volume
         ax3.bar(data.index, data['volume'], label='Volume', color='blue', alpha=0.7)
-        vol_ma = data['volume'].rolling(window=params['vol_ma_period']).mean()
         ax3.plot(data.index, vol_ma, label=f'Volume MA ({params["vol_ma_period"]})', color='yellow', linewidth=2)
         
         # Calculate and plot equity curve

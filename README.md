@@ -171,11 +171,11 @@ class MyCustomStrategy(BaseStrategy):
 
 All strategies follow the conventions above. Example strategies include:
 
-- **MeanReversionRSBBATRStrategy** (`src/strategy/rsi_bb_atr_strategy.py`)
-- **RSIBollVolumeATRStrategy** (`src/strategy/rsi_bb_volume_strategy.py`)
+- **MeanReversionRsiBbStrategy** (`src/strategy/rsi_bb_strategy.py`)
+- **RsiBollVolumeStrategy** (`src/strategy/rsi_bb_volume_strategy.py`)
 - **BBSuperTrendVolumeBreakoutStrategy** (`src/strategy/bb_volume_supertrend_strategy.py`)
 - **RsiVolumeSuperTrendStrategy** (`src/strategy/rsi_volume_supertrend_strategy.py`)
-- **IchimokuRSIATRVolumeStrategy** (`src/strategy/ichimoku_rsi_atr_volume_strategy.py`)
+- **IchimokuRsiVolumeStrategy** (`src/strategy/ichimoku_rsi_volume_strategy.py`)
 
 ## Optimizers
 
@@ -204,7 +204,7 @@ Here is a minimal example of how to run a Backtrader strategy using the new conv
 ```python
 import backtrader as bt
 import pandas as pd
-from src.strategy.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
+from src.strategy.rsi_bb_volume_strategy import RsiBollVolumeStrategy
 
 # Load your data (CSV with columns: datetime, open, high, low, close, volume)
 df = pd.read_csv('data/all/ETHUSDT_4h_20220101_20230101.csv', parse_dates=['datetime'], index_col='datetime')
@@ -215,7 +215,7 @@ data = bt.feeds.PandasData(dataname=df)
 # Set up Cerebro
 cerebro = bt.Cerebro()
 cerebro.adddata(data)
-cerebro.addstrategy(RSIBollVolumeATRStrategy, printlog=True)
+cerebro.addstrategy(RsiBollVolumeStrategy, printlog=True)
 cerebro.broker.setcash(10000.0)
 cerebro.broker.setcommission(commission=0.001)
 
@@ -239,14 +239,14 @@ print(trades_df)
 Here is a minimal example of how to run an optimizer for a strategy:
 
 ```python
-from src.optimizer.rsi_bb_volume_optimizer import RSIBBVolumeOptimizer
+from src.optimizer.rsi_bb_volume_optimizer import RsiBollVolumeOptimizer
 
 # Path to your historical data CSV
 csv_path = 'data/all/ETHUSDT_4h_20220101_20230101.csv'
 
 # Create the optimizer instance
-optimizer = RSIBBVolumeOptimizer(
-    strategy_name='RSIBollVolumeATRStrategy',
+optimizer = RsiBollVolumeOptimizer(
+    strategy_name='RsiBollVolumeStrategy',
     strategy_class=None  # The optimizer will import the correct class internally
 )
 

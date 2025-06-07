@@ -17,7 +17,7 @@
 **Request JSON:**
 ```json
 {
-  "strategy": "rsi_bb_volume",   // Name of the strategy (required)
+  "strategy": "rsi_boll_volume",   // Name of the strategy (required)
   "id": "mybot1",                // Optional bot ID (if not provided, auto-generated)
   "config": {                     // Bot configuration (strategy-specific)
     "trading_pair": "BTCUSDT",
@@ -30,7 +30,7 @@
 **Response:**
 ```json
 {
-  "message": "Started bot for rsi_bb_volume.",
+  "message": "Started bot for rsi_boll_volume.",
   "bot_id": "mybot1"
 }
 ```
@@ -122,7 +122,7 @@ or
 
 ### Get Bot Logs
 
-- **GET** `/log?strategy=rsi_bb_volume` (api.py)
+- **GET** `/log?strategy=rsi_boll_volume` (api.py)
 
 **Response:**
 ```json
@@ -140,7 +140,7 @@ or
 **Request JSON:**
 ```json
 {
-  "strategy": "rsi_bb_volume",
+  "strategy": "rsi_boll_volume",
   "ticker": "BTCUSDT",
   "tf": "1h"
 }
@@ -149,7 +149,7 @@ or
 **Response:**
 ```json
 {
-  "message": "Backtesting rsi_bb_volume on BTCUSDT (1h)... [stub]"
+  "message": "Backtesting rsi_boll_volume on BTCUSDT (1h)... [stub]"
 }
 ```
 
@@ -168,5 +168,5 @@ or
 ## Notes
 
 - All endpoints that modify bots require authentication.
-- The `strategy` parameter should match the name of the strategy/bot module (e.g., `rsi_bb_volume`).
+- The `strategy` parameter should match the name of the strategy/bot module (e.g., `rsi_boll_volume`).
 - The `bot_id` is a unique identifier for each running bot instance. 

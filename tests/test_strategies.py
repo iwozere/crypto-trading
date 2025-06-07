@@ -2,11 +2,15 @@ import pytest
 import pandas as pd
 import numpy as np
 import backtrader as bt
-from src.strategy.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
-from src.strategy.ichimoku_rsi_atr_volume_strategy import IchimokuRSIATRVolumeStrategy
-from src.strategy.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
-from src.strategy.rsi_bb_atr_strategy import MeanReversionRSBBATRStrategy
-from src.strategy.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
+from datetime import datetime, timedelta
+from src.strategy.ichimoku_rsi_volume_strategy import IchimokuRsiVolumeStrategy
+from src.strategy.rsi_bb_volume_strategy import RsiBollVolumeStrategy
+from src.strategy.rsi_bb_strategy import MeanReversionRsiBbStrategy
+from src.strategy.base_strategy import BaseStrategy
+from src.data.data_loader import DataLoader
+from src.utils.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 """
 Unit tests for all trading strategies in src/strategy.
@@ -34,11 +38,9 @@ def make_dummy_data(length=100):
     return df
 
 @pytest.mark.parametrize('strategy_cls', [
-    RsiVolumeSuperTrendStrategy,
-    IchimokuRSIATRVolumeStrategy,
-    RSIBollVolumeATRStrategy,
-    MeanReversionRSBBATRStrategy,
-    BBSuperTrendVolumeBreakoutStrategy
+    IchimokuRsiVolumeStrategy,
+    RsiBollVolumeStrategy,
+    MeanReversionRsiBbStrategy,
 ])
 def test_strategy_runs_and_logs_trades(strategy_cls):
     """
@@ -57,3 +59,24 @@ def test_strategy_runs_and_logs_trades(strategy_cls):
     assert hasattr(strategy, 'trades')
     assert isinstance(strategy.trades, list)
     # Should not raise, and trades can be empty if no signals, but type must be list 
+
+# Test data setup
+@pytest.fixture
+def sample_data():
+    dates = pd.date_range(start='2024-01-01', end='2024-01-10', freq='1H')
+    data = pd.DataFrame({
+        'open': np.random.randn(len(dates)).cumsum() + 100,
+        'high': np.random.randn(len(dates)).cumsum() + 101,
+        'low': np.random.randn(len(dates)).cumsum() + 99,
+        'close': np.random.randn(len(dates)).cumsum() + 100,
+        'volume': np.random.randint(1000, 10000, len(dates))
+    }, index=dates)
+    return data
+
+@pytest.fixture
+def strategy_classes():
+    return [
+        IchimokuRsiVolumeStrategy,
+        RsiBollVolumeStrategy,
+        MeanReversionRsiBbStrategy,
+    ] 

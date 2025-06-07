@@ -1,7 +1,8 @@
 {
   "data_dir": "data",
   "results_dir": "results",
-  "strategy_name": "RSIBollVolumeATRStrategy",
+  "optimizer_name": "RsiBBVolumeOptimizer",
+  "strategy_name": "RsiBollVolumeStrategy",
   "symbol": "BTCUSDT",
   "interval": "1h",
   "start_date": "2023-01-01",
@@ -11,14 +12,25 @@
   "risk_free_rate": 0.01,
   "omega_threshold": 0.0,
   "optimization_method": "optuna",
-  "n_trials": 100,
+  "n_trials": 50,
   "n_random_starts": 42,
   
-  "exit_logic": {
-    "name": "trailing_stop_exit",
-    "params": {
-      "trail_pct": {"type": "Real", "low": 0.01, "high": 0.05}
-    }
+  "exit_logic": "trailing_stop_exit",
+  
+  "parameters": {
+    "rsi_period": [14, 30],
+    "bb_period": [20, 50],
+    "bb_std": [1.5, 3.0],
+    "volume_ma_period": [20, 50],
+    "volume_threshold": [1.5, 3.0],
+    "trailing_stop_activation": [0.5, 2.0],
+    "trailing_stop_distance": [0.5, 2.0]
+  },
+  
+  "optimization_settings": {
+    "n_trials": 50,
+    "n_jobs": -1,
+    "random_state": 42
   },
   
   "search_space": [

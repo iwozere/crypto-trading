@@ -1,7 +1,8 @@
 {
   "data_dir": "data",
   "results_dir": "results",
-  "strategy_name": "MeanReversionRSBBATRStrategy",
+  "optimizer_name": "RsiBBOptimizer",
+  "strategy_name": "MeanReversionRsiBbStrategy",
   "symbol": "BTCUSDT",
   "interval": "1h",
   "start_date": "2023-01-01",
@@ -11,13 +12,19 @@
   "risk_free_rate": 0.01,
   "omega_threshold": 0.0,
   "optimization_method": "optuna",
-  "n_trials": 100,
+  "n_trials": 50,
   "n_random_starts": 42,
-  "exit_logic": {
-    "name": "ma_crossover_exit",
-    "params": {
-      "ma_period": {"type": "Integer", "low": 10, "high": 50}
-    }
+  "exit_logic": "ma_crossover_exit",
+  "parameters": {
+    "rsi_period": [14, 30],
+    "bb_period": [20, 50],
+    "bb_std": [1.5, 3.0],
+    "ma_fast_period": [5, 20],
+    "ma_slow_period": [20, 50]
+  },
+  "optimization_settings": {
+    "n_jobs": -1,
+    "random_state": 42
   },
   "search_space": [
     {"type": "Integer", "name": "bb_period", "low": 10, "high": 50},
