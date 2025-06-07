@@ -109,9 +109,12 @@ class BaseOptimizer:
         self.parameters = self.config.get("parameters", {})  # Initialize parameters
         self.search_space = self.config["search_space"]
         self.default_params = self.config["default_params"]
-        self.plot = self.config["plot"]
-        self.save_trades = self.config["save_trades"]
-        self.plot_size = self.config["plot_size"]
+        
+        # Get visualization settings from nested structure
+        self.visualization_settings = self.config["visualization_settings"]
+        self.plot = self.visualization_settings["plot"]
+        self.save_trades = self.visualization_settings["save_trades"]
+        self.plot_size = self.visualization_settings["plot_size"]
         
         # Create a single notifier instance if notifications are enabled
         self.notifier = None
@@ -120,25 +123,25 @@ class BaseOptimizer:
             self.notifier = create_notifier()
 
         self.strategy_name = self.config.get("strategy_name", "")
-        self.plot_style = self.config.get("plot_style", "default")
-        self.font_size = self.config.get("font_size", 10)
-        self.plot_dpi = self.config.get("plot_dpi", 300)
-        self.show_grid = self.config.get("show_grid", True)
-        self.legend_loc = self.config.get("legend_loc", "upper left")
-        self.save_plot = self.config.get("save_plot", True)
-        self.show_plot = self.config.get("show_plot", False)
-        self.plot_format = self.config.get("plot_format", "png")
-        self.show_equity_curve = self.config.get("show_equity_curve", True)
-        self.show_indicators = self.config.get("show_indicators", True)
-        self.color_scheme = self.config.get("color_scheme", {})
-        self.report_metrics = self.config.get("report_metrics", [])
-        self.trades_csv_path = self.config.get("trades_csv_path", None)
-        self.save_metrics = self.config.get("save_metrics", True)
-        self.metrics_format = self.config.get("metrics_format", "json")
-        self.print_summary = self.config.get("print_summary", True)
-        self.report_params = self.config.get("report_params", True)
-        self.report_filename_pattern = self.config.get("report_filename_pattern", None)
-        self.include_plots_in_report = self.config.get("include_plots_in_report", True)
+        self.plot_style = self.visualization_settings.get("plot_style", "default")
+        self.font_size = self.visualization_settings.get("font_size", 10)
+        self.plot_dpi = self.visualization_settings.get("plot_dpi", 300)
+        self.show_grid = self.visualization_settings.get("show_grid", True)
+        self.legend_loc = self.visualization_settings.get("legend_loc", "upper left")
+        self.save_plot = self.visualization_settings.get("save_plot", True)
+        self.show_plot = self.visualization_settings.get("show_plot", False)
+        self.plot_format = self.visualization_settings.get("plot_format", "png")
+        self.show_equity_curve = self.visualization_settings.get("show_equity_curve", True)
+        self.show_indicators = self.visualization_settings.get("show_indicators", True)
+        self.color_scheme = self.visualization_settings.get("color_scheme", {})
+        self.report_metrics = self.visualization_settings.get("report_metrics", [])
+        self.trades_csv_path = self.visualization_settings.get("trades_csv_path", None)
+        self.save_metrics = self.visualization_settings.get("save_metrics", True)
+        self.metrics_format = self.visualization_settings.get("metrics_format", "json")
+        self.print_summary = self.visualization_settings.get("print_summary", True)
+        self.report_params = self.visualization_settings.get("report_params", True)
+        self.report_filename_pattern = self.visualization_settings.get("report_filename_pattern", None)
+        self.include_plots_in_report = self.visualization_settings.get("include_plots_in_report", True)
         warnings.filterwarnings("ignore", category=UserWarning, module="skopt")
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         self.current_metrics = {}
@@ -438,15 +441,22 @@ class BaseOptimizer:
     def params_to_dict(self, params, param_types=None):
         """
         Convert parameter list to dictionary with proper types.
-        - param_types: dict of {param_name: type}, e.g. {'rsi_period': int, ...}
-        If not provided, will use int for names containing 'period', else float.
+        
+        Args:
+            params: List of parameter values
+            param_types: dict of {param_name: type}, e.g. {'rsi_period': int, ...}
+                        If not provided, will use int for names containing 'period', else float.
+        
+        Returns:
+            Dictionary of parameters with proper types
         """
-        if not hasattr(self, "space"):
-            raise AttributeError(
-                "Optimizer must have a 'space' attribute with parameter names."
-            )
-        param_names = [p.name for p in self.space]
+        # Get parameter names from search space
+        param_names = [p["name"] for p in self.search_space]
+        
+        # Create dictionary from names and values
         param_dict = dict(zip(param_names, params))
+        
+        # Convert types
         typed_param_dict = {}
         for name, value in param_dict.items():
             if param_types and name in param_types:
@@ -463,6 +473,7 @@ class BaseOptimizer:
                 typed_param_dict[name] = bool(value)
             else:
                 typed_param_dict[name] = float(value)
+        
         return typed_param_dict
 
     def get_result_filename(
@@ -620,7 +631,7 @@ class BaseOptimizer:
             strategy_params["exit_params"] = exit_params
 
             # --- Run backtest ---
-            results = self.run_backtest(self.current_data.copy(), strategy_params)
+            results = self.run_backtest(strategy_params)
             net_profit = (
                 results.get("trades", {})
                 .get("pnl", {})
@@ -635,27 +646,19 @@ class BaseOptimizer:
 
     def optimize_single_file(self, data_file):
         """
-        Generalized optimization routine for a single data file.
-        Subclasses must set self.strategy_name and implement self.plot_results.
+        Optimize a single data file.
+        
+        Args:
+            data_file: Name of the data file to optimize
+            
+        Returns:
+            Dictionary containing optimization results
         """
-        self.log_message(
-            f"\nOptimizing {data_file} for {getattr(self, 'strategy_name', 'UnknownStrategy')}...",
-            level="info",
-        )
-        self.current_symbol = data_file.split("_")[0]
-        if data_file not in self.raw_data:
-            self.log_message(f"Error: No data for {data_file}.", level="error")
-            return None
+        self.log_message(f"\nOptimizing {data_file}...", level="info")
         self.current_data = self.raw_data[data_file].copy()
-        if len(self.current_data) < 100:
+        if self.current_data.empty:
             self.log_message(
-                f"Warning: Insufficient data points in {data_file}. Skipping...",
-                level="info",
-            )
-            return None
-        if self.current_data.isnull().any().any():
-            self.log_message(
-                f"Warning: Found missing values in {data_file}. Cleaning data...",
+                f"No data found for {data_file}. Skipping.",
                 level="info",
             )
             self.current_data = self.current_data.fillna(method="ffill").fillna(
@@ -663,16 +666,14 @@ class BaseOptimizer:
             )
         self.current_metrics = {}
         try:
-            # Get optimization method from config
-            opt_method = self.config.get(
-                "optimization_method", "skopt"
-            )  # Default to skopt for backward compatibility
-            n_trials = self.config.get("n_trials", 100)
-            n_random_starts = self.config.get("n_random_starts", 42)
+            # Get optimization method from optimization settings
+            opt_method = self.optimization_settings.get("optimization_method", "skopt")
+            n_trials = self.optimization_settings.get("n_trials", 100)
+            n_random_starts = self.optimization_settings.get("n_random_starts", 42)
             if opt_method == "skopt":
-                noise = self.config.get("noise", 0.01)
-                n_jobs = self.config.get("n_jobs", -1)
-                verbose = self.config.get("verbose", False)
+                noise = self.optimization_settings.get("noise", 0.01)
+                n_jobs = self.optimization_settings.get("n_jobs", -1)
+                verbose = self.optimization_settings.get("verbose", False)
                 result = self.optimize_with_skopt(
                     n_trials=n_trials,
                     n_random_starts=n_random_starts,
@@ -698,9 +699,7 @@ class BaseOptimizer:
                 f"Best score: {best_score:.2f}. Metrics: {self.current_metrics}",
                 level="info",
             )
-            final_backtest_run = self.run_backtest(
-                self.current_data.copy(), best_params
-            )
+            final_backtest_run = self.run_backtest(best_params)
             trades_df = pd.DataFrame()
             if final_backtest_run and hasattr(
                 final_backtest_run.get("strategy", None), "trades"
@@ -821,19 +820,65 @@ class BaseOptimizer:
         except Exception as e:
             self.log_message(f"Error saving combined JSON: {e}", level="error")
 
-    def run_backtest(self, params):
-        """Run a single backtest with the given parameters."""
+    def _prepare_strategy_params(self, params):
+        """
+        Prepare strategy parameters including exit logic parameters.
+        
+        Args:
+            params: Dictionary of strategy parameters
+            
+        Returns:
+            Dictionary of prepared parameters for the strategy
+        """
+        # Start with the base parameters
+        strategy_params = params.copy()
+        
+        # Add exit logic parameters
+        if self.exit_logic:
+            exit_name = self.exit_logic["name"]
+            exit_params = self.exit_logic.get("params", {})
+            
+            # Add exit logic name and params
+            strategy_params["exit_logic_name"] = exit_name
+            strategy_params["exit_params"] = exit_params
+        
+        return strategy_params
+
+    def run_backtest(self, params, data=None):
+        """
+        Run a single backtest with the given parameters.
+        
+        Args:
+            params: Dictionary of strategy parameters
+            data: Optional data to use for backtest. If None, will use self.current_data.
+        """
         cerebro = bt.Cerebro()
 
         # Add data
-        data = self._load_data()
+        if data is None:
+            if self.current_data is None:
+                raise ValueError("No data available for backtest. Call load_all_data() first.")
+            data = self.current_data
+            
+        # Convert DataFrame to Backtrader data feed
+        if isinstance(data, pd.DataFrame):
+            data = bt.feeds.PandasData(
+                dataname=data,
+                datetime=None,  # Use index as datetime
+                open='open',
+                high='high',
+                low='low',
+                close='close',
+                volume='volume',
+                openinterest=-1
+            )
         cerebro.adddata(data)
 
         # Add strategy with parameters
         strategy_params = self._prepare_strategy_params(params)
         if self.notifier:
-            strategy_params["notifier"] = self.notifier
-        cerebro.addstrategy(self.strategy_class, **strategy_params)
+            strategy_params["notify"] = True
+        cerebro.addstrategy(self.strategy_class, params=strategy_params)
 
         # Add analyzers
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")
@@ -945,52 +990,36 @@ class BaseOptimizer:
 
     def objective(self, params):
         """
-        Objective function for optimization. Runs backtest and returns negative net profit.
+        Objective function for optimization.
+        Converts parameters to dictionary and runs backtest.
         """
-        param_dict = self.params_to_dict(params)
-        param_key = str(param_dict)  # Use string representation as cache key
-
-        # Check cache first
-        if param_key in self.metrics_cache:
-            return -self.metrics_cache[param_key]["net_profit"]
-
-        backtest_results = self.run_backtest(self.current_data, param_dict)
-        if backtest_results is None:
-            return float("inf")
-
-        trades = backtest_results["strategy"].get_trades()
-        if not trades:
-            return float("inf")
-
-        trades_df = pd.DataFrame(trades)
-
-        # Calculate only essential metrics for optimization
-        metrics = {
-            "net_profit": trades_df["pnl_comm"].sum(),
-            "total_trades": len(trades_df),
-            "win_rate": (
-                len(trades_df[trades_df["pnl_comm"] > 0]) / len(trades_df) * 100
-                if len(trades_df) > 0
-                else 0
-            ),
-            "max_drawdown": backtest_results["drawdown"]
-            .get("max", {})
-            .get("drawdown", 0),
-        }
-
-        # Cache the results
-        self.metrics_cache[param_key] = metrics
-
-        # Only save results if they're better than previous best
-        if metrics["net_profit"] > self.best_metrics:
-            self.best_metrics = metrics["net_profit"]
-            # Calculate additional metrics only for saving results
-            full_metrics = self.calculate_metrics(trades_df)
-            self.save_results(
-                study=self.optimization_result, data_file=self.current_data_file
+        try:
+            # Convert parameters to dictionary
+            param_dict = self.params_to_dict(params)
+            
+            # Run backtest with parameters
+            backtest_results = self.run_backtest(param_dict)
+            
+            # Extract metrics from analyzers
+            sharpe_ratio = backtest_results.analyzers.sharpe.get_analysis().get('sharperatio', 0.0)
+            drawdown = backtest_results.analyzers.drawdown.get_analysis().get('max', {}).get('drawdown', 0.0)
+            returns = backtest_results.analyzers.returns.get_analysis().get('rtot', 0.0)
+            trades = backtest_results.analyzers.trades.get_analysis()
+            
+            # Calculate objective value (e.g., Sharpe ratio)
+            objective_value = sharpe_ratio if sharpe_ratio is not None else 0.0
+            
+            # Log results
+            self.log_message(
+                f"Parameters: {param_dict}, Objective: {objective_value:.4f}",
+                level="debug"
             )
-
-        return -metrics["net_profit"]
+            
+            return -objective_value  # Negative because we want to maximize
+            
+        except Exception as e:
+            self.log_message(f"Error in objective function: {str(e)}", level="error")
+            return 0.0  # Return worst possible value on error
 
     def _build_skopt_space_from_config(self, search_space_config):
         """
@@ -1017,12 +1046,13 @@ class BaseOptimizer:
     def optimize(self):
         """Run the optimization process."""
         try:
-            if self.optimization_method == "skopt":
+            opt_method = self.optimization_settings.get("optimization_method", "skopt")
+            if opt_method == "skopt":
                 self._run_bayesian_optimization()
-            elif self.optimization_method == "optuna":
+            elif opt_method == "optuna":
                 self._run_optuna_optimization()
             else:
-                raise ValueError(f"Unknown optimization method: {self.optimization_method}")
+                raise ValueError(f"Unknown optimization method: {opt_method}")
         except Exception as e:
             _logger.error(f"Optimization failed: {e}")
             if self.notifier:

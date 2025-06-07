@@ -26,7 +26,7 @@ import backtrader as bt
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from src.optimizer.base_optimizer import BaseOptimizer
-from src.strategy.rsi_bb_volume_strategy import RsiBollVolumeStrategy
+from src.strategy.rsi_bb_strategy import MeanReversionRsiBbStrategy
 
 
 class RsiBBVolumeOptimizer(BaseOptimizer):
@@ -48,17 +48,23 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         Args:
             config: Dictionary containing all optimizer parameters.
         """
+        # Call parent class initialization first
+        super().__init__(config)
+        
+        # Set optimizer-specific attributes
         self.data_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data"
         )
         self.results_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "results"
         )
-        self.strategy_name = "RsiBollVolumeStrategy"
-        self.strategy_class = RsiBollVolumeStrategy
-        super().__init__(config)
+        self.strategy_name = "MeanReversionRsiBbStrategy"
+        self.strategy_class = MeanReversionRsiBbStrategy
+        
+        # Create results directory
         os.makedirs(self.results_dir, exist_ok=True)
 
+        # Set visualization settings
         self.plot_size = config.get("plot_size", [15, 10])
         plt.style.use("dark_background")
         self.plot_style = config.get("plot_style", "default")
@@ -81,11 +87,13 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         self.report_params = config.get("report_params", True)
         self.report_filename_pattern = config.get("report_filename_pattern", None)
         self.include_plots_in_report = config.get("include_plots_in_report", True)
+        
+        # Set plot parameters
         plt.rcParams["figure.figsize"] = self.plot_size
         plt.rcParams["font.size"] = self.font_size
 
         # Read search space from config and convert to skopt space objects
-        self.space = super()._build_skopt_space_from_config(
+        self.space = self._build_skopt_space_from_config(
             config.get("search_space", [])
         )
         warnings.filterwarnings("ignore", category=UserWarning, module="skopt")
@@ -123,34 +131,28 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
             # TA-Lib indicators
             bb_high = bt.talib.BBANDS(
                 data["close"],
-                timeperiod=params["boll_period"],
-                nbdevup=params["boll_devfactor"],
-                nbdevdn=params["boll_devfactor"],
-            )[
-                0
-            ]  # Upper band
+                timeperiod=params["bb_period"],
+                nbdevup=params["bb_devfactor"],
+                nbdevdn=params["bb_devfactor"],
+            )[0]  # Upper band
             bb_mid = bt.talib.BBANDS(
                 data["close"],
-                timeperiod=params["boll_period"],
-                nbdevup=params["boll_devfactor"],
-                nbdevdn=params["boll_devfactor"],
-            )[
-                1
-            ]  # Middle band
+                timeperiod=params["bb_period"],
+                nbdevup=params["bb_devfactor"],
+                nbdevdn=params["bb_devfactor"],
+            )[1]  # Middle band
             bb_low = bt.talib.BBANDS(
                 data["close"],
-                timeperiod=params["boll_period"],
-                nbdevup=params["boll_devfactor"],
-                nbdevdn=params["boll_devfactor"],
-            )[
-                2
-            ]  # Lower band
+                timeperiod=params["bb_period"],
+                nbdevup=params["bb_devfactor"],
+                nbdevdn=params["bb_devfactor"],
+            )[2]  # Lower band
             rsi = bt.talib.RSI(data["close"], timeperiod=params["rsi_period"])
             vol_ma = bt.talib.SMA(data["volume"], timeperiod=params["vol_ma_period"])
         else:
             # Backtrader built-in indicators
             bb = bt.ind.BollingerBands(
-                period=params["boll_period"], devfactor=params["boll_devfactor"]
+                period=params["bb_period"], devfactor=params["bb_devfactor"]
             )
             bb_high = bb.lines.top
             bb_mid = bb.lines.mid
@@ -163,7 +165,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         ax1.plot(
             data.index,
             bb_high,
-            label=f'BB High ({params["boll_period"]}, {params["boll_devfactor"]})',
+            label=f'BB High ({params["bb_period"]}, {params["bb_devfactor"]})',
             color="red",
             alpha=0.7,
             linewidth=1,
@@ -171,7 +173,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         ax1.plot(
             data.index,
             bb_mid,
-            label=f'BB Mid ({params["boll_period"]})',
+            label=f'BB Mid ({params["bb_period"]})',
             color="yellow",
             alpha=0.7,
             linewidth=1,
@@ -179,7 +181,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         ax1.plot(
             data.index,
             bb_low,
-            label=f'BB Low ({params["boll_period"]}, {params["boll_devfactor"]})',
+            label=f'BB Low ({params["bb_period"]}, {params["bb_devfactor"]})',
             color="green",
             alpha=0.7,
             linewidth=1,

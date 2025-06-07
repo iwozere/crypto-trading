@@ -51,6 +51,7 @@ class BaseStrategy(bt.Strategy):
         Args:
             params (dict): Dictionary of strategy parameters
         """
+        super().__init__()  # Initialize bt.Strategy first
         self.params = params
         self.notify = params.get("notify", False)
         self.printlog = params.get("printlog", False)
