@@ -28,12 +28,12 @@ def generate_price_chart(ticker: str) -> bytes:
         ax.legend()
         ax.grid(True)
 
-        # Формат даты на оси X
+        # Date format on X axis
         ax.xaxis.set_major_locator(mdates.MonthLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
         fig.autofmt_xdate()
 
-        # Сохраняем в байты
+        # Save to bytes
         buf = io.BytesIO()
         plt.tight_layout()
         plt.savefig(buf, format="png")
