@@ -380,101 +380,66 @@ class BaseOptimizer:
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         return f"{strategy_name}_{symbol}_{interval}_{start_date}_{end_date}_{timestamp}{suffix}"
 
-    def save_results(self, data_file, best_params, metrics, trades_df, optimization_result=None, plot_path=None, strategy_name=None):
+    def save_results(self, study: optuna.Study, data_file: str) -> None:
         """
-        Unified method to save optimization results. Handles serialization, extra metrics, and logging.
+        Save optimization results to a JSON file.
+        Args:
+            study: Optuna study object containing optimization results
+            data_file: Name of the data file used for optimization
         """
         try:
-            self.log_message(f"\nSaving results for {data_file}...", level='info')
-            os.makedirs(self.results_dir, exist_ok=True)
-            # Calculate extra metrics if possible
-            sqn_pct = None
-            cagr = None
-            final_value = metrics.get('final_value') or metrics.get('portfolio_value')
-            if trades_df is not None and not trades_df.empty and final_value is not None:
-                try:
-                    sqn_pct = self.calculate_sqn_pct(trades_df)
-                    if 'entry_time' in trades_df.columns and 'exit_time' in trades_df.columns:
-                        trades_df = trades_df.dropna(subset=['entry_time', 'exit_time'])
-                        if not trades_df.empty:
-                            cagr = self.calculate_cagr(self.initial_capital, final_value, trades_df['entry_time'].iloc[0], trades_df['exit_time'].iloc[-1])
-                except Exception as e:
-                    self.log_message(f"Error calculating sqn_pct/cagr: {e}", level='error')
-            # Prepare trades log
-            trades_records = []
-            if trades_df is not None and not trades_df.empty:
-                for _, trade_row in trades_df.iterrows():
-                    trade_dict = {}
-                    for col in trades_df.columns:
-                        value = trade_row[col]
-                        if pd.isna(value): trade_dict[col] = None
-                        elif isinstance(value, (pd.Timestamp, datetime)): trade_dict[col] = value.isoformat()
-                        elif isinstance(value, (np.integer, np.floating, int, float)): trade_dict[col] = float(value)
-                        else: trade_dict[col] = str(value)
-                    trades_records.append(trade_dict)
-            # Prepare optimization history
-            optimization_history = []
-            if optimization_result is not None and hasattr(optimization_result, 'x_iters'):
-                for x_iter, score_iter in zip(optimization_result.x_iters, optimization_result.func_vals):
-                    try:
-                        param_dict_iter = self.params_to_dict(x_iter)
-                        optimization_history.append({'params': param_dict_iter, 'score': float(score_iter)})
-                    except Exception as e:
-                        self.log_message(f"Warning: Could not process optimization history entry: {e}", level='warning')
-                        continue
-            # Ensure all metrics are present and not None, and move all to metrics dict
-            metrics['sqn_pct'] = sqn_pct if sqn_pct is not None else 0.0
-            metrics['cagr'] = cagr if cagr is not None else 0.0
-            metrics['sortino_ratio'] = metrics.get('sortino_ratio', 0.0) or 0.0
-            metrics['calmar_ratio'] = metrics.get('calmar_ratio', 0.0) or 0.0
-            metrics['omega_ratio'] = metrics.get('omega_ratio', 0.0) or 0.0
-            metrics['rolling_sharpe'] = metrics.get('rolling_sharpe', []) or []
-            # Compose results dict
+            # Get best trial
+            best_trial = study.best_trial
+            
+            # Get exit logic configuration
+            exit_logic_config = self.config.get('exit_logic', {})
+            exit_logic_name = exit_logic_config.get('name', 'atr_exit')
+            exit_params_config = exit_logic_config.get('params', {})
+            
+            # Separate strategy, exit logic, and other parameters
+            strategy_params = {}
+            exit_params = {}
+            other_params = {}
+            
+            for param_name, param_value in best_trial.params.items():
+                if param_name in exit_params_config:
+                    exit_params[param_name] = param_value
+                elif param_name == 'notify':
+                    other_params[param_name] = param_value
+                else:
+                    strategy_params[param_name] = param_value
+            
+            # Create results dictionary
             results_dict = {
                 'version': '1.0.0',
                 'timestamp': datetime.now().isoformat(),
-                'strategy_name': strategy_name,
                 'data_file': data_file,
-                'best_params': best_params,
-                'metrics': metrics,
-                'plot_path': plot_path,
-                'trades': trades_records,
-                'optimization_history': optimization_history
+                'best_params': {
+                    'strategy': {
+                        'strategy_name': self.strategy_name,
+                        **strategy_params
+                    },
+                    'exit_logic': {
+                        'exit_logic_name': exit_logic_name,
+                        **exit_params
+                    },
+                    **other_params
+                },
+                'best_value': best_trial.value,
+                'optimization_time': self.optimization_time,
+                'n_trials': len(study.trials),
+                'optimization_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
-            # Extract symbol, interval, start and end date
-            symbol = getattr(self, 'current_symbol', 'SYMBOL')
-            interval = 'INTERVAL'
-            if '_' in data_file:
-                parts = data_file.replace('.csv','').split('_')
-                if len(parts) >= 2:
-                    symbol = parts[0]
-                    interval = parts[1]
-            if hasattr(self, 'current_data') and self.current_data is not None and not self.current_data.empty:
-                start_date = str(self.current_data.index.min())[:10]
-                end_date = str(self.current_data.index.max())[:10]
-            else:
-                start_date = 'STARTDATE'
-                end_date = 'ENDDATE'
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename_base = self.get_result_filename(data_file)
-            results_path = os.path.join(self.results_dir, f'{filename_base}.json')
-            self.log_message(f"Saving results to: {results_path}", level='info')
-            try:
-                json_str = json.dumps(results_dict, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-                with open(results_path, 'w') as f: f.write(json_str)
-            except Exception as e:
-                self.log_message(f"Error during JSON serialization: {e}. Trying to save simplified.", level='error')
-                simplified_dict = {k: v for k, v in results_dict.items() if k not in ['trades', 'optimization_history']}
-                simplified_dict['error_in_serialization'] = str(e)
-                json_str = json.dumps(simplified_dict, indent=4, cls=BaseOptimizer.DateTimeEncoder)
-                with open(results_path, 'w') as f: f.write(json_str)
-                self.log_message("Saved simplified results due to serialization error.", level='error')
-            self.log_message(f"Results saved to {results_path}", level='info')
-            return results_dict
+            
+            # Save to file
+            result_file = os.path.join(self.results_dir, self.get_result_filename(data_file))
+            with open(result_file, 'w') as f:
+                json.dump(results_dict, f, indent=4)
+            
+            self.log_message(f"Results saved to {result_file}")
+            
         except Exception as e:
-            self.log_message(f"Error in save_results: {str(e)}", level='error')
-            self.log_message(f"Full traceback: {traceback.format_exc()}", level='error')
-            return None 
+            self.log_message(f"Error saving results: {str(e)}", level='ERROR')
 
     def optimize_with_skopt(self, n_trials=100, n_random_starts=42, noise=0.01, n_jobs=-1, verbose=False):
         """
@@ -601,13 +566,8 @@ class BaseOptimizer:
             if hasattr(self, 'plot_results') and callable(self.plot_results):
                 plot_path = self.plot_results(self.current_data.copy(), trades_df, best_params, data_file)
             return self.save_results(
-                data_file=data_file,
-                best_params=best_params,
-                metrics=self.current_metrics,
-                trades_df=trades_df,
-                optimization_result=result,
-                plot_path=plot_path,
-                strategy_name=getattr(self, 'strategy_name', 'UnknownStrategy')
+                study=result,
+                data_file=data_file
             )
         except Exception as e:
             self.log_message(f"Error during optimization for {data_file}: {str(e)}", level='error')
@@ -714,41 +674,87 @@ class BaseOptimizer:
             self.log_message(traceback.format_exc(), level='error')
             return None
 
-    @lru_cache(maxsize=128)
-    def calculate_metrics(self, trades_df: pd.DataFrame, equity_curve: pd.Series = None) -> Dict[str, Any]:
+    @staticmethod
+    def calculate_metrics(trades_df: pd.DataFrame, equity_curve: pd.Series = None) -> Dict[str, Any]:
         """
-        Calculate and return all relevant metrics, including sortino_ratio, calmar_ratio, omega_ratio, etc.
+        Calculate performance metrics from trades DataFrame.
         Args:
-            trades_df: DataFrame of trades
-            equity_curve: Series of equity values (optional)
+            trades_df: DataFrame containing trade records
+            equity_curve: Optional Series containing equity curve values
         Returns:
-            Dictionary of metrics
+            Dictionary of calculated metrics
         """
-        metrics = {}
-        if trades_df is not None and not trades_df.empty:
-            # Calculate returns from trades
-            returns = trades_df['pnl_comm'] / trades_df['entry_price']
+        if trades_df is None or trades_df.empty:
+            return {}
+
+        try:
+            # Calculate basic metrics
+            total_trades = len(trades_df)
+            winning_trades = len(trades_df[trades_df['pnl_comm'] > 0])
+            losing_trades = len(trades_df[trades_df['pnl_comm'] <= 0])
             
-            # Calculate max drawdown from equity curve if available
-            if equity_curve is not None and not equity_curve.empty:
-                max_drawdown = (equity_curve / equity_curve.cummax() - 1).min()
+            win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+            
+            # Calculate profit metrics
+            gross_profit = trades_df[trades_df['pnl_comm'] > 0]['pnl_comm'].sum()
+            gross_loss = abs(trades_df[trades_df['pnl_comm'] <= 0]['pnl_comm'].sum())
+            net_profit = trades_df['pnl_comm'].sum()
+            
+            # Calculate risk metrics
+            profit_factor = abs(gross_profit / gross_loss) if gross_loss != 0 else float('inf')
+            
+            # Calculate drawdown
+            if 'equity' in trades_df.columns:
+                equity_curve = trades_df['equity']
+            elif equity_curve is not None:
+                equity_curve = equity_curve
             else:
-                max_drawdown = 0
-                
-            # Calculate essential metrics only
-            metrics['max_drawdown'] = max_drawdown
-            metrics['total_trades'] = len(trades_df)
-            metrics['win_rate'] = len(trades_df[trades_df['pnl_comm'] > 0]) / len(trades_df) * 100 if len(trades_df) > 0 else 0
-            metrics['net_profit'] = trades_df['pnl_comm'].sum()
-            metrics['profit_factor'] = abs(trades_df[trades_df['pnl_comm'] > 0]['pnl_comm'].sum() / trades_df[trades_df['pnl_comm'] < 0]['pnl_comm'].sum()) if len(trades_df[trades_df['pnl_comm'] < 0]) > 0 else float('inf')
-        else:
-            metrics['max_drawdown'] = 0
-            metrics['total_trades'] = 0
-            metrics['win_rate'] = 0
-            metrics['net_profit'] = 0
-            metrics['profit_factor'] = 0
+                equity_curve = (1 + trades_df['pnl_comm']).cumprod()
             
-        return metrics
+            rolling_max = equity_curve.expanding().max()
+            drawdown = (equity_curve - rolling_max) / rolling_max * 100
+            max_drawdown = abs(drawdown.min())
+            
+            # Calculate return metrics
+            if 'entry_time' in trades_df.columns and 'exit_time' in trades_df.columns:
+                start_date = trades_df['entry_time'].min()
+                end_date = trades_df['exit_time'].max()
+                days = (end_date - start_date).days
+                if days > 0:
+                    cagr = ((1 + net_profit) ** (365 / days)) - 1
+                else:
+                    cagr = 0
+            else:
+                cagr = 0
+            
+            # Calculate risk-adjusted return metrics
+            returns = trades_df['pnl_comm']
+            if len(returns) > 1:
+                sharpe_ratio = returns.mean() / returns.std() * np.sqrt(252) if returns.std() != 0 else 0
+                sortino_ratio = returns.mean() / returns[returns < 0].std() * np.sqrt(252) if len(returns[returns < 0]) > 0 else 0
+                calmar_ratio = cagr / max_drawdown if max_drawdown != 0 else 0
+            else:
+                sharpe_ratio = sortino_ratio = calmar_ratio = 0
+            
+            return {
+                'total_trades': total_trades,
+                'winning_trades': winning_trades,
+                'losing_trades': losing_trades,
+                'win_rate': win_rate,
+                'gross_profit': gross_profit,
+                'gross_loss': gross_loss,
+                'net_profit': net_profit,
+                'profit_factor': profit_factor,
+                'max_drawdown': max_drawdown,
+                'cagr': cagr,
+                'sharpe_ratio': sharpe_ratio,
+                'sortino_ratio': sortino_ratio,
+                'calmar_ratio': calmar_ratio
+            }
+            
+        except Exception as e:
+            print(f"Error calculating metrics: {str(e)}")
+            return {}
 
     def objective(self, params):
         """
@@ -788,13 +794,8 @@ class BaseOptimizer:
             # Calculate additional metrics only for saving results
             full_metrics = self.calculate_metrics(trades_df)
             self.save_results(
-                data_file=self.current_data_file,
-                best_params=param_dict,
-                metrics=full_metrics,
-                trades_df=trades_df,
-                optimization_result=self.optimization_result,
-                plot_path=self.plot_path,
-                strategy_name=self.strategy_name
+                study=self.optimization_result,
+                data_file=self.current_data_file
             )
             
         return -metrics['net_profit']
