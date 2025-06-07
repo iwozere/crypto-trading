@@ -1,5 +1,5 @@
 """
-RSI BB ATR Optimizer Module
+RSI BB Optimizer Module
 --------------------------
 
 This module implements the optimizer for the MeanReversionRsiBbStrategy. It uses Bayesian optimization to tune parameters for mean-reversion strategies that combine Bollinger Bands, RSI, and ATR. The optimizer supports backtesting, result plotting, and metrics reporting for robust parameter selection.
@@ -11,7 +11,7 @@ Main Features:
 - Designed for use with MeanReversionRsiBbStrategy
 
 Classes:
-- RsiBbAtrOptimizer: Optimizer for the MeanReversionRsiBbStrategy
+- RsiBbOptimizer: Optimizer for the MeanReversionRsiBbStrategy
 """
 import os
 import sys
@@ -31,7 +31,7 @@ from typing import Any, Dict, Optional
 import datetime
 import json
 
-class RsiBbAtrOptimizer(BaseOptimizer):
+class RsiBbOptimizer(BaseOptimizer):
     """
     Optimizer for the MeanReversionRsiBbStrategy.
     
@@ -164,7 +164,7 @@ class RsiBbAtrOptimizer(BaseOptimizer):
         return plot_path
 
 if __name__ == "__main__":
-    with open("config/optimizer/rsi_bb_atr_optimizer.json") as f:
+    with open("config/optimizer/rsi_bb_optimizer.json") as f:
         config = json.load(f)
-    optimizer = RsiBbAtrOptimizer(config)
+    optimizer = RsiBbOptimizer(config)
     optimizer.run_optimization()

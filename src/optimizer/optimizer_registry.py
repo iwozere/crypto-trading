@@ -11,7 +11,7 @@ sys.path.append(project_root)
 from src.optimizer.rsi_bb_volume_optimizer import RsiBBVolumeOptimizer
 from src.optimizer.bb_volume_supertrend_optimizer import BBSuperTrendVolumeBreakoutOptimizer
 from src.optimizer.ichimoku_rsi_atr_volume_optimizer import IchimokuRSIATRVolumeOptimizer
-from src.optimizer.rsi_bb_atr_optimizer import MeanReversionRSBBATROptimizer
+from src.optimizer.rsi_bb_optimizer import MeanReversionRSBBATROptimizer
 from src.optimizer.rsi_volume_supertrend_optimizer import RsiVolumeSuperTrendOptimizer
 
 
