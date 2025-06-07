@@ -1,49 +1,44 @@
-import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
 import backtrader as bt
-import pandas as pd
-import numpy as np
-from src.indicator.super_trend import SuperTrend
 from src.strategy.base_strategy import BaseStrategy, get_exit_class
 import datetime
 from typing import Any, Dict, Optional
 
 """
-RSI Volume SuperTrend Strategy Module
------------------------------------
+Ichimoku RSI Volume Strategy Module
+----------------------------------
 
-This module implements a trend-following trading strategy using SuperTrend, RSI, and Volume indicators with pluggable exit logic. The strategy is designed for use with Backtrader and can be used for both backtesting and live trading.
+This module implements a trend-following trading strategy using Ichimoku Cloud, RSI, and Volume indicators with pluggable exit logic. The strategy is designed for use with Backtrader and can be used for both backtesting and live trading.
 
 Main Features:
-- Entry and exit signals based on SuperTrend, RSI, and Volume
+- Entry and exit signals based on Ichimoku Cloud, RSI, and Volume
 - Pluggable exit logic system for flexible position management
 - Designed for use with Backtrader and compatible with other trading frameworks
 
 Classes:
-- RsiVolumeSuperTrendStrategy: Main strategy class implementing the logic
+- IchimokuRsiVolumeStrategy: Main strategy class implementing the logic
 """
 
-class RsiVolumeSuperTrendStrategy(BaseStrategy):
+class IchimokuRsiVolumeStrategy(BaseStrategy):
     """
-    Trend-following strategy using SuperTrend, RSI, Volume, and pluggable exit logic.
+    Trend-following strategy using Ichimoku Cloud, RSI, Volume, and pluggable exit logic.
     Accepts a single params/config dictionary.
 
     Indicators:
-    - SuperTrend: Determines trend direction and strength
-    - RSI: Identifies pullback entries in the trend direction
+    - Ichimoku Cloud: Determines trend direction and support/resistance levels
+    - RSI: Identifies momentum and potential reversals
     - Volume: Confirms entry and exit signals
 
     Entry Logic:
     - Long:
-        - SuperTrend is bullish (green)
-        - RSI pulls back to oversold level
-        - Volume confirms the entry
+        - Price above Ichimoku Cloud
+        - Tenkan-sen crosses above Kijun-sen
+        - RSI above entry level
+        - Volume above its moving average
     - Short:
-        - SuperTrend is bearish (red)
-        - RSI rallies to overbought level
-        - Volume confirms the entry
+        - Price below Ichimoku Cloud
+        - Tenkan-sen crosses below Kijun-sen
+        - RSI below entry level
+        - Volume above its moving average
 
     Exit Logic:
     - Pluggable exit logic system with multiple options:
@@ -52,6 +47,17 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
         - Moving average crossover (ma_crossover_exit): Exits on MA crossovers
         - Time-based exits (time_based_exit): Exits after a fixed number of bars
         - Trailing stop exits (trailing_stop_exit): Uses trailing stop loss
+
+    Parameters:
+        tenkan_period (int): Period for Tenkan-sen calculation (default: 9)
+        kijun_period (int): Period for Kijun-sen calculation (default: 26)
+        senkou_span_b_period (int): Period for Senkou Span B calculation (default: 52)
+        rsi_period (int): Period for RSI calculation (default: 14)
+        rsi_entry (float): RSI entry threshold (default: 50)
+        vol_ma_period (int): Period for Volume Moving Average (default: 20)
+        exit_logic_name (str): Name of the exit logic to use (default: 'atr_exit')
+        exit_params (dict): Parameters for the selected exit logic
+        printlog (bool): Whether to print trade logs (default: False)
     """
     def __init__(self, params: dict):
         super().__init__(params)
@@ -61,6 +67,9 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
         # Initialize indicators based on use_talib flag
         if use_talib:
             # TA-Lib indicators
+            self.tenkan = bt.talib.SMA(self.data.close, timeperiod=self.params['tenkan_period'])
+            self.kijun = bt.talib.SMA(self.data.close, timeperiod=self.params['kijun_period'])
+            self.senkou_span_b = bt.talib.SMA(self.data.close, timeperiod=self.params['senkou_span_b_period'])
             self.rsi = bt.talib.RSI(self.data.close, timeperiod=self.params['rsi_period'])
             self.atr = bt.talib.ATR(
                 self.data.high,
@@ -71,16 +80,12 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
             self.vol_ma = bt.talib.SMA(self.data.volume, timeperiod=self.params['vol_ma_period'])
         else:
             # Backtrader built-in indicators
+            self.tenkan = bt.ind.SMA(self.data.close, period=self.params['tenkan_period'])
+            self.kijun = bt.ind.SMA(self.data.close, period=self.params['kijun_period'])
+            self.senkou_span_b = bt.ind.SMA(self.data.close, period=self.params['senkou_span_b_period'])
             self.rsi = bt.ind.RSI(period=self.params['rsi_period'])
             self.atr = bt.ind.ATR(period=self.params['atr_period'])
             self.vol_ma = bt.ind.SMA(self.data.volume, period=self.params['vol_ma_period'])
-        
-        # Initialize SuperTrend
-        self.st = SuperTrend(params={
-            'period': self.params['st_period'],
-            'multiplier': self.params['st_multiplier'],
-            'use_talib': use_talib
-        })
         
         # Initialize exit logic
         exit_logic_name = self.params.get('exit_logic_name', 'atr_exit')
@@ -92,6 +97,7 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
         self.entry_price = None
         self.highest_price = None
         self.current_trade = None
+        self.position_type = None
         self.last_exit_reason = None
 
     def notify_order(self, order):
@@ -102,6 +108,7 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                 self.log(f'BUY EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
                 self.entry_price = order.executed.price
                 self.highest_price = self.entry_price
+                self.position_type = 'long'
                 
                 # Initialize exit logic with entry price and ATR
                 atr_value = self.atr[0]
@@ -113,6 +120,7 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                 if self.position.size == 0:
                     self.entry_price = None
                     self.highest_price = None
+                    self.position_type = None
                     if self.current_trade:
                         self.current_trade['exit_price'] = order.executed.price
                         self.current_trade['exit_time'] = self.data.datetime.datetime(0)
@@ -125,6 +133,7 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
             if not self.position:
                 self.entry_price = None
                 self.highest_price = None
+                self.position_type = None
         self.order = None
 
     def next(self):
@@ -132,32 +141,41 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
             return
         close = self.data.close[0]
         volume = self.data.volume[0]
-        rsi_val = self.rsi[0]
-        prev_rsi_val = self.rsi[-1] if len(self.rsi) > 1 else rsi_val
-        st_direction = self.st.lines.direction[0]
-        st_value = self.st.lines.supertrend[0]
-        vol_ma_val = self.vol_ma[0]
-        atr_val = self.atr[0]
+        tenkan = self.tenkan[0]
+        kijun = self.kijun[0]
+        senkou_span_b = self.senkou_span_b[0]
+        rsi = self.rsi[0]
+        atr = self.atr[0]
+        vol_ma = self.vol_ma[0]
+        
+        # Calculate Ichimoku Cloud levels
+        senkou_span_a = (tenkan + kijun) / 2
+        cloud_top = max(senkou_span_a, senkou_span_b)
+        cloud_bot = min(senkou_span_a, senkou_span_b)
         
         if not self.position:
             # Entry Logic
-            if (st_direction == 1 and
-                prev_rsi_val < self.params['rsi_entry_long_level'] and
-                rsi_val > prev_rsi_val and
-                volume > vol_ma_val):
+            if (close > cloud_top and
+                tenkan > kijun and
+                rsi > self.params['rsi_entry'] and
+                volume > vol_ma):
                 
-                self.log(f'LONG ENTRY SIGNAL: ST Direction: {st_direction}, RSI {rsi_val:.2f} > {prev_rsi_val:.2f}, Volume {volume:.2f} > MA {vol_ma_val:.2f}')
+                self.log(f'LONG ENTRY SIGNAL: Close {close:.2f} > Cloud Top {cloud_top:.2f}, RSI {rsi:.2f} > {self.params["rsi_entry"]}, Volume {volume:.2f} > MA {vol_ma:.2f}')
                 
                 # Record trade details
                 self.current_trade = {
                     'entry_time': self.data.datetime.datetime(0),
                     'entry_price': 'pending_long',
-                    'atr_at_entry': atr_val,
-                    'rsi_at_entry': rsi_val,
+                    'atr_at_entry': atr,
+                    'rsi_at_entry': rsi,
                     'volume_at_entry': volume,
-                    'vol_ma_at_entry': vol_ma_val,
-                    'supertrend_val_at_entry': st_value,
-                    'supertrend_dir_at_entry': st_direction,
+                    'vol_ma_at_entry': vol_ma,
+                    'tenkan_at_entry': tenkan,
+                    'kijun_at_entry': kijun,
+                    'senkou_a_at_entry': senkou_span_a,
+                    'senkou_b_at_entry': senkou_span_b,
+                    'cloud_top_at_entry': cloud_top,
+                    'cloud_bot_at_entry': cloud_bot,
                     'type': 'long'
                 }
                 
@@ -168,7 +186,7 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                 self.highest_price = max(self.highest_price, close)
                 
                 # Check exit conditions using the configured exit logic
-                exit_signal, exit_reason = self.exit_logic.check_exit(close, self.highest_price, atr_val)
+                exit_signal, exit_reason = self.exit_logic.check_exit(close, self.highest_price, atr)
                 
                 if exit_signal:
                     self.last_exit_reason = exit_reason
@@ -179,10 +197,14 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                             'exit_time': self.data.datetime.datetime(0),
                             'exit_price': close,
                             'exit_reason': exit_reason,
-                            'atr_at_exit': atr_val,
-                            'rsi_at_exit': rsi_val,
+                            'atr_at_exit': atr,
+                            'rsi_at_exit': rsi,
                             'volume_at_exit': volume,
-                            'vol_ma_at_exit': vol_ma_val,
-                            'supertrend_val_at_exit': st_value,
-                            'supertrend_dir_at_exit': st_direction
-                        })
+                            'vol_ma_at_exit': vol_ma,
+                            'tenkan_at_exit': tenkan,
+                            'kijun_at_exit': kijun,
+                            'senkou_a_at_exit': senkou_span_a,
+                            'senkou_b_at_exit': senkou_span_b,
+                            'cloud_top_at_exit': cloud_top,
+                            'cloud_bot_at_exit': cloud_bot
+                        }) 

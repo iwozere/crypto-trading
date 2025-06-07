@@ -5,17 +5,17 @@ Central registry for all available trading strategy classes, with metadata.
 Allows dynamic lookup and instantiation by name, and provides descriptions and default parameters.
 """
 
-from src.strategy.rsi_bb_atr_strategy import MeanReversionRSBBATRStrategy
-from src.strategy.rsi_bb_volume_strategy import RSIBollVolumeATRStrategy
+from src.strategy.rsi_bb_strategy import MeanReversionRsiBbStrategy
+from src.strategy.rsi_bb_volume_strategy import RsiBollVolumeStrategy
 from src.strategy.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
 from src.strategy.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
-from src.strategy.ichimoku_rsi_atr_volume_strategy import IchimokuRSIATRVolumeStrategy
+from src.strategy.ichimoku_rsi_volume_strategy import IchimokuRsiVolumeStrategy
 from src.strategy.liquidity_momentum_strategy import LiquidityMomentumStrategy
 
 STRATEGY_REGISTRY = {
-    "rsi_bb_atr": {
-        "class": MeanReversionRSBBATRStrategy,
-        "description": "RSI + Bollinger Bands + ATR mean reversion strategy for ranging/sideways markets.",
+    "rsi_bb": {
+        "class": MeanReversionRsiBbStrategy,
+        "description": "RSI + Bollinger Bands mean reversion strategy for ranging/sideways markets.",
         "default_params": {
             "bb_period": 20,
             "bb_devfactor": 2.0,
@@ -33,16 +33,13 @@ STRATEGY_REGISTRY = {
         }
     },
     "rsi_bb_volume": {
-        "class": RSIBollVolumeATRStrategy,
-        "description": "RSI + Bollinger Bands + Volume mean reversion strategy with ATR-based position management.",
+        "class": RsiBollVolumeStrategy,
+        "description": "RSI + Bollinger Bands + Volume mean reversion strategy with pluggable exit logic.",
         "default_params": {
             "rsi_period": 14,
             "boll_period": 20,
             "boll_devfactor": 2.0,
-            "atr_period": 14,
             "vol_ma_period": 20,
-            "tp_atr_mult": 2.0,
-            "sl_atr_mult": 1.5,
             "rsi_oversold": 30,
             "rsi_overbought": 70,
             "printlog": False,
@@ -86,9 +83,9 @@ STRATEGY_REGISTRY = {
             "notify": False
         }
     },
-    "ichimoku_rsi_atr_volume": {
-        "class": IchimokuRSIATRVolumeStrategy,
-        "description": "Ichimoku Cloud + RSI + ATR + Volume strategy for trend and volume confirmation.",
+    "ichimoku_rsi_volume": {
+        "class": IchimokuRsiVolumeStrategy,
+        "description": "Ichimoku Cloud + RSI + Volume strategy for trend and volume confirmation.",
         "default_params": {
             "tenkan_period": 9,
             "kijun_period": 26,
@@ -104,12 +101,11 @@ STRATEGY_REGISTRY = {
     },
     "liquidity_momentum": {
         "class": LiquidityMomentumStrategy,
-        "description": "Strategy combining liquidity ratio and momentum indicators for trading signals.",
+        "description": "Momentum-based strategy using volume profile and liquidity analysis.",
         "default_params": {
-            "buy_thresh": 0.5,
-            "sell_thresh": -0.5,
-            "lookback_period": 252,
-            "momentum_periods": [5, 10, 20],
+            "atr_period": 14,
+            "vol_ma_period": 20,
+            "volume_threshold": 1.5,
             "printlog": False,
             "notify": False
         }

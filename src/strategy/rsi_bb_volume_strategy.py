@@ -6,29 +6,20 @@ import backtrader as bt
 import pandas as pd
 import numpy as np
 from src.notification.telegram_notifier import create_notifier
-from src.strategy.base_strategy import BaseStrategy
-from src.exit.exit_registry import get_exit_class
+from src.strategy.base_strategy import BaseStrategy, get_exit_class
 import datetime
 from typing import Any, Dict, Optional
 
 """
-RSI Bollinger Bands Volume Strategy Module
------------------------------------------
-
-This module implements a mean reversion trading strategy that combines RSI, Bollinger Bands, and Volume indicators with ATR-based position management. The strategy is designed for use with Backtrader and can be used for both backtesting and live trading. It provides entry and exit logic, position management, and trade recording.
-
-Main Features:
-- Entry and exit signals based on RSI, Bollinger Bands, Volume, and ATR
-- Position and risk management using ATR-based take profit and trailing stop loss
-- Designed for use with Backtrader and compatible with other trading frameworks
-
-Classes:
-- RSIBollVolumeATRStrategy: Main strategy class implementing the logic
+RSI + Bollinger Bands + Volume Strategy Module
+---------------------------------------------
+Implements a mean reversion strategy using RSI, Bollinger Bands, and Volume indicators.
+Uses pluggable exit logic for position management.
 """
 
-class RSIBollVolumeATRStrategy(BaseStrategy):
+class RsiBollVolumeStrategy(BaseStrategy):
     """
-    A mean reversion strategy that combines RSI, Bollinger Bands, and Volume indicators with ATR-based position management.
+    A mean reversion strategy that combines RSI, Bollinger Bands, and Volume indicators with pluggable exit logic.
     
     Strategy Logic:
     1. Entry Conditions:
@@ -39,21 +30,25 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
        - Previous position was closed
     
     2. Position Management:
-       - Uses configured exit logic for take profit and stop loss
+       - Uses configured exit logic for position management
        - Position Size: 10% of portfolio value
     
-    3. Exit Conditions:
-       - Based on configured exit logic (ATR, Fixed SL/TP, MA Crossover, Time Based, or Trailing Stop)
+    3. Exit Logic:
+       - Pluggable exit logic system with multiple options:
+         - ATR-based exits (atr_exit): Uses ATR for dynamic take profit and stop loss
+         - Fixed take profit/stop loss (fixed_tp_sl_exit): Uses fixed price levels
+         - Moving average crossover (ma_crossover_exit): Exits on MA crossovers
+         - Time-based exits (time_based_exit): Exits after a fixed number of bars
+         - Trailing stop exits (trailing_stop_exit): Uses trailing stop loss
     
     Parameters:
         rsi_period (int): Period for RSI calculation (default: 14)
         boll_period (int): Period for Bollinger Bands (default: 20)
         boll_devfactor (float): Standard deviation multiplier for Bollinger Bands (default: 2.0)
-        atr_period (int): Period for ATR calculation (default: 14)
         vol_ma_period (int): Period for Volume Moving Average (default: 20)
         rsi_oversold (float): RSI oversold threshold (default: 30)
         rsi_overbought (float): RSI overbought threshold (default: 70)
-        exit_logic_name (str): Name of the exit logic to use
+        exit_logic_name (str): Name of the exit logic to use (default: 'atr_exit')
         exit_params (dict): Parameters for the selected exit logic
         printlog (bool): Whether to print trade logs (default: False)
     
@@ -85,12 +80,6 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                 nbdevup=self.params['boll_devfactor'],
                 nbdevdn=self.params['boll_devfactor']
             )
-            self.atr = bt.talib.ATR(
-                self.data.high,
-                self.data.low,
-                self.data.close,
-                timeperiod=self.params['atr_period']
-            )
             self.vol_ma = bt.talib.SMA(self.data.volume, timeperiod=self.params['vol_ma_period'])
         else:
             # Backtrader built-in indicators
@@ -99,7 +88,6 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                 period=self.params['boll_period'],
                 devfactor=self.params['boll_devfactor']
             )
-            self.atr = bt.ind.ATR(period=self.params['atr_period'])
             self.vol_ma = bt.ind.SMA(self.data.volume, period=self.params['vol_ma_period'])
         
         # Initialize exit logic
@@ -123,6 +111,9 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                 self.entry_price = order.executed.price
                 self.highest_price = order.executed.price
                 self.last_order_type = 'buy'
+                
+                # Initialize exit logic with entry price
+                self.exit_logic.initialize(self.entry_price)
             else:
                 self.position_closed = True
                 self.last_order_type = 'sell'
@@ -147,7 +138,6 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
             bb_mid = self.boll.lines.mid[0]
             bb_high = self.boll.lines.top[0]
             
-        atr_value = self.atr[0]
         vol_ma_value = self.vol_ma[0]
         volume = self.data.volume[0]
         close = self.data.close[0]
@@ -161,13 +151,12 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
                 self.entry_price = close
                 self.highest_price = self.entry_price
                 
-                # Initialize exit logic with entry price and ATR
-                self.exit_logic.initialize(self.entry_price, atr_value)
+                # Initialize exit logic with entry price
+                self.exit_logic.initialize(self.entry_price)
                 
                 self.current_trade = {
                     'entry_time': self.data.datetime.datetime(0),
                     'entry_price': self.entry_price,
-                    'atr_at_entry': atr_value,
                     'rsi_at_entry': rsi_value,
                     'volume_at_entry': volume,
                     'vol_ma_at_entry': vol_ma_value,
@@ -188,16 +177,16 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
             self.highest_price = max(self.highest_price, close)
             
             # Check exit conditions using the configured exit logic
-            exit_signal, exit_reason = self.exit_logic.check_exit(close, self.highest_price, atr_value)
+            exit_signal, exit_reason = self.exit_logic.check_exit(close, self.highest_price)
             
             if exit_signal:
                 self.last_exit_reason = exit_reason
                 self.order = self.close()
                 self.log(f'SELL CREATE {exit_reason} @ {close:.2f}')
                 if self.current_trade:
-                    self._record_trade_exit(close, exit_reason, atr_value, rsi_value, volume, vol_ma_value, bb_low, bb_mid, bb_high)
+                    self._record_trade_exit(close, exit_reason, rsi_value, volume, vol_ma_value, bb_low, bb_mid, bb_high)
 
-    def _record_trade_exit(self, close, exit_type, atr_value, rsi_value, volume, vol_ma_value, bb_low, bb_mid, bb_high):
+    def _record_trade_exit(self, close, exit_type, rsi_value, volume, vol_ma_value, bb_low, bb_mid, bb_high):
         """Helper method to record trade exit details"""
         self.current_trade.update({
             'exit_time': self.data.datetime.datetime(0),
@@ -205,7 +194,6 @@ class RSIBollVolumeATRStrategy(BaseStrategy):
             'exit_type': exit_type,
             'exit_reason': self.last_exit_reason,
             'pnl': (close - self.entry_price) / self.entry_price * 100,
-            'atr_at_exit': atr_value,
             'rsi_at_exit': rsi_value,
             'volume_at_exit': volume,
             'vol_ma_at_exit': vol_ma_value,

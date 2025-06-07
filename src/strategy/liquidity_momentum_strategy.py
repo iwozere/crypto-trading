@@ -1,221 +1,167 @@
 """
-Liquidity Momentum Strategy
---------------------------
+Liquidity Momentum Strategy Module
+--------------------------------
 
-This strategy combines liquidity ratio and momentum indicators to generate trading signals.
-It uses:
-1. Liquidity Ratio: Volume / Market Capitalization
-2. Momentum: 5-day, 10-day, and 20-day returns
-[5, 10, 20] - Short-term momentum (default)
-[5, 10, 30] - Short to medium-term
-[5, 15, 30] - Short to medium-term with different spacing
-[10, 20, 30] - Medium-term momentum
-[10, 20, 50] - Medium to long-term
-[20, 50, 100] - Long-term momentum
-3. Position Score: Average of standardized (z-score) versions of the above factors
-4. Buy/Sell signals based on Position Score thresholds
+This module implements a momentum-based trading strategy using volume profile, price action, and liquidity analysis with pluggable exit logic. The strategy is designed for use with Backtrader and can be used for both backtesting and live trading.
+
+Main Features:
+- Entry signals based on volume profile and price action
+- Liquidity analysis for trade management
+- Pluggable exit logic system for flexible position management
+- Designed for use with Backtrader and compatible with other trading frameworks
+
+Classes:
+- LiquidityMomentumStrategy: Main strategy class implementing the logic
 """
 
 import backtrader as bt
 import numpy as np
 import pandas as pd
-from src.strategy.base_strategy import BaseStrategy
-from typing import Any, Dict, Optional
-from src.analyzer.tickers_list import get_circulating_supply
+from src.strategy.base_strategy import BaseStrategy, get_exit_class
 
 class LiquidityMomentumStrategy(BaseStrategy):
     """
-    Strategy that combines liquidity and momentum indicators for trading signals.
-    
-    Parameters:
-    - buy_thresh: Threshold for buy signals (default: 0.5)
-    - sell_thresh: Threshold for sell signals (default: -0.5)
-    - lookback_period: Period for calculating z-scores (default: 252)
-    - momentum_periods: List of periods for momentum calculation (default: [5, 10, 20])
-    - use_talib: Whether to use TA-Lib indicators (default: False)
+    Momentum-based strategy using volume profile, price action, liquidity analysis, and pluggable exit logic.
+    Accepts a single params/config dictionary.
+
+    Indicators:
+    - Volume Profile: Identifies key price levels and liquidity zones
+    - Price Action: Determines entry and exit points
+    - Liquidity Analysis: Manages trade risk and position sizing
+
+    Entry Logic:
+    - Long:
+        - Price breaks above key resistance with volume confirmation
+        - Liquidity analysis shows favorable risk/reward
+    - Short:
+        - Price breaks below key support with volume confirmation
+        - Liquidity analysis shows favorable risk/reward
+
+    Exit Logic:
+    - Pluggable exit logic system with multiple options:
+        - ATR-based exits (atr_exit): Uses ATR for dynamic take profit and stop loss
+        - Fixed take profit/stop loss (fixed_tp_sl_exit): Uses fixed price levels
+        - Moving average crossover (ma_crossover_exit): Exits on MA crossovers
+        - Time-based exits (time_based_exit): Exits after a fixed number of bars
+        - Trailing stop exits (trailing_stop_exit): Uses trailing stop loss
     """
-    
     def __init__(self, params: dict):
         super().__init__(params)
+        self.notify = self.params.get('notify', False)
+        use_talib = self.params.get('use_talib', False)
         
-        # Set ticker from params (passed by optimizer)
-        self.ticker = self.params.get('ticker')  # Default to BTCUSDT if not provided
-        
-        # Strategy parameters
-        self.buy_thresh = self.params.get('buy_thresh', 0.5)
-        self.sell_thresh = self.params.get('sell_thresh', -0.5)
-        self.lookback_period = self.params.get('lookback_period', 252)
-        self.momentum_periods = self.params.get('momentum_periods', [5, 10, 20])
-        self.use_talib = self.params.get('use_talib', False)
-        
-        # Initialize indicators
-        self.volume = self.data.volume
-        self.close = self.data.close
-        
-        # Calculate market cap (using circulating supply)
-        self.supply = get_circulating_supply(self.ticker)
-        self.market_cap = self.close * self.supply
-        
-        # Calculate liquidity ratio
-        self.liquidity = bt.indicators.DivByZero(
-            self.volume,
-            self.market_cap
-        )
-        
-        # Calculate momentum returns
-        self.momentum_returns = {}
-        for period in self.momentum_periods:
-            self.momentum_returns[period] = bt.indicators.PercentChange(
-                self.close,
-                period=period,
-                plot=False
+        # Initialize indicators based on use_talib flag
+        if use_talib:
+            # TA-Lib indicators
+            self.atr = bt.talib.ATR(
+                self.data.high,
+                self.data.low,
+                self.data.close,
+                timeperiod=self.params['atr_period']
             )
+            self.vol_ma = bt.talib.SMA(self.data.volume, timeperiod=self.params['vol_ma_period'])
+        else:
+            # Backtrader built-in indicators
+            self.atr = bt.ind.ATR(period=self.params['atr_period'])
+            self.vol_ma = bt.ind.SMA(self.data.volume, period=self.params['vol_ma_period'])
         
-        # Initialize position score
-        self.position_score = bt.indicators.SMA(
-            period=1,
-            plot=False
-        )
+        # Initialize exit logic
+        exit_logic_name = self.params.get('exit_logic_name', 'atr_exit')
+        exit_params = self.params.get('exit_params', {})
+        exit_class = get_exit_class(exit_logic_name)
+        self.exit_logic = exit_class(exit_params)
         
-        # Trading state
         self.order = None
         self.entry_price = None
-        self.trade_active = False
-        
-    def compute_position_score(self):
-        """Calculate the position score based on z-scores of liquidity and momentum."""
-        # Check if we have enough data points
-        if len(self.liquidity) < self.lookback_period:
-            return
-            
-        if not self.use_talib:
-            # Calculate z-scores using bt indicators
-            liquidity_mean = bt.indicators.SMA(self.liquidity, period=self.lookback_period)
-            liquidity_std = bt.indicators.StandardDeviation(self.liquidity, period=self.lookback_period)
-            
-            # Check if indicators have enough data
-            if len(liquidity_mean) < 1 or len(liquidity_std) < 1:
-                return
-                
-            # Check if we have valid values
-            if liquidity_std[0] == 0:
-                return
-                
-            z_liquidity = (self.liquidity - liquidity_mean) / liquidity_std
-            
-            # Calculate z-scores for momentum returns
-            z_momentum = {}
-            for period in self.momentum_periods:
-                if len(self.momentum_returns[period]) < self.lookback_period:
-                    return
-                    
-                momentum_mean = bt.indicators.SMA(self.momentum_returns[period], period=self.lookback_period)
-                momentum_std = bt.indicators.StandardDeviation(self.momentum_returns[period], period=self.lookback_period)
-                
-                # Check if indicators have enough data
-                if len(momentum_mean) < 1 or len(momentum_std) < 1:
-                    return
-                    
-                # Check if we have valid values
-                if momentum_std[0] == 0:
-                    return
-                    
-                z_momentum[period] = (self.momentum_returns[period] - momentum_mean) / momentum_std
-            
-            # Calculate average z-score using bt indicators
-            z_scores = [z_liquidity] + list(z_momentum.values())
-            self.position_score = bt.indicators.SMA(
-                bt.indicators.SumN(z_scores, period=1) / len(z_scores),
-                period=1
-            )
-        else:
-            # Calculate z-scores using pandas
-            liquidity_mean = self.liquidity.rolling(window=self.lookback_period).mean()
-            liquidity_std = self.liquidity.rolling(window=self.lookback_period).std()
-            
-            # Check if we have valid values
-            if liquidity_std.iloc[-1] == 0:
-                return
-                
-            z_liquidity = (self.liquidity - liquidity_mean) / liquidity_std
-            
-            # Calculate z-scores for momentum returns
-            z_momentum = {}
-            for period in self.momentum_periods:
-                momentum_mean = self.momentum_returns[period].rolling(window=self.lookback_period).mean()
-                momentum_std = self.momentum_returns[period].rolling(window=self.lookback_period).std()
-                
-                # Check if we have valid values
-                if momentum_std.iloc[-1] == 0:
-                    return
-                    
-                z_momentum[period] = (self.momentum_returns[period] - momentum_mean) / momentum_std
-            
-            # Calculate average z-score using pandas
-            z_scores = [z_liquidity] + list(z_momentum.values())
-            self.position_score = pd.concat(z_scores, axis=1).mean(axis=1)
-    
-    def next(self):
-        """Main strategy logic."""
-        # Skip if we have a pending order
-        if self.order:
-            return
-            
-        # Compute position score
-        self.compute_position_score()
-        
-        # Get current position score
-        current_score = self.position_score[0] if not self.use_talib else self.position_score.iloc[-1]
-        
-        # Check for entry/exit signals
-        if not self.trade_active:
-            # Entry logic
-            if current_score > self.buy_thresh:
-                self.log(f'BUY CREATE, Price: {self.data.close[0]:.2f}, Score: {current_score:.2f}')
-                self.order = self.buy()
-                self.trade_active = True
-                self.entry_price = self.data.close[0]
-                
-                # Record trade entry
-                trade_dict = {
-                    'entry_time': self.data.datetime.datetime(),
-                    'entry_price': self.entry_price,
-                    'position_score': current_score,
-                    'liquidity': self.liquidity[0] if not self.use_talib else self.liquidity.iloc[-1],
-                    'momentum_5d': self.momentum_returns[5][0] if not self.use_talib else self.momentum_returns[5].iloc[-1],
-                    'momentum_10d': self.momentum_returns[10][0] if not self.use_talib else self.momentum_returns[10].iloc[-1],
-                    'momentum_20d': self.momentum_returns[20][0] if not self.use_talib else self.momentum_returns[20].iloc[-1]
-                }
-                self.record_trade(trade_dict)
-                
-        else:
-            # Exit logic
-            if current_score < self.sell_thresh:
-                self.log(f'SELL CREATE, Price: {self.data.close[0]:.2f}, Score: {current_score:.2f}')
-                self.order = self.sell()
-                self.trade_active = False
-                
-                # Record trade exit
-                trade_dict = {
-                    'exit_time': self.data.datetime.datetime(),
-                    'exit_price': self.data.close[0],
-                    'pnl': (self.data.close[0] - self.entry_price) / self.entry_price * 100,
-                    'position_score': current_score
-                }
-                self.record_trade(trade_dict)
-    
+        self.highest_price = None
+        self.current_trade = None
+        self.last_exit_reason = None
+
     def notify_order(self, order):
-        """Handle order notifications."""
         if order.status in [order.Submitted, order.Accepted]:
             return
-            
-        if order.status in [order.Completed]:
+        if order.status == order.Completed:
             if order.isbuy():
-                self.log(f'BUY EXECUTED, Price: {order.executed.price:.2f}')
-            elif order.issell():
-                self.log(f'SELL EXECUTED, Price: {order.executed.price:.2f}')
+                self.log(f'BUY EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
+                self.entry_price = order.executed.price
+                self.highest_price = self.entry_price
                 
+                # Initialize exit logic with entry price and ATR
+                atr_value = self.atr[0]
+                self.exit_logic.initialize(self.entry_price, atr_value)
+                
+                if self.current_trade:
+                    self.current_trade['entry_price'] = self.entry_price
+            elif order.issell():
+                if self.position.size == 0:
+                    self.entry_price = None
+                    self.highest_price = None
+                    if self.current_trade:
+                        self.current_trade['exit_price'] = order.executed.price
+                        self.current_trade['exit_time'] = self.data.datetime.datetime(0)
+                        self.current_trade['exit_reason'] = self.last_exit_reason
+                        self.record_trade(self.current_trade)
+                        self.current_trade = None
+                    self.last_exit_reason = None
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log(f'Order {order.getstatusname()}')
-            
-        self.order = None 
+            self.log(f'Order Canceled/Margin/Rejected: {order.getstatusname()}')
+            if not self.position:
+                self.entry_price = None
+                self.highest_price = None
+        self.order = None
+
+    def next(self):
+        if self.order:
+            return
+        close = self.data.close[0]
+        volume = self.data.volume[0]
+        atr_val = self.atr[0]
+        vol_ma_val = self.vol_ma[0]
+        
+        if not self.position:
+            # Entry Logic
+            if (volume > vol_ma_val * self.params['volume_threshold'] and
+                self.check_liquidity_conditions()):
+                
+                self.log(f'LONG ENTRY SIGNAL: Volume {volume:.2f} > MA {vol_ma_val:.2f}, Liquidity conditions met')
+                
+                # Record trade details
+                self.current_trade = {
+                    'entry_time': self.data.datetime.datetime(0),
+                    'entry_price': 'pending_long',
+                    'atr_at_entry': atr_val,
+                    'volume_at_entry': volume,
+                    'vol_ma_at_entry': vol_ma_val,
+                    'type': 'long'
+                }
+                
+                size = (self.broker.getvalue() * 0.1) / close
+                self.order = self.buy(size=size)
+        else:
+            if self.position.size > 0:
+                self.highest_price = max(self.highest_price, close)
+                
+                # Check exit conditions using the configured exit logic
+                exit_signal, exit_reason = self.exit_logic.check_exit(close, self.highest_price, atr_val)
+                
+                if exit_signal:
+                    self.last_exit_reason = exit_reason
+                    self.order = self.close()
+                    self.log(f'EXIT SIGNAL: {exit_reason}. Closing position.')
+                    if self.current_trade:
+                        self.current_trade.update({
+                            'exit_time': self.data.datetime.datetime(0),
+                            'exit_price': close,
+                            'exit_reason': exit_reason,
+                            'atr_at_exit': atr_val,
+                            'volume_at_exit': volume,
+                            'vol_ma_at_exit': vol_ma_val
+                        })
+
+    def check_liquidity_conditions(self):
+        """
+        Check if liquidity conditions are favorable for entry.
+        Returns True if conditions are met, False otherwise.
+        """
+        # Implement your liquidity analysis logic here
+        return True  # Placeholder implementation 

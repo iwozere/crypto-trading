@@ -6,20 +6,20 @@ import backtrader as bt
 import pandas as pd
 import numpy as np
 from src.indicator.super_trend import SuperTrend
-from src.strategy.base_strategy import BaseStrategy
+from src.strategy.base_strategy import BaseStrategy, get_exit_class
 # from src.notification.telegram import create_notifier # Temporarily commented out
 import datetime
 from typing import Any, Dict, Optional
 
 """
-BB Volume SuperTrend Strategy Module
------------------------------------
+BB SuperTrend Volume Breakout Strategy Module
+-------------------------------------------
 
-This module implements a breakout trading strategy using Bollinger Bands, SuperTrend, and Volume indicators. The strategy is designed for volatile breakout markets and can be used for both backtesting and live trading. It provides entry and exit logic, position management, and trade recording.
+This module implements a breakout trading strategy using Bollinger Bands, SuperTrend, and Volume indicators with pluggable exit logic. The strategy is designed for use with Backtrader and can be used for both backtesting and live trading.
 
 Main Features:
 - Entry and exit signals based on Bollinger Bands, SuperTrend, and Volume
-- Position and risk management using ATR-based take profit and stop loss
+- Pluggable exit logic system for flexible position management
 - Designed for use with Backtrader and compatible with other trading frameworks
 
 Classes:
@@ -28,7 +28,7 @@ Classes:
 
 class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
     """
-    Breakout strategy using Bollinger Bands, SuperTrend, and Volume indicators.
+    Breakout strategy using Bollinger Bands, SuperTrend, and Volume indicators with pluggable exit logic.
     Accepts a single params/config dictionary.
 
     Indicators:
@@ -53,209 +53,149 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
         - Volume is above its moving average (e.g., 1.5x 20-bar average).
 
     Exit Logic:
-    - Position is closed if:
-        - Price closes back inside Bollinger Bands.
-        - SuperTrend flips against the position.
-        - Fixed Take Profit (TP) or Stop Loss (SL) is hit (based on ATR).
+    - Pluggable exit logic system with multiple options:
+        - ATR-based exits (atr_exit): Uses ATR for dynamic take profit and stop loss
+        - Fixed take profit/stop loss (fixed_tp_sl_exit): Uses fixed price levels
+        - Moving average crossover (ma_crossover_exit): Exits on MA crossovers
+        - Time-based exits (time_based_exit): Exits after a fixed number of bars
+        - Trailing stop exits (trailing_stop_exit): Uses trailing stop loss
     """
     def __init__(self, params: dict):
         super().__init__(params)
         self.notify = self.params.get('notify', False)
         use_talib = self.params.get('use_talib', False)
+        
+        # Initialize indicators based on use_talib flag
         if use_talib:
-            self.boll = bt.talib.BBANDS(timeperiod=self.params.get('bb_period', 20), nbdevup=self.params.get('bb_devfactor', 2.0), nbdevdn=self.params.get('bb_devfactor', 2.0))
-            self.atr = bt.talib.ATR(timeperiod=self.params.get('atr_period', 14))
-            self.vol_ma = bt.talib.SMA(timeperiod=self.params.get('vol_ma_period', 20))
-        else:
-            self.boll = bt.indicators.BollingerBands(
-                period=self.params.get('bb_period', 20),
-                devfactor=self.params.get('bb_devfactor', 2.0)
+            # TA-Lib indicators
+            self.boll = bt.talib.BBANDS(
+                self.data.close,
+                timeperiod=self.params['boll_period'],
+                nbdevup=self.params['boll_devfactor'],
+                nbdevdn=self.params['boll_devfactor']
             )
-            self.atr = bt.indicators.ATR(period=self.params.get('atr_period', 14))
-            self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.params.get('vol_ma_period', 20))
-        self.supertrend = SuperTrend(params={
-            'period': self.params.get('st_period', 10),
-            'multiplier': self.params.get('st_multiplier', 3.0),
-            'use_talib': use_talib
-        })
+            self.atr = bt.talib.ATR(
+                self.data.high,
+                self.data.low,
+                self.data.close,
+                timeperiod=self.params['atr_period']
+            )
+            self.vol_ma = bt.talib.SMA(self.data.volume, timeperiod=self.params['vol_ma_period'])
+        else:
+            # Backtrader built-in indicators
+            self.boll = bt.ind.BollingerBands(
+                period=self.params['boll_period'],
+                devfactor=self.params['boll_devfactor']
+            )
+            self.atr = bt.ind.ATR(period=self.params['atr_period'])
+            self.vol_ma = bt.ind.SMA(self.data.volume, period=self.params['vol_ma_period'])
+        
+        # Initialize exit logic
+        exit_logic_name = self.params.get('exit_logic_name', 'atr_exit')
+        exit_params = self.params.get('exit_params', {})
+        exit_class = get_exit_class(exit_logic_name)
+        self.exit_logic = exit_class(exit_params)
+        
         self.order = None
         self.entry_price = None
+        self.highest_price = None
+        self.current_trade = None
         self.trade_active = False
-        self.entry_bar = None
-        self.active_tp_price = None
-        self.active_sl_price = None
-        self.trades = []
-        self.last_exit_price = None
         self.last_exit_reason = None
-        # self.notifier = create_notifier() # Temporarily commented out
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
-            return # Do nothing for these statuses
-
-        if order.status in [order.Completed]:
+            return
+        if order.status == order.Completed:
             if order.isbuy():
                 self.log(f'BUY EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
                 self.entry_price = order.executed.price
-                # Calculate TP/SL based on ATR at entry bar
-                atr_val = self.atr[-(self.datas[0].datetime.idx - self.entry_bar)] # ATR at time of entry signal
-                if atr_val > 0: # Ensure ATR is valid
-                    self.active_tp_price = self.entry_price + self.params.get('tp_atr_mult', 1.45) * atr_val
-                    self.active_sl_price = self.entry_price - self.params.get('sl_atr_mult', 0.74) * atr_val
-                    self.log(f'BUY TP: {self.active_tp_price:.2f}, SL: {self.active_sl_price:.2f}, ATR: {atr_val:.2f}')
-                else:
-                    self.log('ATR was zero or invalid at entry for TP/SL calc for BUY.')
-                    self.active_tp_price = None # Disable TP/SL if ATR is not valid
-                    self.active_sl_price = None
-
+                self.highest_price = self.entry_price
+                
+                # Initialize exit logic with entry price and ATR
+                atr_value = self.atr[0]
+                self.exit_logic.initialize(self.entry_price, atr_value)
+                
+                if self.current_trade:
+                    self.current_trade['entry_price'] = self.entry_price
             elif order.issell():
-                self.log(f'SELL EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
-                if self.trade_active: # This is a closing sell
-                     self.trade_active = False # Reset flag after closing trade
-                     self.last_exit_price = order.executed.price # Store exit price for trade logging
-                else: # This is an opening short sell
-                    self.entry_price = order.executed.price
-                    atr_val = self.atr[-(self.datas[0].datetime.idx - self.entry_bar)]
-                    if atr_val > 0:
-                        self.active_tp_price = self.entry_price - self.params.get('tp_atr_mult', 1.45) * atr_val # TP is lower for shorts
-                        self.active_sl_price = self.entry_price + self.params.get('sl_atr_mult', 0.74) * atr_val # SL is higher for shorts
-                        self.log(f'SHORT TP: {self.active_tp_price:.2f}, SL: {self.active_sl_price:.2f}, ATR: {atr_val:.2f}')
-                    else:
-                        self.log('ATR was zero or invalid at entry for TP/SL calc for SHORT.')
-                        self.active_tp_price = None
-                        self.active_sl_price = None
-
-            self.bar_executed = len(self) # Bar when order was executed
-
+                if self.position.size == 0:
+                    self.entry_price = None
+                    self.highest_price = None
+                    if self.current_trade:
+                        self.current_trade['exit_price'] = order.executed.price
+                        self.current_trade['exit_time'] = self.data.datetime.datetime(0)
+                        self.current_trade['exit_reason'] = self.last_exit_reason
+                        self.record_trade(self.current_trade)
+                        self.current_trade = None
+                    self.last_exit_reason = None
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log(f'Order Canceled/Margin/Rejected: Status {order.getstatusname()}')
-            if self.trade_active and self.order == order: # If an attempt to close failed
-                pass # Keep trade_active as is, may need to retry
-            elif not self.trade_active and self.order == order: # If an attempt to open failed
-                self.entry_price = None # Reset entry price
-                self.active_tp_price = None
-                self.active_sl_price = None
-
-
-        self.order = None # Reset pending order
-
-    def notify_trade(self, trade):
-        if not trade.isclosed:
-            return
-        self.log(f'OPERATION PROFIT, GROSS {trade.pnl:.2f}, NET {trade.pnlcomm:.2f}')
-        self.log(f'Trade history: {getattr(trade, "history", None)}')
-        self.log(f'Trade size: {getattr(trade, "size", None)}')
-        
-        direction = 'long' if trade.size > 0 else 'short'
-        entry_price = trade.price
-        exit_price = self.last_exit_price
-        # Get current indicator values
-        bb_lower = self.boll.lines.bot[0] if hasattr(self, 'boll') else None
-        bb_middle = self.boll.lines.mid[0] if hasattr(self, 'boll') else None
-        bb_upper = self.boll.lines.top[0] if hasattr(self, 'boll') else None
-        atr_val = self.atr[0] if hasattr(self, 'atr') else None
-        st_val = self.supertrend.lines.supertrend[0] if hasattr(self, 'supertrend') else None
-        st_dir = self.supertrend.lines.direction[0] if hasattr(self, 'supertrend') else None
-        vol_ma_val = self.vol_ma[0] if hasattr(self, 'vol_ma') else None
-        volume = self.data.volume[0] if hasattr(self.data, 'volume') else None
-        trade_dict = {
-            # 'symbol': trade.data._name if hasattr(trade.data, '_name') else 'UNKNOWN',
-            'ref': trade.ref,
-            'entry_time': bt.num2date(trade.dtopen) if trade.dtopen else None,
-            'entry_price': entry_price,
-            'direction': direction,
-            'exit_time': bt.num2date(trade.dtclose) if trade.dtclose else None,
-            'exit_price': exit_price,
-            'exit_reason': self.last_exit_reason,
-            'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
-            'size': trade.size, 'value': trade.value,
-            'commission': trade.commission,
-            # Indicator values at exit
-            'bb_lower_at_exit': bb_lower,
-            'bb_middle_at_exit': bb_middle,
-            'bb_upper_at_exit': bb_upper,
-            'atr_at_exit': atr_val,
-            'supertrend_val_at_exit': st_val,
-            'supertrend_dir_at_exit': st_dir,
-            'volume_at_exit': volume,
-            'vol_ma_at_exit': vol_ma_val
-        }
-        if 'pnl_comm' not in trade_dict or trade_dict['pnl_comm'] is None:
-            trade_dict['pnl_comm'] = trade_dict['pnl']
-        self.record_trade(trade_dict)
-        self.last_exit_reason = None
-        self.trade_active = False
-        self.entry_price = None
-        self.active_tp_price = None
-        self.active_sl_price = None
-        self.last_exit_price = None
-
+            self.log(f'Order Canceled/Margin/Rejected: {order.getstatusname()}')
+            if not self.position:
+                self.entry_price = None
+                self.highest_price = None
+        self.order = None
 
     def next(self):
-        if self.order: # If an order is pending, do not send another
+        if self.order:
             return
-
         close = self.data.close[0]
         volume = self.data.volume[0]
-        
-        # Ensure all indicators have enough data
-        if len(self.supertrend.lines.supertrend) < 1 or self.supertrend.lines.direction[0] == 0:
-             self.log(f"Supertrend not ready or direction is 0. ST Direction: {self.supertrend.lines.direction[0] if len(self.supertrend.lines.supertrend) > 0 else 'N/A'}")
-             return
-        if len(self.vol_ma.lines.sma) < 1:
-            self.log("Volume MA not ready.")
-            return
-        if len(self.boll.lines.top) < 1: # Check if BB is ready
-            self.log("Bollinger Bands not ready.")
-            return
-
-        st_direction = self.supertrend.lines.direction[0]
-        vol_ma_val = self.vol_ma[0]
         bb_top = self.boll.lines.top[0]
         bb_bot = self.boll.lines.bot[0]
         bb_mid = self.boll.lines.mid[0]
-        atr_val = self.atr[0] # Current ATR for exits if needed, entry TP/SL uses ATR at entry
-
-        # Check if in a position
-        if not self.position: # Not in position, check for entry
-            self.trade_active = False # Ensure flag is false if not in position
-            # Long Entry Condition
-            if close > bb_top and st_direction == 1 and volume > (vol_ma_val * self.params.get('vol_strength_mult', 3.0)):
-                self.log(f'LONG ENTRY SIGNAL: Close {close:.2f} > BB Top {bb_top:.2f}, ST Green, Vol {volume:.0f} > MA*Mult {vol_ma_val * self.params.get('vol_strength_mult', 3.0):.0f}')
-                self.entry_bar = self.datas[0].datetime.idx # Bar index of signal
-                self.order = self.buy()
-                self.trade_active = True # Mark that we are attempting to enter a trade
-                # TP/SL will be set in notify_order upon execution based on ATR at self.entry_bar
-            # No short entry logic
-        else: # In a position, check for exit
-            self.trade_active = True # Should already be true, but ensure
-            # Exit Logic
-            exit_signal = False
-            exit_reason = ""
-
-            if self.position.size > 0: # In a long position
-                # 1. Price closes back inside Bollinger Bands (below upper band)
-                if close < bb_top:
-                    exit_signal = True
-                    exit_reason = "Long Exit: Close back inside BB Top"
-                # 2. SuperTrend flips against position (turns red)
-                elif st_direction == -1:
-                    exit_signal = True
-                    exit_reason = "Long Exit: SuperTrend flipped to Red"
-                # 3. Fixed TP/SL
-                elif self.active_tp_price and close >= self.active_tp_price:
-                    exit_signal = True
-                    exit_reason = f"Long Exit: Take Profit hit at {self.active_tp_price:.2f}"
-                elif self.active_sl_price and close <= self.active_sl_price:
-                    exit_signal = True
-                    exit_reason = f"Long Exit: Stop Loss hit at {self.active_sl_price:.2f}"
-            # No short position/exit logic
-            if exit_signal:
-                self.last_exit_reason = exit_reason
-                self.log(f'EXIT SIGNAL: {exit_reason}. Closing position.')
-                self.order = self.close() # Close position
-                # self.trade_active is reset in notify_order or notify_trade
-
+        st_direction = self.st.lines.direction[0]
+        st_value = self.st.lines.supertrend[0]
+        vol_ma_val = self.vol_ma[0]
+        atr_value = self.atr[0]
+        
+        if not self.position:
+            # Entry Logic
+            if close > bb_top and st_direction == 1 and volume > vol_ma_val:
+                self.log(f'LONG ENTRY SIGNAL: Close {close:.2f} > BB Top {bb_top:.2f}, ST Direction: {st_direction}, Volume: {volume:.2f} > MA {vol_ma_val:.2f}')
+                
+                # Record trade details
+                self.current_trade = {
+                    'entry_time': self.data.datetime.datetime(0),
+                    'entry_price': 'pending_long',
+                    'atr_at_entry': atr_value,
+                    'volume_at_entry': volume,
+                    'vol_ma_at_entry': vol_ma_val,
+                    'bb_top_at_entry': bb_top,
+                    'bb_mid_at_entry': bb_mid,
+                    'bb_bot_at_entry': bb_bot,
+                    'supertrend_val_at_entry': st_value,
+                    'supertrend_dir_at_entry': st_direction,
+                    'type': 'long'
+                }
+                
+                size = (self.broker.getvalue() * 0.1) / close
+                self.order = self.buy(size=size)
+        else:
+            if self.position.size > 0:
+                self.highest_price = max(self.highest_price, close)
+                
+                # Check exit conditions using the configured exit logic
+                exit_signal, exit_reason = self.exit_logic.check_exit(close, self.highest_price, atr_value)
+                
+                if exit_signal:
+                    self.last_exit_reason = exit_reason
+                    self.order = self.close()
+                    self.log(f'EXIT SIGNAL: {exit_reason}. Closing position.')
+                    if self.current_trade:
+                        self.current_trade.update({
+                            'exit_time': self.data.datetime.datetime(0),
+                            'exit_price': close,
+                            'exit_reason': exit_reason,
+                            'atr_at_exit': atr_value,
+                            'volume_at_exit': volume,
+                            'vol_ma_at_exit': vol_ma_val,
+                            'bb_top_at_exit': bb_top,
+                            'bb_mid_at_exit': bb_mid,
+                            'bb_bot_at_exit': bb_bot,
+                            'supertrend_val_at_exit': st_value,
+                            'supertrend_dir_at_exit': st_direction
+                        })
 
 # Example usage (for testing, normally run via a main script)
 if __name__ == '__main__':

@@ -8,6 +8,7 @@ Main Features:
 - Trade logging and recording
 - Integration with notification systems (Telegram)
 - Utility hooks for trade entry, exit, and error handling
+- Pluggable exit logic system for flexible position management
 - Designed for extension by concrete strategy classes
 
 Classes:
@@ -26,6 +27,18 @@ class BaseStrategy(bt.Strategy):
     """
     Abstract base class for trading strategies. Accepts a single params/config dictionary.
     The notify flag (self.notify) is set from params['notify'] if present.
+    
+    Exit Logic:
+    - Uses a pluggable exit logic system that can be configured via parameters
+    - Available exit logics include:
+        - ATR-based exits (atr_exit)
+        - Fixed take profit/stop loss (fixed_tp_sl_exit)
+        - Moving average crossover (ma_crossover_exit)
+        - Time-based exits (time_based_exit)
+        - Trailing stop exits (trailing_stop_exit)
+    - Exit logic is configured via:
+        - exit_logic_name: Name of the exit logic to use
+        - exit_params: Dictionary of parameters for the selected exit logic
     """
     def __init__(self, params: dict):
         """
