@@ -1,5 +1,6 @@
 import yfinance as yf
 
+
 def calculate_technicals(ticker: str) -> dict:
     try:
         df = yf.download(ticker, period="6mo", interval="1d")
@@ -30,9 +31,9 @@ def calculate_technicals(ticker: str) -> dict:
         macd_signal = df["Signal"].iloc[-1]
 
         trend = (
-            "Uptrend" if sma50 > sma200 and last_close > sma50 else
-            "Downtrend" if sma50 < sma200 and last_close < sma50 else
-            "Sideways"
+            "Uptrend"
+            if sma50 > sma200 and last_close > sma50
+            else "Downtrend" if sma50 < sma200 and last_close < sma50 else "Sideways"
         )
 
         return {
@@ -40,7 +41,7 @@ def calculate_technicals(ticker: str) -> dict:
             "sma_50": round(sma50, 2),
             "sma_200": round(sma200, 2),
             "macd_signal": round(macd_signal, 2),
-            "trend": trend
+            "trend": trend,
         }
 
     except Exception as e:

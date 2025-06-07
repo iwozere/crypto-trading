@@ -3,28 +3,30 @@ Provides logging utilities for the trading system, including console and file lo
 
 This module sets up application-wide logging configuration and exposes a logger for use throughout the project.
 """
-import sys
+
 import os
+import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import logging.config
 from datetime import datetime
 
 # Ensure log directory exists
-log_dir = os.path.join('logs', 'log')
+log_dir = os.path.join("logs", "log")
 os.makedirs(log_dir, exist_ok=True)
+
 
 ####################################################################
 # Simple logger, which logs to console
 ####################################################################
-def print_log(msg : str):
+def print_log(msg: str):
     # Get current timestamp
     current_time = datetime.now()
     time = current_time.strftime("%Y-%m-%d %H:%M:%S")
 
     # Print the timestamp in a human-readable format
-    print(f'{time} {msg}')
-
+    print(f"{time} {msg}")
 
 
 ####################################################################
@@ -35,8 +37,10 @@ def print_log(msg : str):
 LOG_CONFIG = {
     "version": 1,
     "formatters": {
-        "detailed" : {"format": "%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s"},
-        "standard": {"format": "%(asctime)s - %(levelname)s - %(message)s"}
+        "detailed": {
+            "format": "%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s"
+        },
+        "standard": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
     },
     "handlers": {
         "console": {
@@ -61,37 +65,32 @@ LOG_CONFIG = {
             "filename": "logs/log/app_errors.log",
             "level": "ERROR",
             "formatter": "detailed",
-        }
+        },
     },
-    'loggers': {
-        'matplotlib': {
-            'level': 'WARNING',  # Logging level for matplotlib matplotlib to WARNING
-            'handlers': ['console'],
-            'propagate': False,  # Switch off the log propagation to the root logger
+    "loggers": {
+        "matplotlib": {
+            "level": "WARNING",  # Logging level for matplotlib matplotlib to WARNING
+            "handlers": ["console"],
+            "propagate": False,  # Switch off the log propagation to the root logger
         },
         "live_trader": {
             "handlers": ["console", "file"],
             "level": "DEBUG",
-            "propagate": False
+            "propagate": False,
         },
         "telegram_bot": {
             "handlers": ["console", "file"],
             "level": "INFO",
-            "propagate": False
+            "propagate": False,
         },
-        "default": {
-            "handlers": ["console", "file"],
-            "level": "DEBUG"
-        },
-        "root": {
-            "handlers": ["console", "file"],
-            "level": "DEBUG"
-        }
-    }
+        "default": {"handlers": ["console", "file"], "level": "DEBUG"},
+        "root": {"handlers": ["console", "file"], "level": "DEBUG"},
+    },
 }
 
 logging.config.dictConfig(LOG_CONFIG)
 _logger = logging.getLogger()
+
 
 #
 # Set up the logger for the application

@@ -1,8 +1,10 @@
 import os
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from src.trading import create_trading_bot
+
 
 # Example dummy strategy (replace with your real strategy)
 class DummyStrategy:
@@ -10,9 +12,10 @@ class DummyStrategy:
         # Return a list of signal dicts, e.g. [{'type': 'buy', 'price': 100, 'size': 1}]
         return []
 
+
 # Example config for a mock broker and RSI BB Volume bot
 config = {
-    "type": "mock",            # or 'binance', 'binance_paper', 'ibkr'
+    "type": "mock",  # or 'binance', 'binance_paper', 'ibkr'
     "bot_type": "rsi_bb_volume",
     "trading_pair": "BTCUSDT",
     "initial_balance": 1000.0,

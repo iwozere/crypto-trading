@@ -9,15 +9,19 @@ Unit tests for src.management.bot_manager
 How to run:
     pytest tests/test_bot_manager.py
 """
+
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 import src.management.bot_manager as bot_manager
+
 
 @pytest.fixture(autouse=True)
 def clear_bots():
     # Clear bot registries before each test
     bot_manager.running_bots.clear()
     bot_manager.bot_threads.clear()
+
 
 @patch("src.management.bot_manager.importlib.import_module")
 @patch("src.management.bot_manager.threading.Thread")
@@ -26,7 +30,9 @@ def test_start_and_stop_bot(mock_thread, mock_import_module):
     DummyBot = MagicMock()
     DummyBot.return_value.trade_history = ["trade1", "trade2"]
     mock_import_module.return_value = MagicMock()
-    mock_import_module.return_value.__getattr__.side_effect = lambda name: DummyBot if name == "DummyBot" else None
+    mock_import_module.return_value.__getattr__.side_effect = lambda name: (
+        DummyBot if name == "DummyBot" else None
+    )
     # Patch getattr to return DummyBot
     with patch("src.management.bot_manager.getattr", return_value=DummyBot):
         bot_id = bot_manager.start_bot("dummy", {"foo": "bar"}, bot_id="testbot")
@@ -42,6 +48,7 @@ def test_start_and_stop_bot(mock_thread, mock_import_module):
         bot_manager.stop_bot(bot_id)
         assert bot_id not in bot_manager.running_bots
 
+
 @patch("src.management.bot_manager.importlib.import_module")
 @patch("src.management.bot_manager.threading.Thread")
 def test_start_bot_duplicate_id(mock_thread, mock_import_module):
@@ -53,6 +60,7 @@ def test_start_bot_duplicate_id(mock_thread, mock_import_module):
             bot_manager.start_bot("dummy", {}, bot_id="dup")
         assert "already running" in str(e.value)
 
+
 @patch("src.management.bot_manager.importlib.import_module")
 @patch("src.management.bot_manager.threading.Thread")
 def test_stop_bot_not_found(mock_thread, mock_import_module):
@@ -60,9 +68,11 @@ def test_stop_bot_not_found(mock_thread, mock_import_module):
         bot_manager.stop_bot("notfound")
     assert "No running bot" in str(e.value)
 
+
 def test_get_trades_not_found():
     assert bot_manager.get_trades("notfound") == []
 
+
 def test_get_running_bots():
     # Should be empty at start
-    assert bot_manager.get_running_bots() == [] 
+    assert bot_manager.get_running_bots() == []

@@ -1,9 +1,11 @@
 # ticker_bot/analyzer/chart.py
 
-import yfinance as yf
-import matplotlib.pyplot as plt
 import io
+
 import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import yfinance as yf
+
 
 def generate_price_chart(ticker: str) -> bytes:
     try:

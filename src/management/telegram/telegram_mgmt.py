@@ -1,9 +1,11 @@
-import os
 import importlib
+import os
+
+from src.notification.logger import _logger
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
 from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
-from src.notification.logger import _logger
 
 """
 Telegram Bot Management Module
@@ -31,9 +33,9 @@ running_bots = {}
 
 # Set up logging
 _logger.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=_logger.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=_logger.INFO
 )
+
 
 async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
@@ -46,18 +48,26 @@ async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Dynamically import the bot class
         bot_module = importlib.import_module(f"src.trading.{strategy_name}_bot")
-        bot_class = getattr(bot_module, ''.join([w.capitalize() for w in strategy_name.split('_')]) + 'Bot')
-        config = {'trading_pair': 'BTCUSDT', 'initial_balance': 1000.0}  # Example config, extend as needed
+        bot_class = getattr(
+            bot_module,
+            "".join([w.capitalize() for w in strategy_name.split("_")]) + "Bot",
+        )
+        config = {
+            "trading_pair": "BTCUSDT",
+            "initial_balance": 1000.0,
+        }  # Example config, extend as needed
         bot_instance = bot_class(config)
         running_bots[strategy_name] = bot_instance
         # Start the bot in a background thread
         import threading
+
         t = threading.Thread(target=bot_instance.run, daemon=True)
         t.start()
         await update.message.reply_text(f"Started bot for {strategy_name}.")
     except Exception as e:
         _logger.error(f"Failed to start bot: {e}")
         await update.message.reply_text(f"Failed to start bot: {e}")
+
 
 async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
@@ -76,12 +86,14 @@ async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         _logger.error(f"Failed to stop bot: {e}")
         await update.message.reply_text(f"Failed to stop bot: {e}")
 
+
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not running_bots:
         await update.message.reply_text("No bots are currently running.")
         return
     status_lines = [f"{name}: running" for name in running_bots.keys()]
     await update.message.reply_text("\n".join(status_lines))
+
 
 async def log(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
@@ -92,9 +104,10 @@ async def log(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not os.path.exists(log_file):
         await update.message.reply_text(f"No log file found for {strategy_name}.")
         return
-    with open(log_file, 'r') as f:
+    with open(log_file, "r") as f:
         lines = f.readlines()[-20:]
-    await update.message.reply_text(''.join(lines) or "No recent logs.")
+    await update.message.reply_text("".join(lines) or "No recent logs.")
+
 
 async def backtest(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 3:
@@ -102,7 +115,9 @@ async def backtest(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     strategy, ticker, tf = context.args[:3]
     # Stub: Replace with actual backtest logic
-    await update.message.reply_text(f"Backtesting {strategy} on {ticker} ({tf})... [stub]")
+    await update.message.reply_text(
+        f"Backtesting {strategy} on {ticker} ({tf})... [stub]"
+    )
 
 
 def main():
@@ -114,6 +129,7 @@ def main():
     app.add_handler(CommandHandler("backtest", backtest))
     print("Telegram management bot is running...")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()

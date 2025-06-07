@@ -1,11 +1,14 @@
+from typing import Any
+
 import backtrader as bt
 from src.notification.logger import _logger
-from typing import Any
+
 
 class BaseBroker(bt.BrokerBase):
     """
     Abstract base class for all brokers. Defines the required interface and common attributes.
     """
+
     def __init__(self, cash: float = 1000.0) -> None:
         super().__init__()
         self.broker_name: str = "Base Broker"
@@ -14,7 +17,6 @@ class BaseBroker(bt.BrokerBase):
         self.orders: list = []
         self.positions: dict = {}
         self.notifs: list = []
-        
 
     def start(self) -> None:
         """Start the broker."""
@@ -49,4 +51,3 @@ class BaseBroker(bt.BrokerBase):
         """Yield notifications one by one."""
         while self.notifs:
             yield self.notifs.pop(0)
-

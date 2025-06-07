@@ -14,23 +14,36 @@ Main Features:
 Classes:
 - BaseTradingBot: Abstract base class for trading bots
 """
+
+import asyncio
+import json
+import os
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from src.notification.logger import _logger
-from src.notification.telegram_notifier import create_notifier as create_telegram_notifier
+
 from src.notification.emailer import EmailNotifier
+from src.notification.logger import _logger
+from src.notification.telegram_notifier import \
+    create_notifier as create_telegram_notifier
+
 from config.donotshare.donotshare import SENDGRID_API_KEY as sgkey
-import asyncio
-import os
-import json
+
 
 class BaseTradingBot:
     """
     Base class for trading bots. Handles config, strategy class, parameters, broker, notifications, and state.
     Subclasses should only override methods if custom logic is needed.
     """
-    def __init__(self, config: Dict[str, Any], strategy_class: Any, parameters: Dict[str, Any], broker: Any = None, paper_trading: bool = True) -> None:
+
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        strategy_class: Any,
+        parameters: Dict[str, Any],
+        broker: Any = None,
+        paper_trading: bool = True,
+    ) -> None:
         """
         Initialize the trading bot with config, strategy, broker, and mode.
         Args:
@@ -41,8 +54,8 @@ class BaseTradingBot:
             paper_trading: Whether to use paper trading mode
         """
         self.config = config
-        self.trading_pair = config.get('trading_pair', 'BTCUSDT')
-        self.initial_balance = config.get('initial_balance', 1000.0)
+        self.trading_pair = config.get("trading_pair", "BTCUSDT")
+        self.initial_balance = config.get("initial_balance", 1000.0)
         self.strategy_class = strategy_class
         self.parameters = parameters
         self.is_running = False
@@ -52,7 +65,9 @@ class BaseTradingBot:
         self.total_pnl = 0.0
         self.broker = broker
         self.paper_trading = paper_trading
-        self.state_file = os.path.join('logs', 'json', f'{self.trading_pair}_bot_state.json')
+        self.state_file = os.path.join(
+            "logs", "json", f"{self.trading_pair}_bot_state.json"
+        )
         # Notification setup
         self.telegram_notifier = create_telegram_notifier()
         try:
@@ -60,9 +75,11 @@ class BaseTradingBot:
         except Exception as e:
             self.email_notifier = None
             self.log_message(f"Email notifier not initialized: {e}", level="error")
-        self.max_drawdown_pct = config.get('max_drawdown_pct', 20.0)
-        self.max_exposure = config.get('max_exposure', 1.0)  # 1.0 = 100% of balance
-        self.position_sizing_pct = config.get('position_sizing_pct', 0.1)  # 10% of balance per trade
+        self.max_drawdown_pct = config.get("max_drawdown_pct", 20.0)
+        self.max_exposure = config.get("max_exposure", 1.0)  # 1.0 = 100% of balance
+        self.position_sizing_pct = config.get(
+            "position_sizing_pct", 0.1
+        )  # 10% of balance per trade
         self.load_state()
 
     def run(self) -> None:
@@ -98,10 +115,15 @@ class BaseTradingBot:
             signals: List of signal dictionaries
         """
         for signal in signals:
-            if signal['type'] == 'buy' and self.trading_pair not in self.active_positions:
-                self.execute_trade('buy', signal['price'], signal['size'])
-            elif signal['type'] == 'sell' and self.trading_pair in self.active_positions:
-                self.execute_trade('sell', signal['price'], signal['size'])
+            if (
+                signal["type"] == "buy"
+                and self.trading_pair not in self.active_positions
+            ):
+                self.execute_trade("buy", signal["price"], signal["size"])
+            elif (
+                signal["type"] == "sell" and self.trading_pair in self.active_positions
+            ):
+                self.execute_trade("sell", signal["price"], signal["size"])
 
     def execute_trade(self, trade_type: str, price: float, size: float) -> None:
         """
@@ -111,35 +133,46 @@ class BaseTradingBot:
         order = None
         try:
             if not self.paper_trading and self.broker:
-                order = self.broker.place_order(self.trading_pair, trade_type.upper(), size, price=price)
+                order = self.broker.place_order(
+                    self.trading_pair, trade_type.upper(), size, price=price
+                )
                 self.log_order(order)
-            if trade_type == 'buy':
+            if trade_type == "buy":
                 self.active_positions[self.trading_pair] = {
-                    'entry_price': price,
-                    'size': size,
-                    'entry_time': timestamp
+                    "entry_price": price,
+                    "size": size,
+                    "entry_time": timestamp,
                 }
-                self.notify_trade_event('BUY', price, size, timestamp)
+                self.notify_trade_event("BUY", price, size, timestamp)
             else:  # sell
                 if self.trading_pair in self.active_positions:
                     position = self.active_positions[self.trading_pair]
-                    pnl = ((price - position['entry_price']) / position['entry_price']) * 100
+                    pnl = (
+                        (price - position["entry_price"]) / position["entry_price"]
+                    ) * 100
                     trade = {
-                        'bot_id': id(self),
-                        'pair': self.trading_pair,
-                        'type': 'long',
-                        'entry_price': position['entry_price'],
-                        'exit_price': price,
-                        'size': position['size'],
-                        'pl': pnl,
-                        'time': timestamp.isoformat()
+                        "bot_id": id(self),
+                        "pair": self.trading_pair,
+                        "type": "long",
+                        "entry_price": position["entry_price"],
+                        "exit_price": price,
+                        "size": position["size"],
+                        "pl": pnl,
+                        "time": timestamp.isoformat(),
                     }
                     self.trade_history.append(trade)
                     self.log_trade(trade)
-                    self.current_balance *= (1 + pnl/100)
+                    self.current_balance *= 1 + pnl / 100
                     self.total_pnl += pnl
                     del self.active_positions[self.trading_pair]
-                    self.notify_trade_event('SELL', price, size, timestamp, entry_price=position['entry_price'], pnl=pnl)
+                    self.notify_trade_event(
+                        "SELL",
+                        price,
+                        size,
+                        timestamp,
+                        entry_price=position["entry_price"],
+                        pnl=pnl,
+                    )
         except Exception as e:
             self.log_message(f"Error executing trade: {e}", level="error")
             self.notify_error(str(e))
@@ -150,12 +183,12 @@ class BaseTradingBot:
         Args:
             order: Order object or dictionary
         """
-        folder = os.path.join('logs', 'json')
+        folder = os.path.join("logs", "json")
         os.makedirs(folder, exist_ok=True)
-        path = os.path.join(folder, 'orders.json')
+        path = os.path.join(folder, "orders.json")
         try:
             if os.path.exists(path):
-                with open(path, 'r+', encoding='utf-8') as f:
+                with open(path, "r+", encoding="utf-8") as f:
                     try:
                         all_orders = json.load(f)
                     except Exception:
@@ -165,7 +198,7 @@ class BaseTradingBot:
                     json.dump(all_orders, f, default=str, indent=2)
                     f.truncate()
             else:
-                with open(path, 'w', encoding='utf-8') as f:
+                with open(path, "w", encoding="utf-8") as f:
                     json.dump([order], f, default=str, indent=2)
         except Exception as e:
             self.log_message(f"Failed to log order: {e}", level="error")
@@ -176,12 +209,12 @@ class BaseTradingBot:
         Args:
             trade: Trade dictionary
         """
-        folder = os.path.join('logs', 'json')
+        folder = os.path.join("logs", "json")
         os.makedirs(folder, exist_ok=True)
-        path = os.path.join(folder, 'trades.json')
+        path = os.path.join(folder, "trades.json")
         try:
             if os.path.exists(path):
-                with open(path, 'r+', encoding='utf-8') as f:
+                with open(path, "r+", encoding="utf-8") as f:
                     try:
                         all_trades = json.load(f)
                     except Exception:
@@ -191,7 +224,7 @@ class BaseTradingBot:
                     json.dump(all_trades, f, default=str, indent=2)
                     f.truncate()
             else:
-                with open(path, 'w', encoding='utf-8') as f:
+                with open(path, "w", encoding="utf-8") as f:
                     json.dump([trade], f, default=str, indent=2)
         except Exception as e:
             self.log_message(f"Failed to log trade: {e}", level="error")
@@ -200,16 +233,16 @@ class BaseTradingBot:
         """
         Save open positions and bot state to disk for recovery.
         """
-        folder = os.path.join('logs', 'json')
+        folder = os.path.join("logs", "json")
         os.makedirs(folder, exist_ok=True)
         try:
             state = {
-                'active_positions': self.active_positions,
-                'trade_history': self.trade_history,
-                'current_balance': self.current_balance,
-                'total_pnl': self.total_pnl
+                "active_positions": self.active_positions,
+                "trade_history": self.trade_history,
+                "current_balance": self.current_balance,
+                "total_pnl": self.total_pnl,
             }
-            with open(self.state_file, 'w', encoding='utf-8') as f:
+            with open(self.state_file, "w", encoding="utf-8") as f:
                 json.dump(state, f, default=str, indent=2)
         except Exception as e:
             self.log_message(f"Failed to save bot state: {e}", level="error")
@@ -220,12 +253,14 @@ class BaseTradingBot:
         """
         if os.path.exists(self.state_file):
             try:
-                with open(self.state_file, 'r', encoding='utf-8') as f:
+                with open(self.state_file, "r", encoding="utf-8") as f:
                     state = json.load(f)
-                    self.active_positions = state.get('active_positions', {})
-                    self.trade_history = state.get('trade_history', [])
-                    self.current_balance = state.get('current_balance', self.initial_balance)
-                    self.total_pnl = state.get('total_pnl', 0.0)
+                    self.active_positions = state.get("active_positions", {})
+                    self.trade_history = state.get("trade_history", [])
+                    self.current_balance = state.get(
+                        "current_balance", self.initial_balance
+                    )
+                    self.total_pnl = state.get("total_pnl", 0.0)
             except Exception as e:
                 self.log_message(f"Failed to load bot state: {e}", level="error")
 
@@ -242,11 +277,21 @@ class BaseTradingBot:
                 pass
         if self.email_notifier:
             try:
-                self.email_notifier.send_notification_email('ERROR', self.trading_pair, 0, 0, body=error_msg)
+                self.email_notifier.send_notification_email(
+                    "ERROR", self.trading_pair, 0, 0, body=error_msg
+                )
             except Exception:
                 pass
 
-    def notify_trade_event(self, side: str, price: float, size: float, timestamp: datetime, entry_price: Optional[float] = None, pnl: Optional[float] = None) -> None:
+    def notify_trade_event(
+        self,
+        side: str,
+        price: float,
+        size: float,
+        timestamp: datetime,
+        entry_price: Optional[float] = None,
+        pnl: Optional[float] = None,
+    ) -> None:
         """
         Send trade event notification via Telegram and email.
         Args:
@@ -260,23 +305,27 @@ class BaseTradingBot:
         # Telegram notification
         if self.telegram_notifier:
             trade_data = {
-                'symbol': self.trading_pair,
-                'side': side,
-                'entry_price': entry_price if entry_price is not None else price,
-                'exit_price': price if side == 'SELL' else None,
-                'tp_price': getattr(self.strategy_class, 'tp_atr_mult', None),
-                'sl_price': getattr(self.strategy_class, 'sl_atr_mult', None),
-                'quantity': size,
-                'timestamp': timestamp.isoformat(),
-                'pnl': pnl
+                "symbol": self.trading_pair,
+                "side": side,
+                "entry_price": entry_price if entry_price is not None else price,
+                "exit_price": price if side == "SELL" else None,
+                "tp_price": getattr(self.strategy_class, "tp_atr_mult", None),
+                "sl_price": getattr(self.strategy_class, "sl_atr_mult", None),
+                "quantity": size,
+                "timestamp": timestamp.isoformat(),
+                "pnl": pnl,
             }
             try:
-                if side == 'BUY':
-                    asyncio.run(self.telegram_notifier.send_trade_notification(trade_data))
+                if side == "BUY":
+                    asyncio.run(
+                        self.telegram_notifier.send_trade_notification(trade_data)
+                    )
                 else:
                     asyncio.run(self.telegram_notifier.send_trade_update(trade_data))
             except Exception as e:
-                self.log_message(f"Failed to send Telegram notification: {e}", level="error")
+                self.log_message(
+                    f"Failed to send Telegram notification: {e}", level="error"
+                )
         # Email notification
         if self.email_notifier:
             try:
@@ -284,9 +333,13 @@ class BaseTradingBot:
                 body = f"{side} {self.trading_pair}\nPrice: {price}\nSize: {size}\nTime: {timestamp}"
                 if pnl is not None:
                     body += f"\nPnL: {pnl:.2f}%"
-                self.email_notifier.send_notification_email(side, self.trading_pair, price, size, body=body)
+                self.email_notifier.send_notification_email(
+                    side, self.trading_pair, price, size, body=body
+                )
             except Exception as e:
-                self.log_message(f"Failed to send email notification: {e}", level="error")
+                self.log_message(
+                    f"Failed to send email notification: {e}", level="error"
+                )
 
     def update_positions(self):
         """
@@ -296,18 +349,28 @@ class BaseTradingBot:
             # Assumes the strategy instance is available and has get_current_price, sl_atr_mult, tp_atr_mult
             # If running in Backtrader, you may need to adapt this for live/real-time bots
             current_price = None
-            if hasattr(self, 'strategy') and self.strategy and hasattr(self.strategy, 'get_current_price'):
+            if (
+                hasattr(self, "strategy")
+                and self.strategy
+                and hasattr(self.strategy, "get_current_price")
+            ):
                 current_price = self.strategy.get_current_price(pair)
             if current_price is None:
                 continue
-            entry_price = position['entry_price']
+            entry_price = position["entry_price"]
             pnl = ((current_price - entry_price) / entry_price) * 100
             # Check stop loss
-            if hasattr(self.strategy, 'sl_atr_mult') and pnl <= -self.strategy.sl_atr_mult * 100:
-                self.execute_trade('sell', current_price, position['size'])
+            if (
+                hasattr(self.strategy, "sl_atr_mult")
+                and pnl <= -self.strategy.sl_atr_mult * 100
+            ):
+                self.execute_trade("sell", current_price, position["size"])
             # Check take profit
-            elif hasattr(self.strategy, 'tp_atr_mult') and pnl >= self.strategy.tp_atr_mult * 100:
-                self.execute_trade('sell', current_price, position['size'])
+            elif (
+                hasattr(self.strategy, "tp_atr_mult")
+                and pnl >= self.strategy.tp_atr_mult * 100
+            ):
+                self.execute_trade("sell", current_price, position["size"])
 
     def stop(self):
         """
@@ -317,10 +380,16 @@ class BaseTradingBot:
         self.log_message(f"Stopping bot for {self.trading_pair}")
         for pair in list(self.active_positions.keys()):
             current_price = None
-            if hasattr(self, 'strategy') and self.strategy and hasattr(self.strategy, 'get_current_price'):
+            if (
+                hasattr(self, "strategy")
+                and self.strategy
+                and hasattr(self.strategy, "get_current_price")
+            ):
                 current_price = self.strategy.get_current_price(pair)
             if current_price is not None:
-                self.execute_trade('sell', current_price, self.active_positions[pair]['size'])
+                self.execute_trade(
+                    "sell", current_price, self.active_positions[pair]["size"]
+                )
 
     def log_message(self, message, level="info"):
         if level == "error":
@@ -332,9 +401,13 @@ class BaseTradingBot:
         _logger.info(f"{event}: {self.__class__.__name__}")
         _logger.info(f"Trading pair: {self.trading_pair}")
         _logger.info(f"Initial balance: {self.initial_balance}")
-        _logger.info(f"Strategy class: {getattr(self, 'strategy_class', type(self.strategy_class).__name__)}")
+        _logger.info(
+            f"Strategy class: {getattr(self, 'strategy_class', type(self.strategy_class).__name__)}"
+        )
         _logger.info(f"Strategy parameters: {getattr(self, 'parameters', {})}")
-        _logger.info(f"Broker: {self.broker.__class__.__name__ if self.broker else 'None'}")
+        _logger.info(
+            f"Broker: {self.broker.__class__.__name__ if self.broker else 'None'}"
+        )
 
     def notify_bot_event(self, event: str, emoji: str):
         msg = (
@@ -347,8 +420,10 @@ class BaseTradingBot:
             f"Broker: `{self.broker.__class__.__name__ if self.broker else 'None'}`"
         )
         try:
-            if hasattr(self, 'telegram_notifier') and self.telegram_notifier:
-                asyncio.run(self.telegram_notifier.send_trade_notification({'message': msg}))
+            if hasattr(self, "telegram_notifier") and self.telegram_notifier:
+                asyncio.run(
+                    self.telegram_notifier.send_trade_notification({"message": msg})
+                )
         except Exception as e:
             _logger.error(f"Failed to send Telegram {event.lower()} notification: {e}")
 
@@ -374,16 +449,19 @@ class BaseTradingBot:
         self.log_bot_event("started")
         self.notify_bot_event("started", "🤖")
         import backtrader as bt
+
         cerebro = bt.Cerebro()
         cerebro.adddata(data_feed)
         _logger.info(f"Added data feed for {self.trading_pair}")
         cerebro.broker.setcash(self.initial_balance)
         if self.broker:
             cerebro.setbroker(self.broker)
-        cerebro.addstrategy(getattr(self, 'strategy_class'), params=getattr(self, 'parameters', {}))
+        cerebro.addstrategy(
+            getattr(self, "strategy_class"), params=getattr(self, "parameters", {})
+        )
         self.pre_run(data_feed)
         _logger.info(f"Starting Backtrader engine for {self.trading_pair}")
         cerebro.run()
         self.post_run(data_feed)
         self.log_bot_event("stopped")
-        self.notify_bot_event("stopped", "🛑") 
+        self.notify_bot_event("stopped", "🛑")

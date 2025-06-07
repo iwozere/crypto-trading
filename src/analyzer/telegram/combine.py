@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+
+from src.analyzer.telegram.chart import generate_price_chart
 from src.analyzer.telegram.fundamentals import get_fundamentals
 from src.analyzer.telegram.technicals import calculate_technicals
-from src.analyzer.telegram.chart import generate_price_chart
+
 
 @dataclass
 class TickerAnalysis:
@@ -9,6 +11,7 @@ class TickerAnalysis:
     fundamentals: dict
     technicals: dict
     chart_image: bytes  # PNG-image as bytes
+
 
 def analyze_ticker(ticker: str) -> TickerAnalysis:
     fundamentals = get_fundamentals(ticker)
@@ -19,5 +22,5 @@ def analyze_ticker(ticker: str) -> TickerAnalysis:
         ticker=ticker.upper(),
         fundamentals=fundamentals,
         technicals=technicals,
-        chart_image=chart_image
+        chart_image=chart_image,
     )

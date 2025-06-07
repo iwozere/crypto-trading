@@ -7,15 +7,17 @@ Copy this file and fill in the specific logic for your optimizer.
 """
 
 import os
-import pandas as pd
-from skopt.space import Real, Integer, Categorical
-from src.optimizer.base_optimizer import BaseOptimizer
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
+from skopt.space import Categorical, Integer, Real
+from src.optimizer.base_optimizer import BaseOptimizer
 from src.strategy.base_strategy import BaseStrategy
+
+
 class MyCustomStrategy(BaseStrategy):
     pass
- 
+
 
 class OptimizerTemplate(BaseOptimizer):
     """
@@ -25,26 +27,27 @@ class OptimizerTemplate(BaseOptimizer):
     - Implement the optimization logic.
     - Handle result saving and plotting.
     """
+
     def __init__(self, config: dict):
         """
         Initialize the optimizer with a configuration dictionary.
         Args:
             config: Dictionary containing all optimizer parameters.
         """
-        self.data_dir = ... # set as needed
-        self.results_dir = ... # set as needed
-        self.strategy_name = 'MyCustomStrategy'
+        self.data_dir = ...  # set as needed
+        self.results_dir = ...  # set as needed
+        self.strategy_name = "MyCustomStrategy"
         self.strategy_class = MyCustomStrategy
         super().__init__(config)
         # Define the parameter search space
         self.search_space = [
-            Integer(10, 30, name='example_period'),
-            Real(1.0, 3.0, name='example_threshold'),
+            Integer(10, 30, name="example_period"),
+            Real(1.0, 3.0, name="example_threshold"),
             # Add more parameters as needed
         ]
         self.default_params = {
-            'example_period': 14,
-            'example_threshold': 1.5,
+            "example_period": 14,
+            "example_threshold": 1.5,
         }
 
     def load_all_data(self) -> None:
@@ -64,16 +67,23 @@ class OptimizerTemplate(BaseOptimizer):
         """
         # Example implementation (replace with your own logic)
         try:
-            df = pd.read_csv(os.path.join(self.data_dir, filename), index_col=0, parse_dates=True)
+            df = pd.read_csv(
+                os.path.join(self.data_dir, filename), index_col=0, parse_dates=True
+            )
             # Run optimization logic here
             # result = self.run_optimization(df)
-            result = {'metrics': {}, 'trades': []}  # Replace with actual results
+            result = {"metrics": {}, "trades": []}  # Replace with actual results
             return result
         except Exception as e:
             print(f"Error optimizing {filename}: {e}")
             return None
 
-    def plot_results(self, trades_df: pd.DataFrame, metrics: Dict[str, Any], save_path: Optional[str] = None) -> None:
+    def plot_results(
+        self,
+        trades_df: pd.DataFrame,
+        metrics: Dict[str, Any],
+        save_path: Optional[str] = None,
+    ) -> None:
         """
         Plot the results of the optimization (trades, equity curve, etc.).
         Args:
@@ -82,12 +92,14 @@ class OptimizerTemplate(BaseOptimizer):
             save_path: Optional path to save the plot
         """
         # Example: Use matplotlib to plot trades and metrics
-        pass 
+        pass
+
 
 # Example usage:
 if __name__ == "__main__":
     import json
-    with open('config/optimizer/optimizer_config.json') as f:
+
+    with open("config/optimizer/optimizer_config.json") as f:
         config = json.load(f)
     optimizer = OptimizerTemplate(config)
-    optimizer.run_optimization() 
+    optimizer.run_optimization()

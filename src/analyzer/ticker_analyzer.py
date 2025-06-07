@@ -1,15 +1,18 @@
-import yfinance as yf
-import pandas as pd
-import ta
 import datetime
 from typing import Any, Dict, Optional
+
+import pandas as pd
+import ta
+import yfinance as yf
+
 
 class TickerAnalyzer:
     """
     Analyzes a ticker symbol and provides fundamental and technical analysis.
-    
+
     This class uses yfinance to download stock data and ta to calculate technical indicators.
     """
+
     def analyze_ticker(ticker_symbol):
         try:
             # Download data
@@ -17,8 +20,10 @@ class TickerAnalyzer:
 
             # --- FUNDAMENTAL ANALYSIS ---
             info = ticker.info
-            if not info or 'longName' not in info:
-                print(f"\n❌ No fundamental data found for '{ticker_symbol}'. The ticker may be delisted or invalid.")
+            if not info or "longName" not in info:
+                print(
+                    f"\n❌ No fundamental data found for '{ticker_symbol}'. The ticker may be delisted or invalid."
+                )
                 return None, None
             fundamentals = {
                 "Company": info.get("longName"),
@@ -33,25 +38,27 @@ class TickerAnalyzer:
                 "Return on Assets": info.get("returnOnAssets"),
                 "Revenue": info.get("totalRevenue"),
                 "Gross Profits": info.get("grossProfits"),
-                "Net Income": info.get("netIncomeToCommon")
+                "Net Income": info.get("netIncomeToCommon"),
             }
 
             # --- TECHNICAL ANALYSIS ---
             print("\n📈 Technical Indicators:")
             df = ticker.history(period="1y", interval="1d")
             if df is None or df.empty:
-                print(f"❌ No price data found for '{ticker_symbol}'. The ticker may be delisted or has no recent trading history.")
+                print(
+                    f"❌ No price data found for '{ticker_symbol}'. The ticker may be delisted or has no recent trading history."
+                )
                 return None, None
 
             # Clean and add indicators
             df = df.dropna()
-            df['RSI'] = ta.momentum.RSIIndicator(df['Close']).rsi()
-            df['MACD'] = ta.trend.MACD(df['Close']).macd()
-            df['SMA_20'] = ta.trend.SMAIndicator(df['Close'], window=20).sma_indicator()
-            df['EMA_20'] = ta.trend.EMAIndicator(df['Close'], window=20).ema_indicator()
-            bb = ta.volatility.BollingerBands(df['Close'])
-            df['BB_High'] = bb.bollinger_hband()
-            df['BB_Low'] = bb.bollinger_lband()
+            df["RSI"] = ta.momentum.RSIIndicator(df["Close"]).rsi()
+            df["MACD"] = ta.trend.MACD(df["Close"]).macd()
+            df["SMA_20"] = ta.trend.SMAIndicator(df["Close"], window=20).sma_indicator()
+            df["EMA_20"] = ta.trend.EMAIndicator(df["Close"], window=20).ema_indicator()
+            bb = ta.volatility.BollingerBands(df["Close"])
+            df["BB_High"] = bb.bollinger_hband()
+            df["BB_Low"] = bb.bollinger_lband()
 
             latest = df.iloc[-1]
             print(f"Latest Close: {latest['Close']:.2f}")
@@ -61,13 +68,14 @@ class TickerAnalyzer:
             print(f"EMA 20: {latest['EMA_20']:.2f}")
             print(f"Bollinger High: {latest['BB_High']:.2f}")
             print(f"Bollinger Low: {latest['BB_Low']:.2f}")
-            
+
             df.dropna(inplace=True)
-            
+
             return fundamentals, df
         except Exception as e:
             print(f"\n❌ Error analyzing ticker '{ticker_symbol}': {e}")
             return None, None
+
 
 # 🔍 Example usage
 if __name__ == "__main__":

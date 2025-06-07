@@ -1,43 +1,51 @@
+import os
+import warnings
+
+import matplotlib.pyplot as plt
+import numpy as np
+import optuna
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import yfinance as yf
-import numpy as np
-import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
-import optuna
 from torch.utils.data import DataLoader, TensorDataset
-import matplotlib.pyplot as plt
-import os
-import warnings
+
 
 # -------------------------------
 # DATA PROCESSING
 # -------------------------------
 def load_btc_data():
-    df = yf.download('BTC-USD', start='2017-01-01', end='2024-06-30')
-    df = df.asfreq('D')
-    return df[['Close']].dropna()
+    df = yf.download("BTC-USD", start="2017-01-01", end="2024-06-30")
+    df = df.asfreq("D")
+    return df[["Close"]].dropna()
+
 
 def load_btc_data2():
-    df = yf.download('BTC-USD', start='2024-05-01', end='2025-06-01')
-    df = df.asfreq('D')
-    return df[['Close']].dropna()
+    df = yf.download("BTC-USD", start="2024-05-01", end="2025-06-01")
+    df = df.asfreq("D")
+    return df[["Close"]].dropna()
+
 
 def holt_winters_smoothing(series):
-    model = ExponentialSmoothing(series, trend='add', seasonal='add', seasonal_periods=365)
+    model = ExponentialSmoothing(
+        series, trend="add", seasonal="add", seasonal_periods=365
+    )
     fit = model.fit(optimized=True)
     fitted = fit.fittedvalues
     deseasonalized = series / fitted
     return deseasonalized.bfill()
 
+
 def create_sequences(data, window):
     X, y = [], []
     for i in range(window, len(data)):
-        X.append(data[i-window:i])
+        X.append(data[i - window : i])
         y.append(data[i])
     return np.array(X), np.array(y)
+
 
 # -------------------------------
 # HELFORMER MODEL
@@ -51,7 +59,7 @@ class Helformer(nn.Module):
             nhead=n_heads,
             dim_feedforward=hidden_dim,
             dropout=dropout,
-            batch_first=True
+            batch_first=True,
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         self.lstm = nn.LSTM(input_dim, hidden_dim, batch_first=True)
@@ -63,29 +71,35 @@ class Helformer(nn.Module):
         out, _ = self.lstm(x)
         return self.fc(out[:, -1, :])
 
+
 # -------------------------------
 # OBJECTIVE FUNCTION
 # -------------------------------
 def objective(trial):
     window = 30
-    hidden_dim = trial.suggest_int('hidden_dim', 32, 128)
-    embed_dim = trial.suggest_categorical('embed_dim', [8, 16, 32, 64])
-    n_heads = trial.suggest_categorical('n_heads', [1, 2, 4, 8])
-    num_layers = trial.suggest_int('num_layers', 1, 4)
-    dropout = trial.suggest_float('dropout', 0.0, 0.5)
-    lr = trial.suggest_float('lr', 1e-4, 1e-2)
-    batch_size = trial.suggest_categorical('batch_size', [16, 32, 64])
+    hidden_dim = trial.suggest_int("hidden_dim", 32, 128)
+    embed_dim = trial.suggest_categorical("embed_dim", [8, 16, 32, 64])
+    n_heads = trial.suggest_categorical("n_heads", [1, 2, 4, 8])
+    num_layers = trial.suggest_int("num_layers", 1, 4)
+    dropout = trial.suggest_float("dropout", 0.0, 0.5)
+    lr = trial.suggest_float("lr", 1e-4, 1e-2)
+    batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
 
     # Ensure embed_dim is divisible by n_heads
     if embed_dim % n_heads != 0:
         print(f"Pruned: embed_dim {embed_dim} not divisible by n_heads {n_heads}")
         raise optuna.exceptions.TrialPruned()
 
-    model = Helformer(input_dim=embed_dim, hidden_dim=hidden_dim, n_heads=n_heads,
-                      num_layers=num_layers, dropout=dropout)
+    model = Helformer(
+        input_dim=embed_dim,
+        hidden_dim=hidden_dim,
+        n_heads=n_heads,
+        num_layers=num_layers,
+        dropout=dropout,
+    )
 
     df = load_btc_data()
-    deseason = holt_winters_smoothing(df['Close'])
+    deseason = holt_winters_smoothing(df["Close"])
     deseason = deseason.dropna()
 
     # Prune trial if no data left
@@ -121,27 +135,37 @@ def objective(trial):
         preds = model(X_tensor).squeeze()
         loss = criterion(preds, y_tensor.squeeze())
 
-    return loss.item(), model.state_dict(), {
-        'hidden_dim': hidden_dim,
-        'n_heads': n_heads,
-        'num_layers': num_layers,
-        'dropout': dropout,
-        'embed_dim': embed_dim
-    }
+    return (
+        loss.item(),
+        model.state_dict(),
+        {
+            "hidden_dim": hidden_dim,
+            "n_heads": n_heads,
+            "num_layers": num_layers,
+            "dropout": dropout,
+            "embed_dim": embed_dim,
+        },
+    )
+
 
 # -------------------------------
 # LOAD AND INFER
 # -------------------------------
 def load_and_predict():
-    checkpoint = torch.load('helformer_best_model.pt')
-    params = checkpoint['params']
-    model = Helformer(input_dim=params['embed_dim'], hidden_dim=params['hidden_dim'], n_heads=params['n_heads'],
-                      num_layers=params['num_layers'], dropout=params['dropout'])
-    model.load_state_dict(checkpoint['model_state_dict'])
+    checkpoint = torch.load("helformer_best_model.pt")
+    params = checkpoint["params"]
+    model = Helformer(
+        input_dim=params["embed_dim"],
+        hidden_dim=params["hidden_dim"],
+        n_heads=params["n_heads"],
+        num_layers=params["num_layers"],
+        dropout=params["dropout"],
+    )
+    model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
 
     df = load_btc_data2()
-    deseason = holt_winters_smoothing(df['Close'])
+    deseason = holt_winters_smoothing(df["Close"])
     deseason = deseason.dropna()
 
     # Prune trial if no data left
@@ -204,16 +228,16 @@ def load_and_predict():
 
     # Plotting with signals
     plt.figure(figsize=(14, 6))
-    plt.plot(actuals_rescaled, label='Actual Prices', alpha=0.6)
-    plt.plot(preds_rescaled, label='Predicted Prices', alpha=0.6)
+    plt.plot(actuals_rescaled, label="Actual Prices", alpha=0.6)
+    plt.plot(preds_rescaled, label="Predicted Prices", alpha=0.6)
 
     if buy_signals:
         buy_x, buy_y = zip(*buy_signals)
-        plt.scatter(buy_x, buy_y, marker='^', color='green', label='Buy Signal', s=100)
+        plt.scatter(buy_x, buy_y, marker="^", color="green", label="Buy Signal", s=100)
 
     if sell_signals:
         sell_x, sell_y = zip(*sell_signals)
-        plt.scatter(sell_x, sell_y, marker='v', color='red', label='Sell Signal', s=100)
+        plt.scatter(sell_x, sell_y, marker="v", color="red", label="Sell Signal", s=100)
 
     plt.title("BTC Forecast with Buy/Sell Signals")
     plt.xlabel("Days")
@@ -227,6 +251,7 @@ def load_and_predict():
     roi = (final_value - 10000) / 10000 * 100
     print(f"Final portfolio value: ${final_value:.2f}, ROI: {roi:.2f}%")
 
+
 def test_minimal_pipeline():
     window = 30
     hidden_dim = 32
@@ -237,20 +262,25 @@ def test_minimal_pipeline():
     lr = 0.001
     batch_size = 32
 
-    model = Helformer(input_dim=embed_dim, hidden_dim=hidden_dim, n_heads=n_heads,
-                      num_layers=num_layers, dropout=dropout)
+    model = Helformer(
+        input_dim=embed_dim,
+        hidden_dim=hidden_dim,
+        n_heads=n_heads,
+        num_layers=num_layers,
+        dropout=dropout,
+    )
 
-    df = yf.download('BTC-USD', start='2017-01-01', end='2024-06-30')
+    df = yf.download("BTC-USD", start="2017-01-01", end="2024-06-30")
     print("Downloaded data shape:", df.shape)
     print(df.head())
-    df = df.asfreq('D')
+    df = df.asfreq("D")
     print("After asfreq('D') shape:", df.shape)
     print(df.head(10))
-    df = df[['Close']].dropna()
+    df = df[["Close"]].dropna()
     print("After dropna shape:", df.shape)
     print(df.head(10))
 
-    deseason = holt_winters_smoothing(df['Close'])
+    deseason = holt_winters_smoothing(df["Close"])
     print("After holt_winters_smoothing, shape:", deseason.shape)
     print(deseason.head(10))
     deseason = deseason.dropna()
@@ -292,6 +322,7 @@ def test_minimal_pipeline():
     print("Minimal pipeline ran successfully.")
     return True
 
+
 # -------------------------------
 # MAIN EXECUTION
 # -------------------------------
@@ -301,7 +332,7 @@ def main():
     if not test_minimal_pipeline():
         print("Minimal pipeline failed. Please check your data and model setup.")
         return
-    best_loss = float('inf')
+    best_loss = float("inf")
     best_state = None
     best_params = None
 
@@ -314,9 +345,10 @@ def main():
             best_params = params
         return loss
 
-    from optuna.visualization import plot_param_importances, plot_optimization_history
+    from optuna.visualization import (plot_optimization_history,
+                                      plot_param_importances)
 
-    study = optuna.create_study(direction='minimize')
+    study = optuna.create_study(direction="minimize")
     study.optimize(optuna_objective, n_trials=20, n_jobs=1)
 
     if not any(t.state == optuna.trial.TrialState.COMPLETE for t in study.trials):
@@ -336,10 +368,10 @@ def main():
         for t in study.trials:
             f.write(f"Trial {t.number}: Loss={t.value}, Params={t.params}")
 
-        torch.save({
-        'model_state_dict': best_state,
-        'params': best_params
-    }, 'helformer_best_model.pt')
+        torch.save(
+            {"model_state_dict": best_state, "params": best_params},
+            "helformer_best_model.pt",
+        )
 
         # Visualize parameter importance
         fig = plot_param_importances(study)
@@ -350,6 +382,7 @@ def main():
     fig_hist.write_image("optuna_results/optimization_history.png")
 
     load_and_predict()
+
 
 if __name__ == "__main__":
     main()

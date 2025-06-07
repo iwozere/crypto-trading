@@ -1,11 +1,11 @@
 # ticker_bot/bot.py
 
-import os
 import logging
+import os
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import FSInputFile
 from aiogram.utils import executor
-
 from src.analyzer.telegram.combine import analyze_ticker
 
 logging.basicConfig(level=logging.INFO)
@@ -16,9 +16,11 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
 
-@dp.message_handler(commands=['start', 'help'])
+@dp.message_handler(commands=["start", "help"])
 async def send_welcome(message: types.Message):
-    await message.reply("📊 Отправь тикер (например: AAPL или TSLA), и я пришлю анализ компании.")
+    await message.reply(
+        "📊 Отправь тикер (например: AAPL или TSLA), и я пришлю анализ компании."
+    )
 
 
 @dp.message_handler(lambda message: message.text and message.text.strip().isalnum())
@@ -44,12 +46,17 @@ async def handle_ticker(message: types.Message):
         with open(chart_path, "wb") as f:
             f.write(result.chart_image)
 
-        await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile(chart_path), caption=text, parse_mode="HTML")
+        await bot.send_photo(
+            chat_id=message.chat.id,
+            photo=FSInputFile(chart_path),
+            caption=text,
+            parse_mode="HTML",
+        )
 
     except Exception as e:
         logging.exception("Ошибка анализа")
         await message.reply(f"⚠️ Ошибка анализа тикера {ticker}: {str(e)}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)

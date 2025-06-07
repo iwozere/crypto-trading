@@ -5,12 +5,14 @@ Central registry for all available trading strategy classes, with metadata.
 Allows dynamic lookup and instantiation by name, and provides descriptions and default parameters.
 """
 
-from src.strategy.rsi_bb_strategy import MeanReversionRsiBbStrategy
-from src.strategy.rsi_bb_volume_strategy import RsiBollVolumeStrategy
-from src.strategy.bb_volume_supertrend_strategy import BBSuperTrendVolumeBreakoutStrategy
-from src.strategy.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
+from src.strategy.bb_volume_supertrend_strategy import \
+    BBSuperTrendVolumeBreakoutStrategy
 from src.strategy.ichimoku_rsi_volume_strategy import IchimokuRsiVolumeStrategy
 from src.strategy.liquidity_momentum_strategy import LiquidityMomentumStrategy
+from src.strategy.rsi_bb_strategy import MeanReversionRsiBbStrategy
+from src.strategy.rsi_bb_volume_strategy import RsiBollVolumeStrategy
+from src.strategy.rsi_volume_supertrend_strategy import \
+    RsiVolumeSuperTrendStrategy
 
 STRATEGY_REGISTRY = {
     "rsi_bb": {
@@ -29,8 +31,8 @@ STRATEGY_REGISTRY = {
             "trail_atr_mult": 2.0,
             "printlog": False,
             "check_rsi_slope": False,
-            "notify": False
-        }
+            "notify": False,
+        },
     },
     "rsi_bb_volume": {
         "class": RsiBollVolumeStrategy,
@@ -43,8 +45,8 @@ STRATEGY_REGISTRY = {
             "rsi_oversold": 30,
             "rsi_overbought": 70,
             "printlog": False,
-            "notify": False
-        }
+            "notify": False,
+        },
     },
     "bb_volume_supertrend": {
         "class": BBSuperTrendVolumeBreakoutStrategy,
@@ -60,8 +62,8 @@ STRATEGY_REGISTRY = {
             "tp_atr_mult": 2.0,
             "sl_atr_mult": 1.0,
             "printlog": False,
-            "notify": False
-        }
+            "notify": False,
+        },
     },
     "rsi_volume_supertrend": {
         "class": RsiVolumeSuperTrendStrategy,
@@ -80,8 +82,8 @@ STRATEGY_REGISTRY = {
             "sl_atr_mult": 1.5,
             "time_based_exit_period": 5,
             "printlog": False,
-            "notify": False
-        }
+            "notify": False,
+        },
     },
     "ichimoku_rsi_volume": {
         "class": IchimokuRsiVolumeStrategy,
@@ -96,8 +98,8 @@ STRATEGY_REGISTRY = {
             "atr_mult": 2.0,
             "vol_ma_period": 20,
             "printlog": False,
-            "notify": False
-        }
+            "notify": False,
+        },
     },
     "liquidity_momentum": {
         "class": LiquidityMomentumStrategy,
@@ -107,12 +109,13 @@ STRATEGY_REGISTRY = {
             "vol_ma_period": 20,
             "volume_threshold": 1.5,
             "printlog": False,
-            "notify": False
-        }
-    }
+            "notify": False,
+        },
+    },
     # Add new strategies here as needed
 }
 
+
 def get_strategy_info(name: str):
     """Get strategy info dict (class, description, default_params) by registry name."""
-    return STRATEGY_REGISTRY.get(name) 
+    return STRATEGY_REGISTRY.get(name)

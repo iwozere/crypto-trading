@@ -18,6 +18,7 @@ Functions:
 - get_trades(bot_id): Get trade history for a bot
 - get_running_bots(): List all running bot IDs
 """
+
 import importlib
 import threading
 from typing import Any, Dict, List, Optional
@@ -26,7 +27,10 @@ from typing import Any, Dict, List, Optional
 running_bots: Dict[str, Any] = {}
 bot_threads: Dict[str, threading.Thread] = {}
 
-def start_bot(strategy_name: str, config: Dict[str, Any], bot_id: Optional[str] = None) -> str:
+
+def start_bot(
+    strategy_name: str, config: Dict[str, Any], bot_id: Optional[str] = None
+) -> str:
     """
     Start a trading bot for the given strategy. Returns bot_id.
     Args:
@@ -39,17 +43,24 @@ def start_bot(strategy_name: str, config: Dict[str, Any], bot_id: Optional[str] 
         Exception: If a bot with the same ID is already running
     """
     if not bot_id:
-        bot_id = strategy_name if strategy_name not in running_bots else f"{strategy_name}_{len(running_bots)+1}"
+        bot_id = (
+            strategy_name
+            if strategy_name not in running_bots
+            else f"{strategy_name}_{len(running_bots)+1}"
+        )
     if bot_id in running_bots:
         raise Exception(f"Bot with id {bot_id} is already running.")
     bot_module = importlib.import_module(f"src.trading.{strategy_name}_bot")
-    bot_class = getattr(bot_module, ''.join([w.capitalize() for w in strategy_name.split('_')]) + 'Bot')
+    bot_class = getattr(
+        bot_module, "".join([w.capitalize() for w in strategy_name.split("_")]) + "Bot"
+    )
     bot_instance = bot_class(config)
     running_bots[bot_id] = bot_instance
     t = threading.Thread(target=bot_instance.run, daemon=True)
     bot_threads[bot_id] = t
     t.start()
     return bot_id
+
 
 def stop_bot(bot_id: str) -> None:
     """
@@ -66,13 +77,15 @@ def stop_bot(bot_id: str) -> None:
     del running_bots[bot_id]
     del bot_threads[bot_id]
 
+
 def get_status() -> Dict[str, str]:
     """
     Get status of all running bots.
     Returns:
         A dictionary mapping bot IDs to their status ("running")
     """
-    return {bot_id: 'running' for bot_id in running_bots.keys()}
+    return {bot_id: "running" for bot_id in running_bots.keys()}
+
 
 def get_trades(bot_id: str) -> List[Any]:
     """
@@ -83,8 +96,9 @@ def get_trades(bot_id: str) -> List[Any]:
         A list of trade records (may be empty if no trades or bot not found)
     """
     if bot_id in running_bots:
-        return getattr(running_bots[bot_id], 'trade_history', [])
+        return getattr(running_bots[bot_id], "trade_history", [])
     return []
+
 
 def get_running_bots() -> List[str]:
     """
@@ -92,4 +106,4 @@ def get_running_bots() -> List[str]:
     Returns:
         List of bot IDs
     """
-    return list(running_bots.keys()) 
+    return list(running_bots.keys())

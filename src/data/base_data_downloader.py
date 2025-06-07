@@ -1,7 +1,8 @@
-import os
-import pandas as pd
 import datetime
-from typing import List, Optional, Dict, Any
+import os
+from typing import Any, Dict, List, Optional
+
+import pandas as pd
 
 """
 Base Data Downloader Module
@@ -18,20 +19,29 @@ Classes:
 - BaseDataDownloader: Abstract base class for data downloaders
 """
 
+
 class BaseDataDownloader:
     def __init__(self, data_dir: Optional[str] = None, interval: Optional[str] = None):
-        self.data_dir = data_dir or os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'dataset')
-        self.interval = interval or '1d'
+        self.data_dir = data_dir or os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "dataset"
+        )
+        self.interval = interval or "1d"
         os.makedirs(self.data_dir, exist_ok=True)
 
-    def save_data(self, df: pd.DataFrame, symbol: str, start_date: str = None, end_date: str = None) -> str:
+    def save_data(
+        self,
+        df: pd.DataFrame,
+        symbol: str,
+        start_date: str = None,
+        end_date: str = None,
+    ) -> str:
         """
         Save downloaded data to a CSV file.
         """
         if start_date is None:
-            start_date = df['timestamp'].min().strftime('%Y-%m-%d')
+            start_date = df["timestamp"].min().strftime("%Y-%m-%d")
         if end_date is None:
-            end_date = df['timestamp'].max().strftime('%Y-%m-%d')
+            end_date = df["timestamp"].max().strftime("%Y-%m-%d")
         filename = f"{symbol}_{self.interval}_{start_date.replace('-', '')}"
         if end_date:
             filename += f"_{end_date.replace('-', '')}"
@@ -45,11 +55,13 @@ class BaseDataDownloader:
         Load data from a CSV file.
         """
         df = pd.read_csv(filepath)
-        if 'timestamp' in df.columns:
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
+        if "timestamp" in df.columns:
+            df["timestamp"] = pd.to_datetime(df["timestamp"])
         return df
 
-    def download_multiple_symbols(self, symbols: List[str], download_func, *args, **kwargs) -> Dict[str, str]:
+    def download_multiple_symbols(
+        self, symbols: List[str], download_func, *args, **kwargs
+    ) -> Dict[str, str]:
         """
         Download data for multiple symbols using the provided download_func.
         """
@@ -58,11 +70,15 @@ class BaseDataDownloader:
             try:
                 df = download_func(symbol, *args, **kwargs)
                 # Assume start_date and end_date are in kwargs or args
-                start_date = kwargs.get('start_date') or args[0] if args else ''
-                end_date = kwargs.get('end_date') or (args[1] if len(args) > 1 else None)
-                filepath = self.save_data(df, symbol, str(start_date), str(end_date) if end_date else None)
+                start_date = kwargs.get("start_date") or args[0] if args else ""
+                end_date = kwargs.get("end_date") or (
+                    args[1] if len(args) > 1 else None
+                )
+                filepath = self.save_data(
+                    df, symbol, str(start_date), str(end_date) if end_date else None
+                )
                 results[symbol] = filepath
             except Exception as e:
                 print(f"Error processing {symbol}: {str(e)}")
                 continue
-        return results 
+        return results

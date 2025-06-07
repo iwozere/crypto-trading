@@ -1,7 +1,8 @@
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
+
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -13,8 +14,10 @@ class User(db.Model, UserMixin):
 
     def set_password(self, password):
         from werkzeug.security import generate_password_hash
+
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         from werkzeug.security import check_password_hash
-        return check_password_hash(self.password_hash, password) 
+
+        return check_password_hash(self.password_hash, password)

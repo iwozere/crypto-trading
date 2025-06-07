@@ -6,9 +6,11 @@ This template provides a consistent structure for new trading strategies using B
 Copy this file and fill in the specific logic for your strategy.
 """
 
+from typing import Any, Dict, Optional
+
 import backtrader as bt
 from src.strategy.base_strategy import BaseStrategy
-from typing import Any, Dict, Optional
+
 
 class StrategyTemplate(BaseStrategy):
     """
@@ -23,11 +25,12 @@ class StrategyTemplate(BaseStrategy):
     Exit Logic:
     - Describe exit conditions.
     """
+
     params = (
         # Example parameters (customize as needed)
-        ('example_period', 14),
-        ('example_threshold', 1.5),
-        ('printlog', False),
+        ("example_period", 14),
+        ("example_threshold", 1.5),
+        ("printlog", False),
     )
 
     def __init__(self):
@@ -46,32 +49,38 @@ class StrategyTemplate(BaseStrategy):
             return
         if order.status in [order.Completed]:
             if order.isbuy():
-                self.log(f'BUY EXECUTED, Price: {order.executed.price:.2f}')
+                self.log(f"BUY EXECUTED, Price: {order.executed.price:.2f}")
                 self.entry_price = order.executed.price
             elif order.issell():
-                self.log(f'SELL EXECUTED, Price: {order.executed.price:.2f}')
+                self.log(f"SELL EXECUTED, Price: {order.executed.price:.2f}")
                 self.entry_price = order.executed.price
             self.bar_executed = len(self)
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log(f'Order {order.getstatusname()}')
+            self.log(f"Order {order.getstatusname()}")
         self.order = None
 
     def notify_trade(self, trade):
         if not trade.isclosed:
             return
-        self.log(f'OPERATION PROFIT, GROSS {trade.pnl:.2f}, NET {trade.pnlcomm:.2f}')
+        self.log(f"OPERATION PROFIT, GROSS {trade.pnl:.2f}, NET {trade.pnlcomm:.2f}")
         trade_dict = {
             # 'symbol': trade.data._name if hasattr(trade.data, '_name') else 'UNKNOWN',
-            'ref': trade.ref,
-            'entry_time': bt.num2date(trade.dtopen) if trade.dtopen else None,
-            'entry_price': trade.price,
-            'direction': 'long',  # or 'short', customize as needed
-            'exit_time': bt.num2date(trade.dtclose) if trade.dtclose else None,
-            'exit_price': trade.history[-1].event.price if trade.history and trade.history[-1].event else None,
-            'exit_reason': self.last_exit_reason,
-            'pnl': trade.pnl, 'pnl_comm': trade.pnlcomm,
-            'size': trade.size, 'value': trade.value,
-            'commission': trade.commission
+            "ref": trade.ref,
+            "entry_time": bt.num2date(trade.dtopen) if trade.dtopen else None,
+            "entry_price": trade.price,
+            "direction": "long",  # or 'short', customize as needed
+            "exit_time": bt.num2date(trade.dtclose) if trade.dtclose else None,
+            "exit_price": (
+                trade.history[-1].event.price
+                if trade.history and trade.history[-1].event
+                else None
+            ),
+            "exit_reason": self.last_exit_reason,
+            "pnl": trade.pnl,
+            "pnl_comm": trade.pnlcomm,
+            "size": trade.size,
+            "value": trade.value,
+            "commission": trade.commission,
         }
         self.record_trade(trade_dict)
         self.last_exit_reason = None
@@ -91,5 +100,5 @@ class StrategyTemplate(BaseStrategy):
         else:
             # Example: Exit if close < some threshold
             if close < 95:  # Replace with your exit condition
-                self.last_exit_reason = 'Example: Close < 95'
-                self.order = self.close() 
+                self.last_exit_reason = "Example: Close < 95"
+                self.order = self.close()
