@@ -96,18 +96,22 @@ class BaseOptimizer:
         self.commission = self.config["commission"]
         self.risk_free_rate = self.config["risk_free_rate"]
         self.omega_threshold = self.config["omega_threshold"]
-        self.optimization_method = self.config["optimization_method"]
-        self.n_trials = self.config["n_trials"]
-        self.n_random_starts = self.config["n_random_starts"]
+        self.use_talib = self.config["use_talib"]
+        
+        # Get optimization settings from nested structure
+        self.optimization_settings = self.config["optimization_settings"]
+        self.optimization_method = self.optimization_settings["optimization_method"]
+        self.n_trials = self.optimization_settings["n_trials"]
+        self.n_jobs = self.optimization_settings["n_jobs"]
+        self.random_state = self.optimization_settings["random_state"]
+        
         self.exit_logic = self.config["exit_logic"]
         self.parameters = self.config.get("parameters", {})  # Initialize parameters
-        self.optimization_settings = self.config["optimization_settings"]
         self.search_space = self.config["search_space"]
         self.default_params = self.config["default_params"]
         self.plot = self.config["plot"]
         self.save_trades = self.config["save_trades"]
         self.plot_size = self.config["plot_size"]
-        self.use_talib = self.config["use_talib"]
         
         # Create a single notifier instance if notifications are enabled
         self.notifier = None
@@ -1009,3 +1013,56 @@ class BaseOptimizer:
             elif param["type"] == "Categorical":
                 skopt_space.append(Categorical(param["categories"], name=param["name"]))
         return skopt_space
+
+    def optimize(self):
+        """Run the optimization process."""
+        try:
+            if self.optimization_method == "skopt":
+                self._run_bayesian_optimization()
+            elif self.optimization_method == "optuna":
+                self._run_optuna_optimization()
+            else:
+                raise ValueError(f"Unknown optimization method: {self.optimization_method}")
+        except Exception as e:
+            _logger.error(f"Optimization failed: {e}")
+            if self.notifier:
+                self.notifier.send_message(f"Optimization failed: {e}")
+            raise
+
+    def _run_bayesian_optimization(self):
+        """Run Bayesian optimization using scikit-optimize."""
+        try:
+            # Convert search space to skopt format
+            dimensions = []
+            for param in self.search_space:
+                if param["type"] == "Integer":
+                    dimensions.append(Integer(param["low"], param["high"], name=param["name"]))
+                elif param["type"] == "Real":
+                    dimensions.append(Real(param["low"], param["high"], name=param["name"]))
+                elif param["type"] == "Categorical":
+                    dimensions.append(Categorical(param["values"], name=param["name"]))
+
+            # Run optimization
+            result = gp_minimize(
+                func=self._objective,
+                dimensions=dimensions,
+                n_calls=self.n_trials,
+                n_random_starts=self.random_state,  # Use random_state from config
+                random_state=self.random_state,
+                n_jobs=self.n_jobs,
+                verbose=True
+            )
+
+            # Store results
+            self.optimization_result = result
+            self.best_params = dict(zip([d.name for d in dimensions], result.x))
+            self.best_score = -result.fun  # Convert back to maximization
+
+            # Save results
+            self._save_optimization_results()
+
+        except Exception as e:
+            _logger.error(f"Bayesian optimization failed: {e}")
+            if self.notifier:
+                self.notifier.send_message(f"Bayesian optimization failed: {e}")
+            raise

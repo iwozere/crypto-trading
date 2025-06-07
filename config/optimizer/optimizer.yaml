@@ -17,6 +17,8 @@ commission: float  # Trading commission rate (e.g., 0.001 for 0.1%)
 risk_free_rate: float  # Risk-free rate for Sharpe ratio calculation
 omega_threshold: float  # Minimum Omega ratio threshold
 
+use_talib: boolean  # Whether to use TA-Lib for calculations
+
 # Optimization settings
 optimization_settings:
   optimization_method: string  # Optimization method (e.g., "optuna" or "skopt". "grid" is not supported yet.)
@@ -78,7 +80,6 @@ visualization_settings:
   plot: boolean  # Whether to generate plots
   save_trades: boolean  # Whether to save trade history
   plot_size: [integer, integer]  # Plot dimensions [width, height]
-  use_talib: boolean  # Whether to use TA-Lib for calculations
 
 # Validation rules
 validation_rules:
