@@ -5,24 +5,35 @@ from typing import Optional
 
 
 @dataclass
-class TickerAnalysis:
+class Fundamentals:
     ticker: str
     company_name: str
     current_price: float
+    market_cap: float
+    pe_ratio: float
+    forward_pe: float
+    dividend_yield: float
+    earnings_per_share: float
 
-    # Fundamental
-    market_cap: Optional[str]
-    pe_ratio: Optional[float]
-    forward_pe: Optional[float]
-    dividend_yield: Optional[float]
-    earnings_per_share: Optional[float]
+@dataclass
+class Technicals:
+    rsi: float
+    sma_50: float
+    sma_200: float
+    macd_signal: float
+    trend: str
+    bb_upper: float
+    bb_middle: float
+    bb_lower: float
+    bb_width: float  # (upper - lower) / middle
 
-    # Technical
-    rsi: Optional[float]
-    sma_50: Optional[float]
-    sma_200: Optional[float]
-    macd_signal: Optional[float]
-    trend: Optional[str]
+@dataclass
+class TickerAnalysis:
+    ticker: str
+    fundamentals: Fundamentals
+    technicals: Technicals
+    chart_image: bytes
+    recommendation: str = "Neutral"  # Default value
 
     # Resume
     recommendation: Optional[str]
