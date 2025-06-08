@@ -32,7 +32,8 @@
     {"type": "Real", "name": "rsi_overbought", "low": 60.0, "high": 80.0},
     {"type": "Real", "name": "rsi_mid_level", "low": 45.0, "high": 55.0},
     {"type": "Integer", "name": "atr_period", "low": 7, "high": 28},
-    {"type": "Integer", "name": "check_rsi_slope", "low": 0, "high": 1}
+    {"type": "Integer", "name": "check_rsi_slope", "low": 0, "high": 1},
+    {"type": "Integer", "name": "vol_ma_period", "low": 5, "high": 30}
   ],
   "default_params": {
     "bb_period": 20,
@@ -42,7 +43,8 @@
     "rsi_overbought": 70.0,
     "rsi_mid_level": 50.0,
     "atr_period": 14,
-    "check_rsi_slope": 0
+    "check_rsi_slope": 0,
+    "vol_ma_period": 20
   },
   "visualization_settings": {
     "plot": true,

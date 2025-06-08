@@ -110,221 +110,244 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         Returns:
             Path to the saved plot image, or None if plotting fails
         """
-        plt.style.use("dark_background")
-        fig = plt.figure(figsize=self.plot_size)
+        try:
+            plt.style.use("dark_background")
+            fig = plt.figure(figsize=self.plot_size)
 
-        # Create subplots
-        gs = gridspec.GridSpec(4, 1, height_ratios=[3, 1, 1, 1])
-        ax1 = plt.subplot(gs[0])
-        ax2 = plt.subplot(gs[1], sharex=ax1)
-        ax3 = plt.subplot(gs[2], sharex=ax1)
-        ax4 = plt.subplot(gs[3], sharex=ax1)
+            # Create subplots
+            gs = gridspec.GridSpec(4, 1, height_ratios=[3, 1, 1, 1])
+            ax1 = plt.subplot(gs[0])
+            ax2 = plt.subplot(gs[1], sharex=ax1)
+            ax3 = plt.subplot(gs[2], sharex=ax1)
+            ax4 = plt.subplot(gs[3], sharex=ax1)
 
-        for ax in [ax1, ax2, ax3, ax4]:
-            ax.grid(self.show_grid)
+            for ax in [ax1, ax2, ax3, ax4]:
+                ax.grid(self.show_grid)
 
-        # Calculate indicators using the same implementation as the strategy
-        use_talib = params.get("use_talib", False)
+            # Calculate indicators using pandas/TA-Lib
+            use_talib = params.get("use_talib", False)
 
-        if use_talib:
-            # TA-Lib indicators
-            bb_high = bt.talib.BBANDS(
-                data_df["close"],
-                timeperiod=params["bb_period"],
-                nbdevup=params["bb_devfactor"],
-                nbdevdn=params["bb_devfactor"],
-            )[0]  # Upper band
-            bb_mid = bt.talib.BBANDS(
-                data_df["close"],
-                timeperiod=params["bb_period"],
-                nbdevup=params["bb_devfactor"],
-                nbdevdn=params["bb_devfactor"],
-            )[1]  # Middle band
-            bb_low = bt.talib.BBANDS(
-                data_df["close"],
-                timeperiod=params["bb_period"],
-                nbdevup=params["bb_devfactor"],
-                nbdevdn=params["bb_devfactor"],
-            )[2]  # Lower band
-            supertrend = bt.talib.SUPERTREND(
-                data_df["high"],
-                data_df["low"],
-                data_df["close"],
-                timeperiod=params["supertrend_period"],
-                multiplier=params["supertrend_multiplier"],
-            )
-            vol_ma = bt.talib.SMA(data_df["volume"], timeperiod=params["vol_ma_period"])
-        else:
-            # Backtrader built-in indicators
-            bb = bt.ind.BollingerBands(
-                period=params["bb_period"], devfactor=params["bb_devfactor"]
-            )
-            bb_high = bb.lines.top
-            bb_mid = bb.lines.mid
-            bb_low = bb.lines.bot
-            supertrend = bt.ind.SuperTrend(
-                period=params["supertrend_period"],
-                multiplier=params["supertrend_multiplier"],
-            )
-            vol_ma = bt.ind.SMA(data_df["volume"], period=params["vol_ma_period"])
+            if use_talib:
+                # TA-Lib indicators
+                # Bollinger Bands
+                bb_high, bb_mid, bb_low = talib.BBANDS(
+                    data_df["close"].values,
+                    timeperiod=params["bb_period"],
+                    nbdevup=params["bb_devfactor"],
+                    nbdevdn=params["bb_devfactor"],
+                    matype=0,
+                )
 
-        # Plot price and Bollinger Bands
-        ax1.plot(data_df.index, data_df["close"], label="Price", color="white", linewidth=2)
-        ax1.plot(
-            data_df.index,
-            bb_high,
-            label=f'BB High ({params["bb_period"]}, {params["bb_devfactor"]})',
-            color="red",
-            alpha=0.7,
-            linewidth=1,
-        )
-        ax1.plot(
-            data_df.index,
-            bb_mid,
-            label=f'BB Mid ({params["bb_period"]})',
-            color="yellow",
-            alpha=0.7,
-            linewidth=1,
-        )
-        ax1.plot(
-            data_df.index,
-            bb_low,
-            label=f'BB Low ({params["bb_period"]}, {params["bb_devfactor"]})',
-            color="green",
-            alpha=0.7,
-            linewidth=1,
-        )
+                # SuperTrend
+                atr = talib.ATR(
+                    data_df["high"].values,
+                    data_df["low"].values,
+                    data_df["close"].values,
+                    timeperiod=params["supertrend_period"],
+                )
+                basic_upper = (data_df["high"] + data_df["low"]) / 2 + params["supertrend_multiplier"] * atr
+                basic_lower = (data_df["high"] + data_df["low"]) / 2 - params["supertrend_multiplier"] * atr
 
-        # Plot SuperTrend
-        ax1.plot(
-            data_df.index,
-            supertrend,
-            label=f'SuperTrend ({params["supertrend_period"]}, {params["supertrend_multiplier"]})',
-            color="cyan",
-            alpha=0.7,
-            linewidth=1,
-        )
+                # Volume MA
+                vol_ma = talib.SMA(data_df["volume"].values, timeperiod=params["vol_ma_period"])
+            else:
+                # Pandas calculations
+                # Bollinger Bands
+                bb_mid = data_df["close"].rolling(window=params["bb_period"]).mean()
+                bb_std = data_df["close"].rolling(window=params["bb_period"]).std()
+                bb_high = bb_mid + (bb_std * params["bb_devfactor"])
+                bb_low = bb_mid - (bb_std * params["bb_devfactor"])
 
-        # Plot trades
-        if not trades_df.empty:
-            # Plot entry (buy) points
-            ax1.scatter(
-                trades_df["entry_time"],
-                trades_df["entry_price"],
-                color="green",
-                marker="^",
-                s=200,
-                label="Buy",
-            )
-            # Plot exit (sell) points
-            ax1.scatter(
-                trades_df["exit_time"],
-                trades_df["exit_price"],
+                # SuperTrend
+                tr1 = data_df["high"] - data_df["low"]
+                tr2 = abs(data_df["high"] - data_df["close"].shift(1))
+                tr3 = abs(data_df["low"] - data_df["close"].shift(1))
+                tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+                atr = tr.rolling(window=params["supertrend_period"]).mean()
+                basic_upper = (data_df["high"] + data_df["low"]) / 2 + params["supertrend_multiplier"] * atr
+                basic_lower = (data_df["high"] + data_df["low"]) / 2 - params["supertrend_multiplier"] * atr
+
+                # Volume MA
+                vol_ma = data_df["volume"].rolling(window=params["vol_ma_period"]).mean()
+
+            # Calculate SuperTrend signals
+            supertrend = pd.Series(index=data_df.index, dtype=float)
+            direction = pd.Series(index=data_df.index, dtype=int)
+            upper = pd.Series(index=data_df.index, dtype=float)
+            lower = pd.Series(index=data_df.index, dtype=float)
+
+            for i in range(1, len(data_df)):
+                if data_df["close"][i] > upper[i-1]:
+                    direction[i] = 1
+                elif data_df["close"][i] < lower[i-1]:
+                    direction[i] = -1
+                else:
+                    direction[i] = direction[i-1]
+
+                if direction[i] == 1:
+                    upper[i] = min(basic_upper[i], upper[i-1]) if upper[i-1] is not None else basic_upper[i]
+                    lower[i] = basic_lower[i]
+                    supertrend[i] = lower[i]
+                else:
+                    upper[i] = basic_upper[i]
+                    lower[i] = max(basic_lower[i], lower[i-1]) if lower[i-1] is not None else basic_lower[i]
+                    supertrend[i] = upper[i]
+
+            # Plot price and indicators
+            ax1.plot(data_df.index, data_df["close"], label="Price", color="white", linewidth=2)
+            ax1.plot(
+                data_df.index,
+                bb_high,
+                label=f'BB High ({params["bb_period"]}, {params["bb_devfactor"]})',
                 color="red",
-                marker="v",
-                s=200,
-                label="Sell",
+                alpha=0.7,
+                linewidth=1,
             )
-
-        # Plot volume
-        ax2.bar(data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7)
-        ax2.plot(
-            data_df.index,
-            vol_ma,
-            label=f'Volume MA ({params["vol_ma_period"]})',
-            color="yellow",
-            linewidth=2,
-        )
-
-        # Plot breakout signals
-        ax3.plot(
-            data_df.index,
-            data_df["close"] > bb_high,
-            label="Price > BB High",
-            color="green",
-            alpha=0.7,
-        )
-        ax3.plot(
-            data_df.index,
-            data_df["close"] < bb_low,
-            label="Price < BB Low",
-            color="red",
-            alpha=0.7,
-        )
-
-        # Calculate and plot equity curve
-        if not trades_df.empty:
-            # Calculate cumulative returns
-            returns = trades_df["pnl_comm"] / trades_df["entry_price"]
-            cumulative_returns = (1 + returns).cumprod()
-            initial_equity = self.initial_capital
-            equity_curve = initial_equity * cumulative_returns
-
-            # Plot equity curve
-            ax4.plot(
-                trades_df["exit_time"],
-                equity_curve,
-                label="Equity Curve",
+            ax1.plot(
+                data_df.index,
+                bb_mid,
+                label=f'BB Mid ({params["bb_period"]})',
+                color="yellow",
+                alpha=0.7,
+                linewidth=1,
+            )
+            ax1.plot(
+                data_df.index,
+                bb_low,
+                label=f'BB Low ({params["bb_period"]}, {params["bb_devfactor"]})',
                 color="green",
+                alpha=0.7,
+                linewidth=1,
+            )
+            ax1.plot(
+                data_df.index,
+                supertrend,
+                label=f'SuperTrend ({params["supertrend_period"]}, {params["supertrend_multiplier"]})',
+                color="cyan",
                 linewidth=2,
             )
 
-            # Add drawdown visualization
-            rolling_max = equity_curve.expanding().max()
-            drawdown = (equity_curve - rolling_max) / rolling_max * 100
-            ax4.fill_between(
-                trades_df["exit_time"],
-                drawdown,
-                0,
-                color="red",
-                alpha=0.3,
-                label="Drawdown",
+            # Plot trades
+            if not trades_df.empty:
+                # Plot entry (buy) points
+                ax1.scatter(
+                    trades_df["entry_time"],
+                    trades_df["entry_price"],
+                    color="green",
+                    marker="^",
+                    s=200,
+                    label="Buy",
+                )
+                # Plot exit (sell) points
+                ax1.scatter(
+                    trades_df["exit_time"],
+                    trades_df["exit_price"],
+                    color="red",
+                    marker="v",
+                    s=200,
+                    label="Sell",
+                )
+
+            # Plot breakout signals
+            breakout_signals = pd.Series(index=data_df.index, dtype=float)
+            breakout_signals[direction == 1] = data_df["close"][direction == 1]
+            breakout_signals[direction == -1] = data_df["close"][direction == -1]
+            ax2.plot(
+                data_df.index,
+                breakout_signals,
+                label="Breakout Signals",
+                color="magenta",
+                linewidth=2,
             )
 
-            # Add horizontal line at initial capital
-            ax4.axhline(
-                y=initial_equity,
-                color="white",
-                linestyle="--",
-                alpha=0.5,
-                label="Initial Capital",
+            # Plot volume
+            ax3.bar(data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7)
+            ax3.plot(
+                data_df.index,
+                vol_ma,
+                label=f'Volume MA ({params["vol_ma_period"]})',
+                color="yellow",
+                linewidth=2,
             )
 
-        # Set titles and labels
-        ax1.set_title(f"Trading Results - {data_file_name}", fontsize=20)
-        ax1.set_ylabel("Price", fontsize=16)
-        ax2.set_ylabel("Volume", fontsize=16)
-        ax3.set_ylabel("Breakout Signals", fontsize=16)
-        ax4.set_ylabel("Equity", fontsize=16)
-        ax4.set_xlabel("Date", fontsize=16)
+            # Calculate and plot equity curve
+            if not trades_df.empty:
+                # Calculate cumulative returns
+                returns = trades_df["pnl_comm"] / trades_df["entry_price"]
+                cumulative_returns = (1 + returns).cumprod()
+                initial_equity = self.initial_capital
+                equity_curve = initial_equity * cumulative_returns
 
-        # Set legend
-        for ax in [ax1, ax2, ax3, ax4]:
-            ax.legend(loc=self.legend_loc, fontsize=self.font_size)
+                # Plot equity curve
+                ax4.plot(
+                    trades_df["exit_time"],
+                    equity_curve,
+                    label="Equity Curve",
+                    color="green",
+                    linewidth=2,
+                )
 
-        # Rotate x-axis labels
-        plt.xticks(rotation=45)
+                # Add drawdown visualization
+                rolling_max = equity_curve.expanding().max()
+                drawdown = (equity_curve - rolling_max) / rolling_max * 100
+                ax4.fill_between(
+                    trades_df["exit_time"],
+                    drawdown,
+                    0,
+                    color="red",
+                    alpha=0.3,
+                    label="Drawdown",
+                )
 
-        # Adjust layout
-        plt.tight_layout(pad=1.5)
-        plot_path = os.path.join(
-            self.results_dir,
-            self.get_result_filename(
-                data_file_name, suffix="_plot." + self.plot_format
-            ),
-        )
-        if self.save_plot:
-            plt.savefig(
-                plot_path,
-                dpi=self.plot_dpi,
-                bbox_inches="tight",
-                format=self.plot_format,
+                # Add horizontal line at initial capital
+                ax4.axhline(
+                    y=initial_equity,
+                    color="white",
+                    linestyle="--",
+                    alpha=0.5,
+                    label="Initial Capital",
+                )
+
+            # Set titles and labels
+            ax1.set_title(f"Trading Results - {data_file_name}", fontsize=20)
+            ax1.set_ylabel("Price", fontsize=16)
+            ax2.set_ylabel("Breakout Signals", fontsize=16)
+            ax3.set_ylabel("Volume", fontsize=16)
+            ax4.set_ylabel("Equity", fontsize=16)
+            ax4.set_xlabel("Date", fontsize=16)
+
+            # Set legend
+            for ax in [ax1, ax2, ax3, ax4]:
+                ax.legend(loc=self.legend_loc, fontsize=self.font_size)
+
+            # Rotate x-axis labels
+            plt.xticks(rotation=45)
+
+            # Adjust layout
+            plt.tight_layout()
+
+            # Use base class helper for plot file name
+            plot_path = os.path.join(
+                self.results_dir,
+                self.get_result_filename(
+                    data_file_name, suffix="_plot." + self.plot_format
+                ),
             )
-        if self.show_plot:
-            plt.show()
-        plt.close()
-        self.log_message(f"Plot saved to {plot_path}")
-        return plot_path
+            if self.save_plot:
+                plt.savefig(
+                    plot_path,
+                    dpi=self.plot_dpi,
+                    bbox_inches="tight",
+                    format=self.plot_format,
+                )
+            if self.show_plot:
+                plt.show()
+            plt.close()
+            return plot_path
+        except Exception as e:
+            self.log_message(f"Error plotting results: {str(e)}", level="error")
+            self.log_message(traceback.format_exc(), level="error")
+            return None
 
 
 if __name__ == "__main__":

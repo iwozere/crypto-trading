@@ -19,6 +19,9 @@ from src.strategy.liquidity_momentum_strategy import LiquidityMomentumStrategy
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 import matplotlib.gridspec as gridspec
+import talib
+import traceback
+from typing import Optional
 
 
 class LiquidityMomentumOptimizer(BaseOptimizer):
@@ -71,30 +74,72 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
 
     def plot_results(
         self, data_df: pd.DataFrame, trades_df: pd.DataFrame, params: dict, data_file_name: str
-    ) -> str:
+    ) -> Optional[str]:
         """
-        Plot optimization results with strategy-specific visualizations.
+        Plot the results of the strategy, including price, indicators, trades, and equity curve.
         Args:
-            data_df: Price data DataFrame
-            trades_df: Trades DataFrame
-            params: Strategy parameters
-            data_file_name: Name of the data file
+            data_df: DataFrame with OHLCV data
+            trades_df: DataFrame with trade records (must include 'entry_time', 'entry_price', 'exit_time', 'exit_price')
+            params: Dictionary of strategy parameters
+            data_file_name: Name of the data file (for plot title and saving)
         Returns:
-            Path to the saved plot file
+            Path to the saved plot image, or None if plotting fails
         """
         try:
             plt.style.use("dark_background")
             fig = plt.figure(figsize=self.plot_size)
 
             # Create subplots
-            gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 1])
+            gs = gridspec.GridSpec(4, 1, height_ratios=[3, 1, 1, 1])
             ax1 = plt.subplot(gs[0])
             ax2 = plt.subplot(gs[1], sharex=ax1)
             ax3 = plt.subplot(gs[2], sharex=ax1)
+            ax4 = plt.subplot(gs[3], sharex=ax1)
 
-            # Plot price and trades
+            for ax in [ax1, ax2, ax3, ax4]:
+                ax.grid(self.show_grid)
+
+            # Calculate indicators using pandas/TA-Lib
+            use_talib = params.get("use_talib", False)
+
+            if use_talib:
+                # TA-Lib indicators
+                # Calculate liquidity ratio
+                typical_price = (data_df["high"] + data_df["low"] + data_df["close"]) / 3
+                liquidity_ratio = talib.SMA(
+                    (data_df["volume"] * typical_price).values,
+                    timeperiod=params["liquidity_period"],
+                )
+
+                # Calculate momentum indicators
+                momentum_5 = talib.ROC(data_df["close"].values, timeperiod=5)
+                momentum_10 = talib.ROC(data_df["close"].values, timeperiod=10)
+                momentum_20 = talib.ROC(data_df["close"].values, timeperiod=20)
+
+                # Calculate volume MA
+                vol_ma = talib.SMA(data_df["volume"].values, timeperiod=params["vol_ma_period"])
+            else:
+                # Pandas calculations
+                # Calculate liquidity ratio
+                typical_price = (data_df["high"] + data_df["low"] + data_df["close"]) / 3
+                liquidity_ratio = (data_df["volume"] * typical_price).rolling(
+                    window=params["liquidity_period"]
+                ).mean()
+
+                # Calculate momentum indicators
+                momentum_5 = data_df["close"].pct_change(periods=5) * 100
+                momentum_10 = data_df["close"].pct_change(periods=10) * 100
+                momentum_20 = data_df["close"].pct_change(periods=20) * 100
+
+                # Calculate volume MA
+                vol_ma = data_df["volume"].rolling(window=params["vol_ma_period"]).mean()
+
+            # Plot price
             ax1.plot(data_df.index, data_df["close"], label="Price", color="white", linewidth=2)
+
+            # Plot trades
             if not trades_df.empty:
+                # Plot entry (buy) points
                 ax1.scatter(
                     trades_df["entry_time"],
                     trades_df["entry_price"],
@@ -103,6 +148,7 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
                     s=200,
                     label="Buy",
                 )
+                # Plot exit (sell) points
                 ax1.scatter(
                     trades_df["exit_time"],
                     trades_df["exit_price"],
@@ -112,53 +158,133 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
                     label="Sell",
                 )
 
-            # Calculate and plot liquidity ratio
-            liquidity_ratio = data_df["volume"] / data_df["close"]
-            ax2.plot(data_df.index, liquidity_ratio, label="Liquidity Ratio", color="cyan")
+            # Plot liquidity ratio
+            ax2.plot(
+                data_df.index,
+                liquidity_ratio,
+                label=f'Liquidity Ratio ({params["liquidity_period"]})',
+                color="cyan",
+                linewidth=2,
+            )
+            ax2.axhline(
+                y=params["liquidity_threshold"],
+                color="red",
+                linestyle="--",
+                alpha=0.5,
+                label="Threshold",
+            )
 
             # Plot momentum indicators
-            momentum_periods = [5, 10, 20]  # Example periods
-            for period in momentum_periods:
-                returns = data_df["close"].pct_change(period)
-                ax3.plot(
-                    data_df.index, returns, label=f"{period}-period Returns", alpha=0.7
+            ax3.plot(
+                data_df.index,
+                momentum_5,
+                label="Momentum (5)",
+                color="yellow",
+                linewidth=1,
+            )
+            ax3.plot(
+                data_df.index,
+                momentum_10,
+                label="Momentum (10)",
+                color="orange",
+                linewidth=1,
+            )
+            ax3.plot(
+                data_df.index,
+                momentum_20,
+                label="Momentum (20)",
+                color="red",
+                linewidth=1,
+            )
+            ax3.axhline(y=0, color="white", linestyle="--", alpha=0.5)
+
+            # Plot volume
+            ax4.bar(data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7)
+            ax4.plot(
+                data_df.index,
+                vol_ma,
+                label=f'Volume MA ({params["vol_ma_period"]})',
+                color="yellow",
+                linewidth=2,
+            )
+
+            # Calculate and plot equity curve
+            if not trades_df.empty:
+                # Calculate cumulative returns
+                returns = trades_df["pnl_comm"] / trades_df["entry_price"]
+                cumulative_returns = (1 + returns).cumprod()
+                initial_equity = self.initial_capital
+                equity_curve = initial_equity * cumulative_returns
+
+                # Plot equity curve
+                ax4.plot(
+                    trades_df["exit_time"],
+                    equity_curve,
+                    label="Equity Curve",
+                    color="green",
+                    linewidth=2,
                 )
 
-            # Customize plots
-            ax1.set_title(f"Liquidity Momentum Strategy - {data_file_name}")
-            ax1.set_ylabel("Price")
-            ax1.legend()
-            ax1.grid(self.show_grid)
+                # Add drawdown visualization
+                rolling_max = equity_curve.expanding().max()
+                drawdown = (equity_curve - rolling_max) / rolling_max * 100
+                ax4.fill_between(
+                    trades_df["exit_time"],
+                    drawdown,
+                    0,
+                    color="red",
+                    alpha=0.3,
+                    label="Drawdown",
+                )
 
-            ax2.set_ylabel("Liquidity Ratio")
-            ax2.legend()
-            ax2.grid(self.show_grid)
+                # Add horizontal line at initial capital
+                ax4.axhline(
+                    y=initial_equity,
+                    color="white",
+                    linestyle="--",
+                    alpha=0.5,
+                    label="Initial Capital",
+                )
 
-            ax3.set_ylabel("Returns")
-            ax3.legend()
-            ax3.grid(self.show_grid)
+            # Set titles and labels
+            ax1.set_title(f"Trading Results - {data_file_name}", fontsize=20)
+            ax1.set_ylabel("Price", fontsize=16)
+            ax2.set_ylabel("Liquidity Ratio", fontsize=16)
+            ax3.set_ylabel("Momentum", fontsize=16)
+            ax4.set_ylabel("Volume", fontsize=16)
+            ax4.set_xlabel("Date", fontsize=16)
 
-            # Format x-axis
-            for ax in [ax1, ax2, ax3]:
-                ax.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d"))
-                plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
+            # Set legend
+            for ax in [ax1, ax2, ax3, ax4]:
+                ax.legend(loc=self.legend_loc, fontsize=self.font_size)
 
+            # Rotate x-axis labels
+            plt.xticks(rotation=45)
+
+            # Adjust layout
             plt.tight_layout()
 
-            # Save plot
+            # Use base class helper for plot file name
             plot_path = os.path.join(
                 self.results_dir,
-                f"{self.get_result_filename(data_file_name)}_plot.{self.plot_format}",
+                self.get_result_filename(
+                    data_file_name, suffix="_plot." + self.plot_format
+                ),
             )
-            plt.savefig(plot_path, dpi=self.plot_dpi)
+            if self.save_plot:
+                plt.savefig(
+                    plot_path,
+                    dpi=self.plot_dpi,
+                    bbox_inches="tight",
+                    format=self.plot_format,
+                )
             if self.show_plot:
                 plt.show()
             plt.close()
-
             return plot_path
-
         except Exception as e:
-            _logger.error(f"Error plotting results: {str(e)}")
+            self.log_message(f"Error plotting results: {str(e)}", level="error")
+            self.log_message(traceback.format_exc(), level="error")
             return None
 
     def NOT_USED_score_objective(self, metrics: dict) -> float:

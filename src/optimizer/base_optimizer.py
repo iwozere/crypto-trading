@@ -606,6 +606,14 @@ class BaseOptimizer:
                 # Convert trades list to DataFrame
                 trades_df = pd.DataFrame(trades) if trades else pd.DataFrame()
                 
+                # Ensure current_data is a DataFrame with datetime index
+                if isinstance(current_data, pd.DataFrame):
+                    if not isinstance(current_data.index, pd.DatetimeIndex):
+                        current_data.index = pd.to_datetime(current_data.index)
+                else:
+                    self.log_message("current_data is not a DataFrame", level="error")
+                    return
+                
                 # Call optimizer-specific plot_results method with consistent parameter names
                 plot_path = self.plot_results(
                     data_df=current_data,
