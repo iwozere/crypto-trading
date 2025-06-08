@@ -13,10 +13,17 @@ from aiogram.filters import Command
 from aiogram.types import Message
 from src.analyzer.telegram.combine import analyze_ticker
 from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
+from src.notification.logger import setup_logger
 
-logging.basicConfig(level=logging.INFO)
+# Set up logger
+logger = setup_logger(
+    'ticker_analyzer_bot',
+    'logs/log/ticker_analyzer_bot.log',
+    level=logging.DEBUG
+)
 
 if not TELEGRAM_BOT_TOKEN:
+    logger.error("TELEGRAM_BOT_TOKEN environment variable is not set")
     raise ValueError("TELEGRAM_BOT_TOKEN environment variable is not set")
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
@@ -24,6 +31,7 @@ dp = Dispatcher()
 
 @dp.message(Command("start", "help"))
 async def send_welcome(message: Message):
+    logger.info(f"User {message.from_user.id} started the bot")
     await message.reply(
         "📊 Send a ticker symbol (e.g., AAPL, TSLA, BTC-USD), and I'll analyze it for you.\n\n"
         "Available commands:\n"
@@ -33,10 +41,12 @@ async def send_welcome(message: Message):
 @dp.message(lambda message: message.text and message.text.strip().isalnum())
 async def handle_ticker(message: Message):
     ticker = message.text.strip().upper()
+    logger.info(f"User {message.from_user.id} requested analysis for {ticker}")
     await message.reply(f"🔍 Analyzing {ticker}...")
 
     try:
         result = analyze_ticker(ticker)
+        logger.info(f"Successfully analyzed {ticker}")
 
         # Format response text
         text = (
@@ -75,13 +85,14 @@ async def handle_ticker(message: Message):
         os.unlink(temp_file.name)
 
     except Exception as e:
-        logging.exception("Analysis error")
+        logger.exception(f"Error analyzing {ticker}")
         await message.reply(
             f"⚠️ Error analyzing {ticker}:\n"
             f"Please check if the ticker symbol is correct and try again."
         )
 
 async def main():
+    logger.info("Starting ticker analyzer bot")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":

@@ -6,6 +6,8 @@ This module sets up application-wide logging configuration and exposes a logger 
 
 import os
 import sys
+import logging
+from logging.handlers import RotatingFileHandler
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
@@ -95,5 +97,39 @@ _logger = logging.getLogger()
 #
 # Set up the logger for the application
 # Usage: setup_logger('live_trader')
-def setup_logger(name: str) -> logging.Logger:
-    return logging.getLogger(name)
+def setup_logger(name: str, log_file: str, level=logging.INFO):
+    """Set up logger with both file and console handlers."""
+    # Create logs directory if it doesn't exist
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    
+    # Create logger
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    
+    # Create formatters
+    file_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    console_formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(message)s'
+    )
+    
+    # Create file handler
+    file_handler = RotatingFileHandler(
+        log_file,
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=5
+    )
+    file_handler.setLevel(level)
+    file_handler.setFormatter(file_formatter)
+    
+    # Create console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(level)
+    console_handler.setFormatter(console_formatter)
+    
+    # Add handlers to logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    
+    return logger
