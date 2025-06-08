@@ -1,7 +1,7 @@
 {
   "data_dir": "data",
   "results_dir": "results",
-  "strategy_name": "MeanReversionRsiBbStrategy",
+  "strategy_name": "RsiBollVolumeStrategy",
   "optimizer_name": "RsiBBOptimizer",
   "symbol": "BTCUSDT",
   "interval": "1h",

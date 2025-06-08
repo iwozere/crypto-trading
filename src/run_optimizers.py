@@ -10,7 +10,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime
+import datetime
 
 # Add project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -32,7 +32,7 @@ logging.basicConfig(
     handlers=[
         logging.FileHandler(
             os.path.join(
-                log_dir, f'optimization_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+                log_dir, f'optimization_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
             )
         ),
         logging.StreamHandler(),

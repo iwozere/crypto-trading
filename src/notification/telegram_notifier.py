@@ -247,6 +247,47 @@ class TelegramNotifier:
             self.logger.error(f"Failed to send error notification (async): {e}")
             return False
 
+    def send_message(self, message: str, parse_mode: str = "HTML") -> bool:
+        """
+        Send a message to the configured chat.
+        
+        Args:
+            message: The message to send
+            parse_mode: The parse mode for the message (HTML or Markdown)
+            
+        Returns:
+            bool: True if message was sent successfully, False otherwise
+        """
+        try:
+            if not self.bot or not self.chat_id:
+                self.logger.warning("Telegram bot not configured")
+                return False
+
+            # Add timestamp to message
+            message_data = {
+                "message": message,
+                "timestamp": datetime.datetime.now(),
+                "bot_name": self.bot_name
+            }
+            
+            # Format message with timestamp
+            formatted_message = (
+                f"🤖 {message_data['bot_name']}\n"
+                f"⏰ {message_data['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"{message_data['message']}"
+            )
+            
+            self.bot.send_message(
+                chat_id=self.chat_id,
+                text=formatted_message,
+                parse_mode=parse_mode
+            )
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error sending Telegram message: {str(e)}")
+            return False
+
 
 def create_notifier() -> Optional[TelegramNotifier]:
     """

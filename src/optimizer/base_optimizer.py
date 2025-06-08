@@ -365,15 +365,15 @@ class BaseOptimizer:
             message: Message to log
             level: Log level (info, warning, error)
         """
-        log_dir = os.path.join("logs", "log")
-        os.makedirs(log_dir, exist_ok=True)
+        import logging
+        logger = logging.getLogger(__name__)
 
         if level == "error":
-            _logger.error(message)
+            logger.error(message)
         elif level == "warning":
-            _logger.warning(message)
+            logger.warning(message)
         else:
-            _logger.info(message)
+            logger.info(message)
 
     def load_all_data(
         self,
@@ -482,8 +482,6 @@ class BaseOptimizer:
         """
         Generate a standardized filename for results and plots based on data_file and current_data.
         """
-        import datetime
-
         # Extract strategy name
         if not strategy_name:
             strategy_name = getattr(self, "strategy_name", "Strategy")
@@ -504,65 +502,72 @@ class BaseOptimizer:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         return f"{strategy_name}_{symbol}_{interval}_{start_date}_{end_date}_{timestamp}{suffix}"
 
-    def save_results(self, study: optuna.Study, data_file: str) -> None:
+    def save_results(self, study, data_file, current_data):
         """
-        Save optimization results to a JSON file.
-        Args:
-            study: Optuna study object containing optimization results
-            data_file: Name of the data file used for optimization
+        Save optimization results to JSON and generate plots.
         """
         try:
-            # Get best trial
-            best_trial = study.best_trial
+            # Get the result filename
+            result_filename = self.get_result_filename(data_file, current_data)
+            if not result_filename:
+                self.log_message("Failed to generate result filename", level="error")
+                return
 
-            # Get exit logic configuration
-            exit_logic_config = self.config.get("exit_logic", {})
-            exit_logic_name = exit_logic_config.get("name", "atr_exit")
-            exit_params_config = exit_logic_config.get("params", {})
-
-            # Separate strategy, exit logic, and other parameters
-            strategy_params = {}
-            exit_params = {}
-            other_params = {}
-
-            for param_name, param_value in best_trial.params.items():
-                if param_name in exit_params_config:
-                    exit_params[param_name] = param_value
-                elif param_name == "notify":
-                    other_params[param_name] = param_value
-                else:
-                    strategy_params[param_name] = param_value
+            # Extract strategy name from data file
+            strategy_name = self._extract_strategy_name(data_file)
+            if not strategy_name:
+                self.log_message("Failed to extract strategy name", level="error")
+                return
 
             # Create results dictionary
             results_dict = {
                 "version": "1.0.0",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.datetime.now().isoformat(),
+                "optimization_date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "strategy_name": strategy_name,
                 "data_file": data_file,
-                "best_params": {
-                    "strategy": {
-                        "strategy_name": self.strategy_name,
-                        **strategy_params,
-                    },
-                    "exit_logic": {"exit_logic_name": exit_logic_name, **exit_params},
-                    **other_params,
-                },
-                "best_value": best_trial.value,
-                "optimization_time": self.optimization_time,
+                "best_params": study.best_params,
+                "best_value": study.best_value,
                 "n_trials": len(study.trials),
-                "optimization_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "best_trial": {
+                    "number": study.best_trial.number,
+                    "params": study.best_trial.params,
+                    "value": study.best_trial.value,
+                    "datetime_start": study.best_trial.datetime_start.isoformat() if study.best_trial.datetime_start else None,
+                    "datetime_complete": study.best_trial.datetime_complete.isoformat() if study.best_trial.datetime_complete else None,
+                } if study.best_trial else None
             }
 
-            # Save to file
-            result_file = os.path.join(
-                self.results_dir, self.get_result_filename(data_file)
-            )
-            with open(result_file, "w") as f:
+            # Save results to JSON
+            json_path = os.path.join(self.results_dir, f"{result_filename}.json")
+            with open(json_path, "w") as f:
                 json.dump(results_dict, f, indent=4)
+            self.log_message(f"Results saved to {json_path}", level="info")
 
-            self.log_message(f"Results saved to {result_file}")
+            # Generate and save plot
+            plot_path = os.path.join(self.results_dir, f"{result_filename}_plot.png")
+            try:
+                fig = optuna.visualization.plot_optimization_history(study)
+                fig.write_image(plot_path)
+                self.log_message(f"Plot saved to {plot_path}", level="info")
+            except Exception as e:
+                self.log_message(f"Error generating plot: {str(e)}", level="error")
 
         except Exception as e:
-            self.log_message(f"Error saving results: {str(e)}", level="ERROR")
+            self.log_message(f"Error saving results: {str(e)}", level="error")
+            self.log_message(traceback.format_exc(), level="error")
+
+    def _extract_strategy_name(self, data_file):
+        """
+        Extract strategy name from data file name.
+        Example: RSIBollVolumeATRStrategy_ETHUSDT_4h_20240501_20250501.csv -> RSIBollVolumeATRStrategy
+        """
+        try:
+            # Split by underscore and take the first part
+            return data_file.split('_')[0]
+        except Exception as e:
+            self.log_message(f"Error extracting strategy name: {str(e)}", level="error")
+            return None
 
     def optimize_with_skopt(
         self, n_trials=100, n_random_starts=42, noise=0.01, n_jobs=-1, verbose=False
@@ -592,12 +597,14 @@ class BaseOptimizer:
             exit_params_config = {}
 
         def objective(trial):
-            # --- Suggest strategy parameters (add as needed) ---
+            # --- Suggest strategy parameters ---
             strategy_params = {}
-            # Suggest all strategy params that are not exit logic params
-            for pname, pinfo in self.param_ranges.items():
-                if pname == "exit_logic_name" or pname in EXIT_PARAM_MAP:
-                    continue
+            
+            # Get all parameters that need to be optimized
+            all_params = {**self.param_ranges, **exit_params_config}
+            
+            # Suggest values for all parameters
+            for pname, pinfo in all_params.items():
                 if pinfo["type"] == "Real":
                     strategy_params[pname] = trial.suggest_float(
                         pname, pinfo["low"], pinfo["high"]
@@ -611,151 +618,81 @@ class BaseOptimizer:
                         pname, pinfo["categories"]
                     )
 
-            # --- Exit logic parameters ---
-            exit_params = {}
-            for param, pinfo in exit_params_config.items():
-                if pinfo["type"] == "Real":
-                    exit_params[param] = trial.suggest_float(
-                        param, pinfo["low"], pinfo["high"]
-                    )
-                elif pinfo["type"] == "Integer":
-                    exit_params[param] = trial.suggest_int(
-                        param, pinfo["low"], pinfo["high"]
-                    )
-                elif pinfo["type"] == "Categorical":
-                    exit_params[param] = trial.suggest_categorical(
-                        param, pinfo["categories"]
-                    )
-
+            # Add exit logic name
             strategy_params["exit_logic_name"] = exit_logic_name
-            strategy_params["exit_params"] = exit_params
 
-            # --- Run backtest ---
-            results = self.run_backtest(strategy_params)
-            net_profit = (
-                results.get("trades", {})
-                .get("pnl", {})
-                .get("net", {})
-                .get("total", 0.0)
-                if results
-                else 0.0
-            )
-            return -net_profit
+            try:
+                # --- Run backtest ---
+                results = self.run_backtest(strategy_params)
+                
+                # Get net profit from analyzers
+                analysis = results.analyzers.trades.get_analysis()
+                
+                # Handle nested dictionary structure
+                try:
+                    pnl = analysis.get('pnl', {})
+                    net_profit = float(pnl.get('net', 0.0))
+                except (KeyError, AttributeError, TypeError):
+                    net_profit = 0.0
+                
+                # Return negative net profit (since we want to maximize)
+                return -net_profit
+                
+            except Exception as e:
+                import traceback
+                error_msg = f"Error in objective function: {str(e)}\n{traceback.format_exc()}"
+                self.log_message(error_msg, level="error")
+                return float('inf')  # Return worst possible value if anything fails
 
         return objective
 
-    def optimize_single_file(self, data_file):
-        """
-        Optimize a single data file.
-        
-        Args:
-            data_file: Name of the data file to optimize
-            
-        Returns:
-            Dictionary containing optimization results
-        """
-        self.log_message(f"\nOptimizing {data_file}...", level="info")
-        self.current_data = self.raw_data[data_file].copy()
-        if self.current_data.empty:
-            self.log_message(
-                f"No data found for {data_file}. Skipping.",
-                level="info",
-            )
-            self.current_data = self.current_data.fillna(method="ffill").fillna(
-                method="bfill"
-            )
-        self.current_metrics = {}
+    def optimize_single_file(self, file_path, n_trials=100, final_backtest_run=True):
+        """Run optimization for a single file."""
         try:
-            # Get optimization method from optimization settings
-            opt_method = self.optimization_settings.get("optimization_method", "skopt")
-            n_trials = self.optimization_settings.get("n_trials", 100)
-            n_random_starts = self.optimization_settings.get("n_random_starts", 42)
-            if opt_method == "skopt":
-                noise = self.optimization_settings.get("noise", 0.01)
-                n_jobs = self.optimization_settings.get("n_jobs", -1)
-                verbose = self.optimization_settings.get("verbose", False)
-                result = self.optimize_with_skopt(
-                    n_trials=n_trials,
-                    n_random_starts=n_random_starts,
-                    noise=noise,
-                    n_jobs=n_jobs,
-                    verbose=verbose,
-                )
-                best_params = self.params_to_dict(result.x)
-                best_score = result.fun
-            elif opt_method == "optuna":
-                study = optuna.create_study(direction="minimize")
-                study.optimize(self.get_optuna_objective(), n_trials=n_trials)
-                best_params = study.best_params
-                best_score = study.best_value
-                result = study
-            else:
-                raise ValueError(f"Unknown optimization method: {opt_method}")
-            self.log_message(f"\nOptimization completed for {data_file}", level="info")
-            self.log_message(
-                f"Best params for {data_file}: {best_params}", level="info"
+            self.log_message(f"Starting optimization for {file_path}")
+            
+            # Load data if not already loaded
+            if not hasattr(self, 'raw_data') or self.raw_data is None:
+                self.load_all_data()
+            
+            # Set current file and data
+            self.current_file = file_path
+            self.current_data = self.raw_data[file_path].copy()
+            
+            if self.current_data.empty:
+                self.log_message(f"No data found for {file_path}. Skipping.", level="error")
+                return None
+                
+            # Fill any missing values using recommended methods
+            self.current_data = self.current_data.ffill().bfill()
+
+            # Create study
+            study = optuna.create_study(
+                direction="minimize",
+                sampler=optuna.samplers.TPESampler(seed=42),
             )
-            self.log_message(
-                f"Best score: {best_score:.2f}. Metrics: {self.current_metrics}",
-                level="info",
-            )
-            final_backtest_run = self.run_backtest(best_params)
-            trades_df = pd.DataFrame()
-            if final_backtest_run and hasattr(
-                final_backtest_run.get("strategy", None), "trades"
-            ):
-                trades_list = final_backtest_run["strategy"].trades
-                if trades_list:
-                    trades_df = pd.DataFrame(trades_list)
-                    # Calculate metrics from trades
-                    self.current_metrics = self.calculate_metrics(trades_df)
-                    # Add trade-specific metrics
-                    self.current_metrics["total_trades"] = len(trades_list)
-                    winning_trades = [
-                        t for t in trades_list if t.get("pnl_comm", 0) > 0
-                    ]
-                    self.current_metrics["win_rate"] = (
-                        len(winning_trades) / len(trades_list) * 100
-                        if trades_list
-                        else 0
-                    )
-                    losing_trades_sum = sum(
-                        t.get("pnl_comm", 0)
-                        for t in trades_list
-                        if t.get("pnl_comm", 0) <= 0
-                    )
-                    if losing_trades_sum == 0:
-                        self.current_metrics["profit_factor"] = (
-                            float("inf") if winning_trades else 0
-                        )
-                    else:
-                        self.current_metrics["profit_factor"] = abs(
-                            sum(t.get("pnl_comm", 0) for t in winning_trades)
-                            / losing_trades_sum
-                        )
-                    self.current_metrics["net_profit"] = sum(
-                        t.get("pnl_comm", 0) for t in trades_list
-                    )
-                    self.current_metrics["portfolio_growth_pct"] = (
-                        (self.current_metrics["net_profit"] / self.initial_capital)
-                        * 100
-                        if self.initial_capital > 0
-                        else 0
-                    )
-                    self.current_metrics["final_value"] = (
-                        self.initial_capital + self.current_metrics["net_profit"]
-                    )
-            plot_path = None
-            if hasattr(self, "plot_results") and callable(self.plot_results):
-                plot_path = self.plot_results(
-                    self.current_data.copy(), trades_df, best_params, data_file
-                )
-            return self.save_results(study=result, data_file=data_file)
+
+            # Run optimization
+            study.optimize(self.get_optuna_objective(), n_trials=n_trials)
+
+            # Get best parameters
+            best_params = study.best_params
+            self.log_message(f"Best parameters: {best_params}")
+
+            # Run final backtest with best parameters if requested
+            try:
+                if final_backtest_run:
+                    final_results = self.run_backtest(best_params)
+                    if hasattr(final_results, 'analyzers') and hasattr(final_results.analyzers, 'trades'):
+                        final_analysis = final_results.analyzers.trades.get_analysis()
+                        self.log_message(f"Final backtest results: {final_analysis}")
+            except Exception as e:
+                self.log_message(f"Error in final backtest: {str(e)}", level="error")
+
+            return study
+
         except Exception as e:
-            self.log_message(
-                f"Error during optimization for {data_file}: {str(e)}", level="error"
-            )
-            self.log_message(traceback.format_exc(), level="error")
+            self.log_message(f"Error in optimize_single_file: {str(e)}", level="error")
             return None
 
     def run_optimization(self):
@@ -787,7 +724,20 @@ class BaseOptimizer:
                     continue
                 result = self.optimize_single_file(data_file)
                 if result is not None:
-                    all_results.append(result)
+                    # Extract serializable data from the study
+                    study_data = {
+                        "best_params": result.best_params,
+                        "best_value": result.best_value,
+                        "n_trials": len(result.trials),
+                        "best_trial": {
+                            "number": result.best_trial.number,
+                            "params": result.best_trial.params,
+                            "value": result.best_trial.value,
+                            "datetime_start": result.best_trial.datetime_start.isoformat() if result.best_trial.datetime_start else None,
+                            "datetime_complete": result.best_trial.datetime_complete.isoformat() if result.best_trial.datetime_complete else None,
+                        } if result.best_trial else None
+                    }
+                    all_results.append(study_data)
             except Exception as e:
                 self.log_message(
                     f"Error processing {data_file}: {str(e)}", level="error"
@@ -800,20 +750,18 @@ class BaseOptimizer:
 
         combined_results = {
             "version": "1.0.0",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.datetime.now().isoformat(),
             "optimizer_class": self.__class__.__name__,
             "strategy_name": getattr(self, "strategy_name", "UnknownStrategy"),
             "results": all_results,
         }
         combined_path = os.path.join(
             self.results_dir,
-            f'combined_optimization_results_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json',
+            f'combined_optimization_results_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.json',
         )
         try:
             with open(combined_path, "w") as f:
-                json.dump(
-                    combined_results, f, indent=4, cls=BaseOptimizer.DateTimeEncoder
-                )
+                json.dump(combined_results, f, indent=4)
             self.log_message(
                 f"\nCombined results saved to {combined_path}", level="info"
             )
@@ -833,14 +781,19 @@ class BaseOptimizer:
         # Start with the base parameters
         strategy_params = params.copy()
         
-        # Add exit logic parameters
-        if self.exit_logic:
-            exit_name = self.exit_logic["name"]
-            exit_params = self.exit_logic.get("params", {})
-            
-            # Add exit logic name and params
-            strategy_params["exit_logic_name"] = exit_name
-            strategy_params["exit_params"] = exit_params
+        # Get exit logic configuration
+        exit_logic_config = self.config.get("exit_logic", {})
+        exit_logic_name = exit_logic_config.get("name", "atr_exit")
+        
+        # Extract exit logic parameters from the optimized params
+        exit_params = {}
+        for param_name, param_value in params.items():
+            if param_name in EXIT_PARAM_MAP.get(exit_logic_name, {}):
+                exit_params[param_name] = param_value
+        
+        # Add exit logic name and params
+        strategy_params["exit_logic_name"] = exit_logic_name
+        strategy_params["exit_params"] = exit_params
         
         return strategy_params
 

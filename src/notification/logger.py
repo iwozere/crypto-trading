@@ -97,39 +97,33 @@ _logger = logging.getLogger()
 #
 # Set up the logger for the application
 # Usage: setup_logger('live_trader')
-def setup_logger(name: str, log_file: str, level=logging.INFO):
-    """Set up logger with both file and console handlers."""
+def setup_logger():
+    """Set up the logger with file and console handlers."""
+    logger = logging.getLogger("trading_bot")
+    logger.setLevel(logging.INFO)
+
     # Create logs directory if it doesn't exist
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
-    
-    # Create logger
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    
-    # Create formatters
-    file_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    console_formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(message)s'
-    )
-    
+    os.makedirs("logs", exist_ok=True)
+
     # Create file handler
-    file_handler = RotatingFileHandler(
-        log_file,
-        maxBytes=10*1024*1024,  # 10MB
-        backupCount=5
-    )
-    file_handler.setLevel(level)
-    file_handler.setFormatter(file_formatter)
-    
+    current_time = datetime.datetime.now()
+    log_file = os.path.join("logs", f"app_{current_time.strftime('%Y%m%d_%H%M%S')}.log")
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.INFO)
+
     # Create console handler
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(level)
-    console_handler.setFormatter(console_formatter)
-    
+    console_handler.setLevel(logging.INFO)
+
+    # Create formatter
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
     # Add handlers to logger
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
-    
+
     return logger

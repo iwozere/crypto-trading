@@ -67,7 +67,7 @@ class ConfigManager:
 
     def _archive_config(self, bot_id: str):
         """Archive existing configuration"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         source = os.path.join(self.config_dir, f"{bot_id}.json")
         dest = os.path.join(self.archive_dir, f"{bot_id}_{timestamp}.json")
         shutil.copy2(source, dest)
@@ -134,3 +134,30 @@ class ConfigManager:
                 except Exception as e:
                     print(f"Error reading archive {file}: {str(e)}")
         return sorted(archives, key=lambda x: x["timestamp"], reverse=True)
+
+    def save_config(self, config: dict) -> bool:
+        """
+        Save configuration to a file.
+        
+        Args:
+            config: Configuration dictionary to save
+            
+        Returns:
+            bool: True if save was successful, False otherwise
+        """
+        try:
+            # Create backup of current config if it exists
+            if os.path.exists(self.config_file):
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_file = f"{self.config_file}.{timestamp}.bak"
+                shutil.copy2(self.config_file, backup_file)
+            
+            # Save new config
+            with open(self.config_file, 'w') as f:
+                json.dump(config, f, indent=4)
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error saving config: {str(e)}")
+            return False

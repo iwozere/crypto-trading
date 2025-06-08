@@ -129,7 +129,7 @@ class BaseTradingBot:
         """
         Generic trade execution logic for buy/sell. Subclasses can override for custom behavior.
         """
-        timestamp = datetime.now()
+        timestamp = datetime.datetime.now()
         order = None
         try:
             if not self.paper_trading and self.broker:
@@ -408,6 +408,8 @@ class BaseTradingBot:
         _logger.info(
             f"Broker: {self.broker.__class__.__name__ if self.broker else 'None'}"
         )
+        timestamp = datetime.datetime.now()
+        _logger.info(f"Timestamp: {timestamp}")
 
     def notify_bot_event(self, event: str, emoji: str):
         msg = (
