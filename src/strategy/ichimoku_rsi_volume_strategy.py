@@ -182,9 +182,7 @@ class IchimokuRsiVolumeStrategy(BaseStrategy):
                 self.highest_price = max(self.highest_price, close)
 
                 # Check exit conditions using the configured exit logic
-                exit_signal, exit_reason = self.exit_logic.check_exit(
-                    close, self.highest_price, atr
-                )
+                exit_signal, exit_reason = self.exit_logic.check_exit(close)
 
                 if exit_signal:
                     self.last_exit_reason = exit_reason

@@ -38,11 +38,6 @@ class StrategyTemplate(BaseStrategy):
         # Initialize indicators here
         # self.sma = bt.indicators.SimpleMovingAverage(self.data.close, period=self.p.example_period)
         # self.rsi = bt.indicators.RSI(self.data.close, period=14)
-        self.order = None
-        self.entry_price = None
-        self.trade_active = False
-        self.trades = []  # List to log trades
-        self.last_exit_reason = None
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:

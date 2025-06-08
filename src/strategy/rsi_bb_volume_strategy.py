@@ -199,9 +199,7 @@ class RsiBollVolumeStrategy(BaseStrategy):
         # Exit conditions
         elif self.position and not self.position_closed:
             # Check exit logic
-            exit_signal, exit_reason = self.exit_logic.check_exit(
-                close, self.highest_price, atr_value
-            )
+            exit_signal, exit_reason = self.exit_logic.check_exit(close)
             if exit_signal:
                 self.order = self.sell()
                 self.position_closed = True
