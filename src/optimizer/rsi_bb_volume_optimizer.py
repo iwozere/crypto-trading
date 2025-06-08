@@ -99,15 +99,15 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         warnings.filterwarnings("ignore", category=UserWarning, module="skopt")
 
     def plot_results(
-        self, data: Any, trades_df: Any, params: Dict[str, Any], data_file: str
+        self, data_df: Any, trades_df: Any, params: Dict[str, Any], data_file_name: str
     ) -> Optional[str]:
         """
         Plot the results of the strategy, including price, indicators, trades, and equity curve.
         Args:
-            data: DataFrame with OHLCV data
+            data_df: DataFrame with OHLCV data
             trades_df: DataFrame with trade records (must include 'entry_time', 'entry_price', 'exit_time', 'exit_price')
             params: Dictionary of strategy parameters
-            data_file: Name of the data file (for plot title and saving)
+            data_file_name: Name of the data file (for plot title and saving)
         Returns:
             Path to the saved plot image, or None if plotting fails
         """
@@ -130,25 +130,25 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         if use_talib:
             # TA-Lib indicators
             bb_high = bt.talib.BBANDS(
-                data["close"],
+                data_df["close"],
                 timeperiod=params["bb_period"],
                 nbdevup=params["bb_devfactor"],
                 nbdevdn=params["bb_devfactor"],
             )[0]  # Upper band
             bb_mid = bt.talib.BBANDS(
-                data["close"],
+                data_df["close"],
                 timeperiod=params["bb_period"],
                 nbdevup=params["bb_devfactor"],
                 nbdevdn=params["bb_devfactor"],
             )[1]  # Middle band
             bb_low = bt.talib.BBANDS(
-                data["close"],
+                data_df["close"],
                 timeperiod=params["bb_period"],
                 nbdevup=params["bb_devfactor"],
                 nbdevdn=params["bb_devfactor"],
             )[2]  # Lower band
-            rsi = bt.talib.RSI(data["close"], timeperiod=params["rsi_period"])
-            vol_ma = bt.talib.SMA(data["volume"], timeperiod=params["vol_ma_period"])
+            rsi = bt.talib.RSI(data_df["close"], timeperiod=params["rsi_period"])
+            vol_ma = bt.talib.SMA(data_df["volume"], timeperiod=params["vol_ma_period"])
         else:
             # Backtrader built-in indicators
             bb = bt.ind.BollingerBands(
@@ -158,12 +158,12 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
             bb_mid = bb.lines.mid
             bb_low = bb.lines.bot
             rsi = bt.ind.RSI(period=params["rsi_period"])
-            vol_ma = bt.ind.SMA(data["volume"], period=params["vol_ma_period"])
+            vol_ma = bt.ind.SMA(data_df["volume"], period=params["vol_ma_period"])
 
         # Plot price and Bollinger Bands
-        ax1.plot(data.index, data["close"], label="Price", color="white", linewidth=2)
+        ax1.plot(data_df.index, data_df["close"], label="Price", color="white", linewidth=2)
         ax1.plot(
-            data.index,
+            data_df.index,
             bb_high,
             label=f'BB High ({params["bb_period"]}, {params["bb_devfactor"]})',
             color="red",
@@ -171,7 +171,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
             linewidth=1,
         )
         ax1.plot(
-            data.index,
+            data_df.index,
             bb_mid,
             label=f'BB Mid ({params["bb_period"]})',
             color="yellow",
@@ -179,7 +179,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
             linewidth=1,
         )
         ax1.plot(
-            data.index,
+            data_df.index,
             bb_low,
             label=f'BB Low ({params["bb_period"]}, {params["bb_devfactor"]})',
             color="green",
@@ -210,7 +210,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
 
         # Plot RSI
         ax2.plot(
-            data.index,
+            data_df.index,
             rsi,
             label=f'RSI ({params["rsi_period"]})',
             color="cyan",
@@ -219,16 +219,16 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         ax2.axhline(y=params["rsi_overbought"], color="red", linestyle="--", alpha=0.5)
         ax2.axhline(y=params["rsi_oversold"], color="green", linestyle="--", alpha=0.5)
         ax2.fill_between(
-            data.index, params["rsi_overbought"], 100, color="red", alpha=0.1
+            data_df.index, params["rsi_overbought"], 100, color="red", alpha=0.1
         )
         ax2.fill_between(
-            data.index, 0, params["rsi_oversold"], color="green", alpha=0.1
+            data_df.index, 0, params["rsi_oversold"], color="green", alpha=0.1
         )
 
         # Plot volume
-        ax3.bar(data.index, data["volume"], label="Volume", color="blue", alpha=0.7)
+        ax3.bar(data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7)
         ax3.plot(
-            data.index,
+            data_df.index,
             vol_ma,
             label=f'Volume MA ({params["vol_ma_period"]})',
             color="yellow",
@@ -274,7 +274,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
             )
 
         # Set titles and labels
-        ax1.set_title(f"Trading Results - {data_file}", fontsize=20)
+        ax1.set_title(f"Trading Results - {data_file_name}", fontsize=20)
         ax1.set_ylabel("Price", fontsize=16)
         ax2.set_ylabel("RSI", fontsize=16)
         ax3.set_ylabel("Volume", fontsize=16)
@@ -295,7 +295,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         plot_path = os.path.join(
             self.results_dir,
             self.get_result_filename(
-                data_file, suffix="_plot." + self.plot_format
+                data_file_name, suffix="_plot." + self.plot_format
             ),
         )
         if self.save_plot:

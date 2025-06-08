@@ -16,6 +16,9 @@ import pandas as pd
 from src.notification.logger import _logger
 from src.optimizer.base_optimizer import BaseOptimizer
 from src.strategy.liquidity_momentum_strategy import LiquidityMomentumStrategy
+import matplotlib.pyplot as plt
+from matplotlib.dates import DateFormatter
+import matplotlib.gridspec as gridspec
 
 
 class LiquidityMomentumOptimizer(BaseOptimizer):
@@ -67,76 +70,62 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
         self.print_summary = config.get("print_summary", True)
 
     def plot_results(
-        self, data: pd.DataFrame, trades_df: pd.DataFrame, params: dict, data_file: str
+        self, data_df: pd.DataFrame, trades_df: pd.DataFrame, params: dict, data_file_name: str
     ) -> str:
         """
         Plot optimization results with strategy-specific visualizations.
         Args:
-            data: Price data DataFrame
+            data_df: Price data DataFrame
             trades_df: Trades DataFrame
             params: Strategy parameters
-            data_file: Name of the data file
+            data_file_name: Name of the data file
         Returns:
             Path to the saved plot file
         """
         try:
-            import matplotlib.pyplot as plt
-            from matplotlib.dates import DateFormatter
+            plt.style.use("dark_background")
+            fig = plt.figure(figsize=self.plot_size)
 
-            # Create figure with subplots
-            fig, (ax1, ax2, ax3) = plt.subplots(
-                3, 1, figsize=self.plot_size, gridspec_kw={"height_ratios": [3, 1, 1]}
-            )
+            # Create subplots
+            gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 1])
+            ax1 = plt.subplot(gs[0])
+            ax2 = plt.subplot(gs[1], sharex=ax1)
+            ax3 = plt.subplot(gs[2], sharex=ax1)
 
             # Plot price and trades
-            ax1.plot(
-                data.index, data["close"], label="Close Price", color="blue", alpha=0.6
-            )
-
-            # Plot buy/sell points
+            ax1.plot(data_df.index, data_df["close"], label="Price", color="white", linewidth=2)
             if not trades_df.empty:
-                buys = trades_df[trades_df["side"] == "buy"]
-                sells = trades_df[trades_df["side"] == "sell"]
-
                 ax1.scatter(
-                    buys["entry_time"],
-                    buys["entry_price"],
-                    marker="^",
+                    trades_df["entry_time"],
+                    trades_df["entry_price"],
                     color="green",
-                    s=100,
+                    marker="^",
+                    s=200,
                     label="Buy",
                 )
                 ax1.scatter(
-                    sells["exit_time"],
-                    sells["exit_price"],
-                    marker="v",
+                    trades_df["exit_time"],
+                    trades_df["exit_price"],
                     color="red",
-                    s=100,
+                    marker="v",
+                    s=200,
                     label="Sell",
                 )
 
-            # Plot liquidity ratio
-            liquidity_ratio = data["volume"] / data["market_cap"]
-            ax2.plot(
-                data.index, liquidity_ratio, label="Liquidity Ratio", color="purple"
-            )
-            ax2.axhline(y=params["buy_thresh"], color="g", linestyle="--", alpha=0.5)
-            ax2.axhline(y=params["sell_thresh"], color="r", linestyle="--", alpha=0.5)
+            # Calculate and plot liquidity ratio
+            liquidity_ratio = data_df["volume"] / data_df["close"]
+            ax2.plot(data_df.index, liquidity_ratio, label="Liquidity Ratio", color="cyan")
 
             # Plot momentum indicators
-            momentum_periods = [
-                params["momentum_period_1"],
-                params["momentum_period_2"],
-                params["momentum_period_3"],
-            ]
+            momentum_periods = [5, 10, 20]  # Example periods
             for period in momentum_periods:
-                returns = data["close"].pct_change(period)
+                returns = data_df["close"].pct_change(period)
                 ax3.plot(
-                    data.index, returns, label=f"{period}-period Returns", alpha=0.7
+                    data_df.index, returns, label=f"{period}-period Returns", alpha=0.7
                 )
 
             # Customize plots
-            ax1.set_title(f"Liquidity Momentum Strategy - {data_file}")
+            ax1.set_title(f"Liquidity Momentum Strategy - {data_file_name}")
             ax1.set_ylabel("Price")
             ax1.legend()
             ax1.grid(self.show_grid)
@@ -159,7 +148,7 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
             # Save plot
             plot_path = os.path.join(
                 self.results_dir,
-                f"{self.get_result_filename(data_file)}_plot.{self.plot_format}",
+                f"{self.get_result_filename(data_file_name)}_plot.{self.plot_format}",
             )
             plt.savefig(plot_path, dpi=self.plot_dpi)
             if self.show_plot:

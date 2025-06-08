@@ -564,19 +564,24 @@ class BaseOptimizer:
 
             # Get trades from strategy
             trades = []
-            if hasattr(final_results, 'strategy') and hasattr(final_results.strategy, 'trades'):
-                for trade in final_results.strategy.trades:
-                    trade_dict = {
-                        'entry_time': trade.dtopen.isoformat() if hasattr(trade, 'dtopen') else None,
-                        'entry_price': trade.price,
-                        'exit_time': trade.dtclose.isoformat() if hasattr(trade, 'dtclose') else None,
-                        'exit_price': trade.pnl,
-                        'exit_type': trade.status,
-                        'exit_reason': trade.info.get('exit_reason', '') if hasattr(trade, 'info') else '',
-                        'pnl': trade.pnl,
-                        'pnl_comm': trade.pnlcomm,
-                    }
-                    trades.append(trade_dict)
+            if hasattr(final_results, 'strategy'):
+                strategy = final_results.strategy
+                if hasattr(strategy, 'trades'):
+                    for trade in strategy.trades:
+                        if hasattr(trade, 'status') and trade.status == 'closed':  # Only include closed trades
+                            trade_dict = {
+                                'entry_time': trade.dtopen.isoformat() if hasattr(trade, 'dtopen') else None,
+                                'entry_price': float(trade.price) if hasattr(trade, 'price') else None,
+                                'exit_time': trade.dtclose.isoformat() if hasattr(trade, 'dtclose') else None,
+                                'exit_price': float(trade.pnl) if hasattr(trade, 'pnl') else None,
+                                'exit_type': trade.status,
+                                'exit_reason': trade.info.get('exit_reason', '') if hasattr(trade, 'info') else '',
+                                'pnl': float(trade.pnl) if hasattr(trade, 'pnl') else None,
+                                'pnl_comm': float(trade.pnlcomm) if hasattr(trade, 'pnlcomm') else None,
+                                'direction': trade.direction if hasattr(trade, 'direction') else None,
+                                'size': float(trade.size) if hasattr(trade, 'size') else None,
+                            }
+                            trades.append(trade_dict)
 
             # Create results dictionary
             results_dict = {
@@ -601,12 +606,12 @@ class BaseOptimizer:
                 # Convert trades list to DataFrame
                 trades_df = pd.DataFrame(trades) if trades else pd.DataFrame()
                 
-                # Call optimizer-specific plot_results method
+                # Call optimizer-specific plot_results method with consistent parameter names
                 plot_path = self.plot_results(
-                    data=current_data,
+                    data_df=current_data,
                     trades_df=trades_df,
                     params=best_params,
-                    data_file=data_file
+                    data_file_name=data_file
                 )
                 
                 if plot_path:

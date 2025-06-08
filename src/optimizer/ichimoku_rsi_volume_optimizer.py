@@ -95,7 +95,7 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
         Plot the results of the strategy, including price, indicators, trades, and equity curve.
         Args:
             data_df: DataFrame with OHLCV data
-            trades_df: DataFrame with trade records (must include 'direction', 'entry_time', 'entry_price', 'exit_time', 'exit_price')
+            trades_df: DataFrame with trade records (must include 'entry_time', 'entry_price', 'exit_time', 'exit_price')
             params: Dictionary of strategy parameters
             data_file_name: Name of the data file (for plot title and saving)
         Returns:
@@ -103,132 +103,100 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
         """
         plt.style.use("dark_background")
         fig = plt.figure(figsize=self.plot_size)
+
+        # Create subplots
         gs = gridspec.GridSpec(5, 1, height_ratios=[3, 1, 1, 1, 1])
         ax1 = plt.subplot(gs[0])
         ax2 = plt.subplot(gs[1], sharex=ax1)
         ax3 = plt.subplot(gs[2], sharex=ax1)
         ax4 = plt.subplot(gs[3], sharex=ax1)
         ax5 = plt.subplot(gs[4], sharex=ax1)
+
         for ax in [ax1, ax2, ax3, ax4, ax5]:
             ax.grid(self.show_grid)
 
-        # Price and Ichimoku Cloud
-        ax1.plot(
-            data_df.index, data_df["close"], label="Price", color="white", linewidth=2
-        )
+        # Calculate indicators using the same implementation as the strategy
+        use_talib = params.get("use_talib", False)
 
-        # Ichimoku lines
-        # For plotting, recalc Ichimoku lines manually for pandas
-        def ichimoku_lines(df, tenkan, kijun, senkou):
-            high = df["high"]
-            low = df["low"]
-            tenkan_sen = (high.rolling(tenkan).max() + low.rolling(tenkan).min()) / 2
-            kijun_sen = (high.rolling(kijun).max() + low.rolling(kijun).min()) / 2
-            senkou_span_a = ((tenkan_sen + kijun_sen) / 2).shift(kijun)
-            senkou_span_b = (
-                (high.rolling(senkou).max() + low.rolling(senkou).min()) / 2
-            ).shift(kijun)
-            chikou_span = df["close"].shift(-kijun)
-            return tenkan_sen, kijun_sen, senkou_span_a, senkou_span_b, chikou_span
+        if use_talib:
+            # TA-Lib indicators
+            ichimoku = bt.talib.ICHIMOKU(
+                data_df["high"],
+                data_df["low"],
+                data_df["close"],
+                tenkan_period=params["tenkan_period"],
+                kijun_period=params["kijun_period"],
+                senkou_span_b_period=params["senkou_span_b_period"],
+            )
+            rsi = bt.talib.RSI(data_df["close"], timeperiod=params["rsi_period"])
+            vol_ma = bt.talib.SMA(data_df["volume"], timeperiod=params["vol_ma_period"])
+        else:
+            # Backtrader built-in indicators
+            ichimoku = bt.ind.Ichimoku(
+                tenkan_period=params["tenkan_period"],
+                kijun_period=params["kijun_period"],
+                senkou_span_b_period=params["senkou_span_b_period"],
+            )
+            rsi = bt.ind.RSI(period=params["rsi_period"])
+            vol_ma = bt.ind.SMA(data_df["volume"], period=params["vol_ma_period"])
 
-        tenkan = int(round(params["ichimoku_tenkan"]))
-        kijun = int(round(params["ichimoku_kijun"]))
-        senkou = int(round(params["ichimoku_senkou"]))
-        tenkan_sen, kijun_sen, senkou_a, senkou_b, chikou = ichimoku_lines(
-            data_df, tenkan, kijun, senkou
-        )
-        ax1.plot(
-            data_df.index, tenkan_sen, label="Tenkan-sen", color="orange", linewidth=1.5
-        )
-        ax1.plot(
-            data_df.index, kijun_sen, label="Kijun-sen", color="blue", linewidth=1.5
-        )
+        # Plot price and Ichimoku Cloud
+        ax1.plot(data_df.index, data_df["close"], label="Price", color="white", linewidth=2)
         ax1.plot(
             data_df.index,
-            senkou_a,
-            label="Senkou Span A",
-            color="green",
-            linewidth=1.2,
-            alpha=0.7,
-        )
-        ax1.plot(
-            data_df.index,
-            senkou_b,
-            label="Senkou Span B",
+            ichimoku.tenkan_sen,
+            label=f'Tenkan-sen ({params["tenkan_period"]})',
             color="red",
-            linewidth=1.2,
             alpha=0.7,
-        )
-        ax1.fill_between(
-            data_df.index,
-            senkou_a,
-            senkou_b,
-            where=senkou_a >= senkou_b,
-            color="green",
-            alpha=0.15,
-        )
-        ax1.fill_between(
-            data_df.index,
-            senkou_a,
-            senkou_b,
-            where=senkou_a < senkou_b,
-            color="red",
-            alpha=0.15,
-        )
-        ax1.plot(
-            data_df.index,
-            chikou,
-            label="Chikou Span",
-            color="magenta",
             linewidth=1,
-            alpha=0.5,
+        )
+        ax1.plot(
+            data_df.index,
+            ichimoku.kijun_sen,
+            label=f'Kijun-sen ({params["kijun_period"]})',
+            color="blue",
+            alpha=0.7,
+            linewidth=1,
+        )
+        ax1.plot(
+            data_df.index,
+            ichimoku.senkou_span_a,
+            label='Senkou Span A',
+            color="green",
+            alpha=0.7,
+            linewidth=1,
+        )
+        ax1.plot(
+            data_df.index,
+            ichimoku.senkou_span_b,
+            label=f'Senkou Span B ({params["senkou_span_b_period"]})',
+            color="yellow",
+            alpha=0.7,
+            linewidth=1,
         )
 
         # Plot trades
         if not trades_df.empty:
-            long_trades = trades_df[trades_df["type"] == "long"]
-            short_trades = trades_df[trades_df["type"] == "short"]
-            if not long_trades.empty:
-                ax1.scatter(
-                    long_trades["entry_time"],
-                    long_trades["entry_price"],
-                    color="lime",
-                    marker="^",
-                    s=200,
-                    label="Long Entry",
-                    zorder=5,
-                )
-                ax1.scatter(
-                    long_trades["exit_time"],
-                    long_trades["exit_price"],
-                    color="red",
-                    marker="v",
-                    s=200,
-                    label="Long Exit",
-                    zorder=5,
-                )
-            if not short_trades.empty:
-                ax1.scatter(
-                    short_trades["entry_time"],
-                    short_trades["entry_price"],
-                    color="fuchsia",
-                    marker="v",
-                    s=200,
-                    label="Short Entry",
-                    zorder=5,
-                )
-                ax1.scatter(
-                    short_trades["exit_time"],
-                    short_trades["exit_price"],
-                    color="aqua",
-                    marker="^",
-                    s=200,
-                    label="Short Exit",
-                    zorder=5,
-                )
+            # Plot entry (buy) points
+            ax1.scatter(
+                trades_df["entry_time"],
+                trades_df["entry_price"],
+                color="green",
+                marker="^",
+                s=200,
+                label="Buy",
+            )
+            # Plot exit (sell) points
+            ax1.scatter(
+                trades_df["exit_time"],
+                trades_df["exit_price"],
+                color="red",
+                marker="v",
+                s=200,
+                label="Sell",
+            )
 
-        # RSI
-        rsi = talib.RSI(data_df["close"], timeperiod=params["rsi_period"])
+        # Plot RSI
         ax2.plot(
             data_df.index,
             rsi,
@@ -236,62 +204,50 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
             color="cyan",
             linewidth=2,
         )
-        ax2.axhline(
-            y=params["rsi_oversold"],
-            color="yellow",
-            linestyle="--",
-            alpha=0.7,
-            label=f'RSI Oversold ({params["rsi_oversold"]})',
+        ax2.axhline(y=params["rsi_overbought"], color="red", linestyle="--", alpha=0.5)
+        ax2.axhline(y=params["rsi_oversold"], color="green", linestyle="--", alpha=0.5)
+        ax2.fill_between(
+            data_df.index, params["rsi_overbought"], 100, color="red", alpha=0.1
         )
-        ax2.axhline(
-            y=params["rsi_overbought"],
-            color="red",
-            linestyle="--",
-            alpha=0.7,
-            label=f'RSI Overbought ({params["rsi_overbought"]})',
+        ax2.fill_between(
+            data_df.index, 0, params["rsi_oversold"], color="green", alpha=0.1
         )
-        ax2.set_ylabel("RSI", fontsize=self.font_size)
-        ax2.legend(loc=self.legend_loc, fontsize=self.font_size)
 
-        # ATR (for trailing stop)
-        atr = talib.ATR(
-            data_df["high"],
-            data_df["low"],
-            data_df["close"],
-            timeperiod=params["atr_period"],
-        )
+        # Plot volume
+        ax3.bar(data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7)
         ax3.plot(
             data_df.index,
-            atr,
-            label=f'ATR ({params["atr_period"]})',
-            color="orange",
-            linewidth=1.5,
-        )
-        ax3.set_ylabel("ATR", fontsize=self.font_size)
-        ax3.legend(loc=self.legend_loc, fontsize=self.font_size)
-
-        # Volume
-        vol_ma_window = int(round(params["ichimoku_senkou"]))
-        ax4.bar(
-            data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7
-        )
-        vol_ma = data_df["volume"].rolling(window=vol_ma_window).mean()
-        ax4.plot(
-            data_df.index,
             vol_ma,
-            label=f"Volume MA ({vol_ma_window})",
+            label=f'Volume MA ({params["vol_ma_period"]})',
             color="yellow",
             linewidth=2,
         )
-        ax4.set_ylabel("Volume", fontsize=self.font_size)
-        ax4.legend(loc=self.legend_loc, fontsize=self.font_size)
 
-        # Equity Curve
+        # Plot Ichimoku signals
+        ax4.plot(
+            data_df.index,
+            data_df["close"] > ichimoku.senkou_span_a,
+            label="Price > Span A",
+            color="green",
+            alpha=0.7,
+        )
+        ax4.plot(
+            data_df.index,
+            data_df["close"] > ichimoku.senkou_span_b,
+            label="Price > Span B",
+            color="blue",
+            alpha=0.7,
+        )
+
+        # Calculate and plot equity curve
         if not trades_df.empty:
-            trades_df = trades_df.sort_values(by="exit_time").copy()
-            trades_df["returns"] = trades_df["pnl"] / 100
+            # Calculate cumulative returns
+            returns = trades_df["pnl_comm"] / trades_df["entry_price"]
+            cumulative_returns = (1 + returns).cumprod()
             initial_equity = self.initial_capital
-            equity_curve = initial_equity * (1 + trades_df["returns"]).cumprod()
+            equity_curve = initial_equity * cumulative_returns
+
+            # Plot equity curve
             ax5.plot(
                 trades_df["exit_time"],
                 equity_curve,
@@ -299,6 +255,8 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
                 color="green",
                 linewidth=2,
             )
+
+            # Add drawdown visualization
             rolling_max = equity_curve.expanding().max()
             drawdown = (equity_curve - rolling_max) / rolling_max * 100
             ax5.fill_between(
@@ -309,6 +267,8 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
                 alpha=0.3,
                 label="Drawdown",
             )
+
+            # Add horizontal line at initial capital
             ax5.axhline(
                 y=initial_equity,
                 color="white",
@@ -316,15 +276,24 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
                 alpha=0.5,
                 label="Initial Capital",
             )
-        ax5.set_ylabel("Equity", fontsize=self.font_size)
-        ax5.set_xlabel("Date", fontsize=self.font_size)
-        ax5.legend(loc=self.legend_loc, fontsize=self.font_size)
 
-        # Titles and layout
+        # Set titles and labels
         ax1.set_title(f"Trading Results - {data_file_name}", fontsize=20)
+        ax1.set_ylabel("Price", fontsize=16)
+        ax2.set_ylabel("RSI", fontsize=16)
+        ax3.set_ylabel("Volume", fontsize=16)
+        ax4.set_ylabel("Ichimoku Signals", fontsize=16)
+        ax5.set_ylabel("Equity", fontsize=16)
+        ax5.set_xlabel("Date", fontsize=16)
+
+        # Set legend
         for ax in [ax1, ax2, ax3, ax4, ax5]:
             ax.legend(loc=self.legend_loc, fontsize=self.font_size)
+
+        # Rotate x-axis labels
         plt.xticks(rotation=45)
+
+        # Adjust layout
         plt.tight_layout()
         plot_path = os.path.join(
             self.results_dir,
