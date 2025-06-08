@@ -68,7 +68,7 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         super().__init__(config)
         os.makedirs(self.results_dir, exist_ok=True)
 
-        self.plot_size = config.get("plot_size", [15, 10])
+        self.plot_size = self.visualization_settings.get("plot_size", [15, 10])
         plt.style.use("dark_background")
         sns.set_theme(style="darkgrid")
         plt.rcParams["figure.figsize"] = self.plot_size
