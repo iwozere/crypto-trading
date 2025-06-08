@@ -21,6 +21,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 
 import json
 import warnings
+import traceback
 from typing import Any, Dict, Optional
 
 import backtrader as bt
