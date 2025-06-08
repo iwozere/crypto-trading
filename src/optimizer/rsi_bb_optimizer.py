@@ -285,7 +285,7 @@ class RsiBbOptimizer(BaseOptimizer):
         plot_path = os.path.join(
             self.results_dir,
             self.get_result_filename(
-                data_file_name, suffix="_plot.png", current_data=data_df
+                data_file_name, suffix="_plot.png"
             ),
         )
         plt.savefig(plot_path, dpi=300, bbox_inches="tight")

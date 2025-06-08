@@ -295,7 +295,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         plot_path = os.path.join(
             self.results_dir,
             self.get_result_filename(
-                data_file, suffix="_plot." + self.plot_format, current_data=data
+                data_file, suffix="_plot." + self.plot_format
             ),
         )
         if self.save_plot:

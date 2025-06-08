@@ -16,11 +16,7 @@ from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
 from src.notification.logger import setup_logger
 
 # Set up logger
-logger = setup_logger(
-    'ticker_analyzer_bot',
-    'logs/log/ticker_analyzer_bot.log',
-    level=logging.DEBUG
-)
+logger = setup_logger()
 
 if not TELEGRAM_BOT_TOKEN:
     logger.error("TELEGRAM_BOT_TOKEN environment variable is not set")

@@ -293,7 +293,7 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         plot_path = os.path.join(
             self.results_dir,
             self.get_result_filename(
-                data_file_name, suffix="_plot." + self.plot_format, current_data=data_df
+                data_file_name, suffix="_plot." + self.plot_format
             ),
         )
         if self.save_plot:

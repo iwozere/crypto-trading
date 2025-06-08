@@ -505,10 +505,11 @@ class BaseOptimizer:
     def save_results(self, study, data_file, current_data):
         """
         Save optimization results to JSON and generate plots.
+        Handles both Optuna studies and scikit-optimize results.
         """
         try:
             # Get the result filename
-            result_filename = self.get_result_filename(data_file, current_data)
+            result_filename = self.get_result_filename(data_file)
             if not result_filename:
                 self.log_message("Failed to generate result filename", level="error")
                 return
@@ -519,23 +520,74 @@ class BaseOptimizer:
                 self.log_message("Failed to extract strategy name", level="error")
                 return
 
+            # Run final backtest with best parameters to get metrics and trades
+            if hasattr(study, 'best_params'):  # Optuna study
+                best_params = study.best_params
+            else:  # scikit-optimize result
+                best_params = dict(zip([d.name for d in self.space], study.x))
+
+            # Run backtest with best parameters
+            final_results = self.run_backtest(best_params)
+            
+            # Get metrics from analyzers
+            metrics = {}
+            if hasattr(final_results, 'analyzers'):
+                if hasattr(final_results.analyzers, 'trades'):
+                    trade_analysis = final_results.analyzers.trades.get_analysis()
+                    metrics.update({
+                        'total_trades': trade_analysis.get('total', {}).get('total', 0),
+                        'winning_trades': trade_analysis.get('won', {}).get('total', 0),
+                        'losing_trades': trade_analysis.get('lost', {}).get('total', 0),
+                        'win_rate': trade_analysis.get('won', {}).get('total', 0) / trade_analysis.get('total', {}).get('total', 1) * 100 if trade_analysis.get('total', {}).get('total', 0) > 0 else 0,
+                        'gross_profit': trade_analysis.get('pnl', {}).get('gross', {}).get('profit', 0),
+                        'gross_loss': trade_analysis.get('pnl', {}).get('gross', {}).get('loss', 0),
+                        'net_profit': trade_analysis.get('pnl', {}).get('net', 0),
+                        'profit_factor': abs(trade_analysis.get('pnl', {}).get('gross', {}).get('profit', 0) / trade_analysis.get('pnl', {}).get('gross', {}).get('loss', 1)) if trade_analysis.get('pnl', {}).get('gross', {}).get('loss', 0) != 0 else float('inf'),
+                    })
+                
+                if hasattr(final_results.analyzers, 'drawdown'):
+                    drawdown_analysis = final_results.analyzers.drawdown.get_analysis()
+                    metrics['max_drawdown'] = drawdown_analysis.get('max', {}).get('drawdown', 0)
+                
+                if hasattr(final_results.analyzers, 'returns'):
+                    returns_analysis = final_results.analyzers.returns.get_analysis()
+                    metrics.update({
+                        'cagr': returns_analysis.get('rnorm', 0),
+                        'sharpe_ratio': returns_analysis.get('sharperatio', 0),
+                        'sortino_ratio': returns_analysis.get('sortino', 0),
+                        'calmar_ratio': returns_analysis.get('calmar', 0),
+                    })
+                
+                if hasattr(final_results.analyzers, 'sharpe'):
+                    sharpe_analysis = final_results.analyzers.sharpe.get_analysis()
+                    metrics['sharpe_ratio'] = sharpe_analysis.get('sharperatio', 0)
+
+            # Get trades from strategy
+            trades = []
+            if hasattr(final_results, 'strategy') and hasattr(final_results.strategy, 'trades'):
+                for trade in final_results.strategy.trades:
+                    trade_dict = {
+                        'entry_time': trade.dtopen.isoformat() if hasattr(trade, 'dtopen') else None,
+                        'entry_price': trade.price,
+                        'exit_time': trade.dtclose.isoformat() if hasattr(trade, 'dtclose') else None,
+                        'exit_price': trade.pnl,
+                        'exit_type': trade.status,
+                        'exit_reason': trade.info.get('exit_reason', '') if hasattr(trade, 'info') else '',
+                        'pnl': trade.pnl,
+                        'pnl_comm': trade.pnlcomm,
+                    }
+                    trades.append(trade_dict)
+
             # Create results dictionary
             results_dict = {
                 "version": "1.0.0",
                 "timestamp": datetime.datetime.now().isoformat(),
-                "optimization_date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "strategy_name": strategy_name,
                 "data_file": data_file,
-                "best_params": study.best_params,
-                "best_value": study.best_value,
-                "n_trials": len(study.trials),
-                "best_trial": {
-                    "number": study.best_trial.number,
-                    "params": study.best_trial.params,
-                    "value": study.best_trial.value,
-                    "datetime_start": study.best_trial.datetime_start.isoformat() if study.best_trial.datetime_start else None,
-                    "datetime_complete": study.best_trial.datetime_complete.isoformat() if study.best_trial.datetime_complete else None,
-                } if study.best_trial else None
+                "exit_logic_name": self.exit_logic.get("name", "atr_exit"),
+                "best_params": best_params,
+                "metrics": metrics,
+                "trades": trades
             }
 
             # Save results to JSON
@@ -544,14 +596,28 @@ class BaseOptimizer:
                 json.dump(results_dict, f, indent=4)
             self.log_message(f"Results saved to {json_path}", level="info")
 
-            # Generate and save plot
-            plot_path = os.path.join(self.results_dir, f"{result_filename}_plot.png")
+            # Generate and save plot using optimizer-specific plot_results method
             try:
-                fig = optuna.visualization.plot_optimization_history(study)
-                fig.write_image(plot_path)
-                self.log_message(f"Plot saved to {plot_path}", level="info")
+                # Convert trades list to DataFrame
+                trades_df = pd.DataFrame(trades) if trades else pd.DataFrame()
+                
+                # Call optimizer-specific plot_results method
+                plot_path = self.plot_results(
+                    data=current_data,
+                    trades_df=trades_df,
+                    params=best_params,
+                    data_file=data_file
+                )
+                
+                if plot_path:
+                    results_dict["plot_path"] = plot_path
+                    self.log_message(f"Plot saved to {plot_path}", level="info")
+                else:
+                    self.log_message("Failed to generate plot", level="error")
+                    
             except Exception as e:
                 self.log_message(f"Error generating plot: {str(e)}", level="error")
+                self.log_message(traceback.format_exc(), level="error")
 
         except Exception as e:
             self.log_message(f"Error saving results: {str(e)}", level="error")

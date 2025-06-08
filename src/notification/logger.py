@@ -12,7 +12,7 @@ from logging.handlers import RotatingFileHandler
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import logging.config
-from datetime import datetime
+from datetime import datetime as dt
 
 # Ensure log directory exists
 log_dir = os.path.join("logs", "log")
@@ -24,7 +24,7 @@ os.makedirs(log_dir, exist_ok=True)
 ####################################################################
 def print_log(msg: str):
     # Get current timestamp
-    current_time = datetime.now()
+    current_time = dt.now()
     time = current_time.strftime("%Y-%m-%d %H:%M:%S")
 
     # Print the timestamp in a human-readable format
@@ -106,7 +106,7 @@ def setup_logger():
     os.makedirs("logs", exist_ok=True)
 
     # Create file handler
-    current_time = datetime.datetime.now()
+    current_time = dt.now()
     log_file = os.path.join("logs", f"app_{current_time.strftime('%Y%m%d_%H%M%S')}.log")
     file_handler = logging.FileHandler(log_file)
     file_handler.setLevel(logging.INFO)
