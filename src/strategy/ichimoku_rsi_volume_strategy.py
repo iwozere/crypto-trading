@@ -106,18 +106,6 @@ class IchimokuRsiVolumeStrategy(BaseStrategy):
                 self.data.volume, period=self.params["vol_ma_period"]
             )
 
-        # Initialize exit logic
-        exit_logic_name = self.params.get("exit_logic_name", "atr_exit")
-        exit_params = self.params.get("exit_params", {})
-        exit_class = get_exit_class(exit_logic_name)
-        self.exit_logic = exit_class(exit_params)
-
-        self.order = None
-        self.entry_price = None
-        self.highest_price = None
-        self.current_trade = None
-        self.position_type = None
-        self.last_exit_reason = None
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -131,9 +119,8 @@ class IchimokuRsiVolumeStrategy(BaseStrategy):
                 self.highest_price = self.entry_price
                 self.position_type = "long"
 
-                # Initialize exit logic with entry price and ATR
-                atr_value = self.atr[0]
-                self.exit_logic.initialize(self.entry_price, atr_value)
+                # Initialize exit logic with entry price
+                self.exit_logic.initialize(self.entry_price)
 
                 if self.current_trade:
                     self.current_trade["entry_price"] = self.entry_price

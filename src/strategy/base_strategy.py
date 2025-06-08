@@ -57,10 +57,20 @@ class BaseStrategy(bt.Strategy):
         self.printlog = params.get("printlog", False)
         self.trades = []
         self.notifier = create_notifier() if self.notify else None
-        # Exit logic instantiation
-        exit_logic_name = params.get("exit_logic_name", "atr_exit")
-        exit_params = params.get("exit_params", {})
-        self.exit_logic = get_exit_class(exit_logic_name)(params=exit_params)
+        
+        # Initialize exit logic
+        exit_logic_name = self.params.get("exit_logic_name", "atr_exit")
+        exit_params = self.params.get("exit_params", {})
+        exit_class = get_exit_class(exit_logic_name)
+        self.exit_logic = exit_class(exit_params)
+
+        self.order = None
+        self.entry_price = None
+        self.highest_price = None
+        self.current_trade = None
+        self.trade_active = False
+        self.last_exit_reason = None
+
 
     def log(
         self,

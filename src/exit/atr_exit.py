@@ -12,29 +12,39 @@ class ATRExit(BaseExitLogic):
         self.tp_mult = self.params.get("tp_mult", 2.0)
         self.tp_price = None
         self.sl_price = None
+        self.atr_value = None
 
-    def initialize(self, entry_price, atr_value):
-        """Initialize the exit logic with entry price and ATR value."""
-        super().initialize(entry_price, atr_value)
-        self.tp_price = self.entry_price + self.tp_mult * self.atr_value
-        self.sl_price = self.entry_price - self.sl_mult * self.atr_value
+    def initialize(self, entry_price):
+        """Basic initialization with just entry price"""
+        super().initialize(entry_price)
+        self.atr_value = None
+        # Set initial TP/SL levels
+        self._update_levels(None)
+
+    def _update_levels(self, atr_value):
+        """Update take profit and stop loss levels based on current ATR value."""
+        self.tp_price = self.entry_price + self.tp_mult * atr_value if atr_value else None
+        self.sl_price = self.entry_price - self.sl_mult * atr_value if atr_value else None
 
     def get_stop_loss(self):
         """Get the current stop loss price."""
         return self.sl_price
 
-    def check_exit(self, current_price, highest_price, atr_value):
+    def on_new_candle(self, **kwargs):
         """
-        Check if price has hit take profit or stop loss levels.
-
-        Args:
-            current_price (float): Current price
-            highest_price (float): Highest price since entry
-            atr_value (float): Current ATR value
-
-        Returns:
-            tuple: (bool, str) - (should_exit, exit_reason)
+        Called on each new candle with any additional data needed.
+        Each exit logic can implement what it needs.
         """
+        self.atr_value = kwargs.get('atr_value')
+        if self.atr_value is None:
+            raise ValueError("ATR value required")
+        self._update_levels(self.atr_value)
+
+    def check_exit(self, current_price):
+        """Basic exit check with just price data"""
+        # Update TP/SL levels with current ATR value
+        self._update_levels(self.atr_value)
+        
         if current_price >= self.tp_price:
             return True, "take profit"
         elif current_price <= self.sl_price:

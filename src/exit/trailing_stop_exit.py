@@ -11,19 +11,17 @@ class TrailingStopExit(BaseExitLogic):
         self.trail_pct = self.params.get("trail_pct", 0.02)
         self.trailing_stop = None
 
-    def initialize(self, entry_price, atr_value):
-        """Initialize the exit logic with entry price and ATR value."""
-        super().initialize(entry_price, atr_value)
+    def initialize(self, entry_price):
+        """Initialize the exit logic with entry price."""
+        super().initialize(entry_price)
         self.trailing_stop = self.entry_price * (1 - self.trail_pct)
 
-    def check_exit(self, current_price, highest_price, atr_value):
+    def check_exit(self, current_price):
         """
         Check if price has fallen below the trailing stop.
 
         Args:
             current_price (float): Current price
-            highest_price (float): Highest price since entry
-            atr_value (float): Current ATR value
 
         Returns:
             tuple: (bool, str) - (should_exit, exit_reason)

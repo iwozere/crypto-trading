@@ -13,20 +13,18 @@ class MACrossoverExit(BaseExitLogic):
         self.prices = []
         self.ma_values = []
 
-    def initialize(self, entry_price, atr_value):
-        """Initialize the exit logic with entry price and ATR value."""
-        super().initialize(entry_price, atr_value)
+    def initialize(self, entry_price):
+        """Initialize the exit logic with entry price."""
+        super().initialize(entry_price)
         self.prices = [entry_price]
         self.ma_values = [entry_price]
 
-    def check_exit(self, current_price, highest_price, atr_value):
+    def check_exit(self, current_price):
         """
         Check if price has crossed below the moving average.
 
         Args:
             current_price (float): Current price
-            highest_price (float): Highest price since entry
-            atr_value (float): Current ATR value
 
         Returns:
             tuple: (bool, str) - (should_exit, exit_reason)

@@ -122,19 +122,6 @@ class RsiBollVolumeStrategy(BaseStrategy):
             )
             self.atr = bt.ind.ATR(period=self.params["atr_period"])
 
-        # Initialize exit logic
-        exit_logic_name = self.params.get("exit_logic_name", "atr_exit")
-        exit_params = self.params.get("exit_params", {})
-        exit_class = get_exit_class(exit_logic_name)
-        self.exit_logic = exit_class(exit_params)
-
-        self.order = None
-        self.entry_price = None
-        self.highest_price = None
-        self.current_trade = None
-        self.position_closed = True
-        self.last_order_type = None
-        self.last_exit_reason = None
 
     def notify_order(self, order):
         if order.status == order.Completed:
@@ -143,9 +130,8 @@ class RsiBollVolumeStrategy(BaseStrategy):
                 self.highest_price = order.executed.price
                 self.last_order_type = "buy"
 
-                # Initialize exit logic with entry price and ATR value
-                atr_value = self.atr[0]
-                self.exit_logic.initialize(self.entry_price, atr_value)
+                # Initialize exit logic with entry price
+                self.exit_logic.initialize(self.entry_price)
             else:
                 self.position_closed = True
                 self.last_order_type = "sell"

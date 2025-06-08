@@ -14,20 +14,18 @@ class FixedSLTPExit(BaseExitLogic):
         self.tp_price = None
         self.sl_price = None
 
-    def initialize(self, entry_price, atr_value):
-        """Initialize the exit logic with entry price and ATR value."""
-        super().initialize(entry_price, atr_value)
+    def initialize(self, entry_price):
+        """Initialize the exit logic with entry price."""
+        super().initialize(entry_price)
         self.tp_price = self.entry_price * (1 + self.tp_pct)
         self.sl_price = self.entry_price * (1 - self.sl_pct)
 
-    def check_exit(self, current_price, highest_price, atr_value):
+    def check_exit(self, current_price):
         """
         Check if price has hit take profit or stop loss levels.
 
         Args:
             current_price (float): Current price
-            highest_price (float): Highest price since entry
-            atr_value (float): Current ATR value
 
         Returns:
             tuple: (bool, str) - (should_exit, exit_reason)

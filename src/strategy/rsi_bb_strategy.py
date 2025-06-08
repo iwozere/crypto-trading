@@ -87,18 +87,6 @@ class MeanReversionRsiBbStrategy(BaseStrategy):
             )
             self.rsi = bt.indicators.RSI(period=self.params.get("rsi_period", 14))
 
-        # Initialize exit logic
-        exit_logic_name = self.params.get("exit_logic_name", "atr_exit")
-        exit_params = self.params.get("exit_params", {})
-        exit_class = get_exit_class(exit_logic_name)
-        self.exit_logic = exit_class(exit_params)
-
-        self.order = None
-        self.entry_price = None
-        self.entry_bar_idx = None
-        self.highest_price = None
-        self.current_trade = None
-        self.last_exit_reason = None
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
