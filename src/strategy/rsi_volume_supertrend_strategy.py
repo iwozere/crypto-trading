@@ -65,68 +65,43 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
         # Initialize indicators based on use_talib flag
         if use_talib:
             # TA-Lib indicators
-            self.rsi = bt.talib.RSI(
-                self.data.close, timeperiod=self.params["rsi_period"]
-            )
-            self.atr = bt.talib.ATR(
-                self.data.high,
-                self.data.low,
-                self.data.close,
-                timeperiod=self.params["atr_period"],
-            )
+            self.rsi = bt.talib.RSI(timeperiod=self.params.get("rsi_period", 14))
             self.vol_ma = bt.talib.SMA(
                 self.data.volume, timeperiod=self.params["vol_ma_period"]
             )
         else:
             # Backtrader built-in indicators
-            self.rsi = bt.ind.RSI(period=self.params["rsi_period"])
-            self.atr = bt.ind.ATR(period=self.params["atr_period"])
+            self.rsi = bt.indicators.RSI(period=self.params.get("rsi_period", 14))
             self.vol_ma = bt.ind.SMA(
                 self.data.volume, period=self.params["vol_ma_period"]
             )
 
-        # Initialize SuperTrend
-        self.st = SuperTrend(
-            params={
-                "period": self.params["st_period"],
-                "multiplier": self.params["st_multiplier"],
-                "use_talib": use_talib,
-            }
+        # Initialize SuperTrend indicator
+        self.supertrend = SuperTrend(
+            self.data,
+            period=self.params.get("supertrend_period", 10),
+            multiplier=self.params.get("supertrend_multiplier", 3.0),
         )
 
-
     def notify_order(self, order):
-        if order.status in [order.Submitted, order.Accepted]:
-            return
         if order.status == order.Completed:
             if order.isbuy():
-                self.log(
-                    f"BUY EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}"
-                )
                 self.entry_price = order.executed.price
-                self.highest_price = self.entry_price
+                self.highest_price = order.executed.price
+                self.last_order_type = "buy"
 
-                # Initialize exit logic with entry price
-                self.exit_logic.initialize(self.entry_price)
-
-                if self.current_trade:
-                    self.current_trade["entry_price"] = self.entry_price
-            elif order.issell():
-                if self.position.size == 0:
-                    self.entry_price = None
-                    self.highest_price = None
-                    if self.current_trade:
-                        self.current_trade["exit_price"] = order.executed.price
-                        self.current_trade["exit_time"] = self.data.datetime.datetime(0)
-                        self.current_trade["exit_reason"] = self.last_exit_reason
-                        self.record_trade(self.current_trade)
-                        self.current_trade = None
-                    self.last_exit_reason = None
-        elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log(f"Order Canceled/Margin/Rejected: {order.getstatusname()}")
-            if not self.position:
-                self.entry_price = None
-                self.highest_price = None
+                # Initialize exit logic with entry price and ATR if available
+                if hasattr(self, 'atr'):
+                    self.exit_logic.initialize(self.entry_price, atr_value=self.atr[0])
+                else:
+                    self.exit_logic.initialize(self.entry_price)
+            else:
+                self.position_closed = True
+                self.last_order_type = "sell"
+        elif order.status in [order.Canceled, order.Margin]:
+            if order.isbuy():
+                self.position_closed = True
+                self.last_order_type = None
         self.order = None
 
     def next(self):
@@ -136,8 +111,8 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
         volume = self.data.volume[0]
         rsi_val = self.rsi[0]
         prev_rsi_val = self.rsi[-1] if len(self.rsi) > 1 else rsi_val
-        st_direction = self.st.lines.direction[0]
-        st_value = self.st.lines.supertrend[0]
+        st_direction = self.supertrend.lines.direction[0]
+        st_value = self.supertrend.lines.supertrend[0]
         vol_ma_val = self.vol_ma[0]
         atr_val = self.atr[0]
 

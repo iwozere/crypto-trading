@@ -70,42 +70,24 @@ class IchimokuRsiVolumeStrategy(BaseStrategy):
         # Initialize indicators based on use_talib flag
         if use_talib:
             # TA-Lib indicators
-            self.tenkan = bt.talib.SMA(
-                self.data.close, timeperiod=self.params["tenkan_period"]
-            )
-            self.kijun = bt.talib.SMA(
-                self.data.close, timeperiod=self.params["kijun_period"]
-            )
-            self.senkou_span_b = bt.talib.SMA(
-                self.data.close, timeperiod=self.params["senkou_span_b_period"]
-            )
-            self.rsi = bt.talib.RSI(
-                self.data.close, timeperiod=self.params["rsi_period"]
-            )
-            self.atr = bt.talib.ATR(
-                self.data.high,
-                self.data.low,
-                self.data.close,
-                timeperiod=self.params["atr_period"],
-            )
+            self.rsi = bt.talib.RSI(timeperiod=self.params.get("rsi_period", 14))
             self.vol_ma = bt.talib.SMA(
                 self.data.volume, timeperiod=self.params["vol_ma_period"]
             )
         else:
             # Backtrader built-in indicators
-            self.tenkan = bt.ind.SMA(
-                self.data.close, period=self.params["tenkan_period"]
-            )
-            self.kijun = bt.ind.SMA(self.data.close, period=self.params["kijun_period"])
-            self.senkou_span_b = bt.ind.SMA(
-                self.data.close, period=self.params["senkou_span_b_period"]
-            )
-            self.rsi = bt.ind.RSI(period=self.params["rsi_period"])
-            self.atr = bt.ind.ATR(period=self.params["atr_period"])
+            self.rsi = bt.indicators.RSI(period=self.params.get("rsi_period", 14))
             self.vol_ma = bt.ind.SMA(
                 self.data.volume, period=self.params["vol_ma_period"]
             )
 
+        # Ichimoku Cloud indicators
+        self.ichimoku = bt.indicators.Ichimoku(
+            tenkan_period=self.params.get("tenkan_period", 9),
+            kijun_period=self.params.get("kijun_period", 26),
+            senkou_period=self.params.get("senkou_period", 52),
+            displacement=self.params.get("displacement", 26),
+        )
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -119,8 +101,11 @@ class IchimokuRsiVolumeStrategy(BaseStrategy):
                 self.highest_price = self.entry_price
                 self.position_type = "long"
 
-                # Initialize exit logic with entry price
-                self.exit_logic.initialize(self.entry_price)
+                # Initialize exit logic with entry price and ATR if available
+                if hasattr(self, 'atr'):
+                    self.exit_logic.initialize(self.entry_price, atr_value=self.atr[0])
+                else:
+                    self.exit_logic.initialize(self.entry_price)
 
                 if self.current_trade:
                     self.current_trade["entry_price"] = self.entry_price
@@ -141,7 +126,6 @@ class IchimokuRsiVolumeStrategy(BaseStrategy):
             if not self.position:
                 self.entry_price = None
                 self.highest_price = None
-                self.position_type = None
         self.order = None
 
     def next(self):
@@ -149,9 +133,9 @@ class IchimokuRsiVolumeStrategy(BaseStrategy):
             return
         close = self.data.close[0]
         volume = self.data.volume[0]
-        tenkan = self.tenkan[0]
-        kijun = self.kijun[0]
-        senkou_span_b = self.senkou_span_b[0]
+        tenkan = self.ichimoku.tenkan[0]
+        kijun = self.ichimoku.kijun[0]
+        senkou_span_b = self.ichimoku.senkou_span_b[0]
         rsi = self.rsi[0]
         atr = self.atr[0]
         vol_ma = self.vol_ma[0]

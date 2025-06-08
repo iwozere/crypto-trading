@@ -55,22 +55,14 @@ class LiquidityMomentumStrategy(BaseStrategy):
         # Initialize indicators based on use_talib flag
         if use_talib:
             # TA-Lib indicators
-            self.atr = bt.talib.ATR(
-                self.data.high,
-                self.data.low,
-                self.data.close,
-                timeperiod=self.params["atr_period"],
-            )
             self.vol_ma = bt.talib.SMA(
                 self.data.volume, timeperiod=self.params["vol_ma_period"]
             )
         else:
             # Backtrader built-in indicators
-            self.atr = bt.ind.ATR(period=self.params["atr_period"])
             self.vol_ma = bt.ind.SMA(
                 self.data.volume, period=self.params["vol_ma_period"]
             )
-
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -83,8 +75,11 @@ class LiquidityMomentumStrategy(BaseStrategy):
                 self.entry_price = order.executed.price
                 self.highest_price = self.entry_price
 
-                # Initialize exit logic with entry price
-                self.exit_logic.initialize(self.entry_price)
+                # Initialize exit logic with entry price and ATR if available
+                if hasattr(self, 'atr'):
+                    self.exit_logic.initialize(self.entry_price, atr_value=self.atr[0])
+                else:
+                    self.exit_logic.initialize(self.entry_price)
 
                 if self.current_trade:
                     self.current_trade["entry_price"] = self.entry_price

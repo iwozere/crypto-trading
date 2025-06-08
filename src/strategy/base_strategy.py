@@ -64,6 +64,20 @@ class BaseStrategy(bt.Strategy):
         exit_class = get_exit_class(exit_logic_name)
         self.exit_logic = exit_class(exit_params)
 
+        # Initialize ATR indicator if using ATR-based exit
+        if exit_logic_name == "atr_exit":
+            use_talib = self.params.get("use_talib", False)
+            atr_period = self.params.get("atr_period", 14)
+            if use_talib:
+                self.atr = bt.talib.ATR(
+                    self.data.high,
+                    self.data.low,
+                    self.data.close,
+                    timeperiod=atr_period
+                )
+            else:
+                self.atr = bt.ind.ATR(period=atr_period)
+
         self.order = None
         self.entry_price = None
         self.highest_price = None
@@ -106,7 +120,6 @@ class BaseStrategy(bt.Strategy):
             ts = ts.isoformat()
         elif ts is None:
             import datetime
-
             ts = datetime.datetime.now().isoformat()
         symbol = trade_dict.get("symbol", "UNKNOWN")
         fname = (

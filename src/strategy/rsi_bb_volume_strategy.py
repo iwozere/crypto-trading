@@ -92,36 +92,25 @@ class RsiBollVolumeStrategy(BaseStrategy):
         # Initialize indicators based on use_talib flag
         if use_talib:
             # TA-Lib indicators
-            self.rsi = bt.talib.RSI(
-                self.data.close, timeperiod=self.params["rsi_period"]
-            )
             self.boll = bt.talib.BBANDS(
-                self.data.close,
-                timeperiod=self.params["boll_period"],
-                nbdevup=self.params["boll_devfactor"],
-                nbdevdn=self.params["boll_devfactor"],
+                timeperiod=self.params.get("bb_period", 20),
+                nbdevup=self.params.get("bb_devfactor", 2.0),
+                nbdevdn=self.params.get("bb_devfactor", 2.0),
             )
+            self.rsi = bt.talib.RSI(timeperiod=self.params.get("rsi_period", 14))
             self.vol_ma = bt.talib.SMA(
                 self.data.volume, timeperiod=self.params["vol_ma_period"]
             )
-            self.atr = bt.talib.ATR(
-                self.data.high,
-                self.data.low,
-                self.data.close,
-                timeperiod=self.params["atr_period"],
-            )
         else:
             # Backtrader built-in indicators
-            self.rsi = bt.ind.RSI(period=self.params["rsi_period"])
-            self.boll = bt.ind.BollingerBands(
-                period=self.params["boll_period"],
-                devfactor=self.params["boll_devfactor"],
+            self.boll = bt.indicators.BollingerBands(
+                period=self.params.get("bb_period", 20),
+                devfactor=self.params.get("bb_devfactor", 2.0),
             )
+            self.rsi = bt.indicators.RSI(period=self.params.get("rsi_period", 14))
             self.vol_ma = bt.ind.SMA(
                 self.data.volume, period=self.params["vol_ma_period"]
             )
-            self.atr = bt.ind.ATR(period=self.params["atr_period"])
-
 
     def notify_order(self, order):
         if order.status == order.Completed:
@@ -130,8 +119,11 @@ class RsiBollVolumeStrategy(BaseStrategy):
                 self.highest_price = order.executed.price
                 self.last_order_type = "buy"
 
-                # Initialize exit logic with entry price
-                self.exit_logic.initialize(self.entry_price)
+                # Initialize exit logic with entry price and ATR if available
+                if hasattr(self, 'atr'):
+                    self.exit_logic.initialize(self.entry_price, atr_value=self.atr[0])
+                else:
+                    self.exit_logic.initialize(self.entry_price)
             else:
                 self.position_closed = True
                 self.last_order_type = "sell"
