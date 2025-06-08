@@ -689,10 +689,14 @@ class BaseOptimizer:
             except Exception as e:
                 self.log_message(f"Error in final backtest: {str(e)}", level="error")
 
+            # Save individual results and generate plot
+            self.save_results(study, file_path, self.current_data)
+
             return study
 
         except Exception as e:
             self.log_message(f"Error in optimize_single_file: {str(e)}", level="error")
+            self.log_message(traceback.format_exc(), level="error")
             return None
 
     def run_optimization(self):
