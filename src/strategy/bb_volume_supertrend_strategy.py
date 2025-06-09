@@ -100,7 +100,6 @@ class BBSuperTrendVolumeBreakoutStrategy(BaseStrategy):
 
         # Initialize SuperTrend indicator
         self.st = SuperTrend(
-            self.data,
             params={
                 "period": self.params["st_period"],
                 "multiplier": self.params["st_multiplier"],

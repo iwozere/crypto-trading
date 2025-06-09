@@ -6,8 +6,8 @@ from src.exit.base_exit import BaseExitLogic
 
 
 class FixedSLTPExit(BaseExitLogic):
-    def __init__(self, params=None):
-        super().__init__(params)
+    def __init__(self, strategy, params=None):
+        super().__init__(strategy, params)
         self.sl_pct = self.params.get("sl_pct", 0.02)  # 2% stop loss
         self.rr = self.params.get("rr", 2.0)  # Risk-reward ratio
         self.tp_pct = self.sl_pct * self.rr  # Take profit percentage
@@ -31,7 +31,7 @@ class FixedSLTPExit(BaseExitLogic):
             tuple: (bool, str) - (should_exit, exit_reason)
         """
         if current_price >= self.tp_price:
-            return True, "take profit"
+            return True, "TP"
         elif current_price <= self.sl_price:
-            return True, "stop loss"
+            return True, "SL"
         return False, None

@@ -6,8 +6,8 @@ from src.exit.base_exit import BaseExitLogic
 
 
 class TrailingStopExit(BaseExitLogic):
-    def __init__(self, params=None):
-        super().__init__(params)
+    def __init__(self, strategy, params=None):
+        super().__init__(strategy, params)
         self.trail_pct = self.params.get("trail_pct", 0.02)
         self.trailing_stop = None
 
@@ -31,5 +31,5 @@ class TrailingStopExit(BaseExitLogic):
         self.trailing_stop = max(self.trailing_stop, new_trailing)
 
         if current_price <= self.trailing_stop:
-            return True, "trailing stop"
+            return True, "TS"
         return False, None

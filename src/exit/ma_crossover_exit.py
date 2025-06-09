@@ -7,8 +7,8 @@ from src.exit.base_exit import BaseExitLogic
 
 
 class MACrossoverExit(BaseExitLogic):
-    def __init__(self, params=None):
-        super().__init__(params)
+    def __init__(self, strategy, params=None):
+        super().__init__(strategy, params)
         self.ma_period = self.params.get("ma_period", 20)
         self.prices = []
         self.ma_values = []
@@ -39,5 +39,5 @@ class MACrossoverExit(BaseExitLogic):
         if len(self.ma_values) > 2:
             prev_ma = self.ma_values[-2]
             if current_price < ma and current_price > prev_ma:
-                return True, "ma crossover"
+                return True, "MA"
         return False, None

@@ -6,8 +6,8 @@ from src.exit.base_exit import BaseExitLogic
 
 
 class TimeBasedExit(BaseExitLogic):
-    def __init__(self, params=None):
-        super().__init__(params)
+    def __init__(self, strategy, params=None):
+        super().__init__(strategy, params)
         self.time_period = self.params.get("time_period", 10)
         self.periods_elapsed = 0
 
@@ -28,5 +28,5 @@ class TimeBasedExit(BaseExitLogic):
         """
         self.periods_elapsed += 1
         if self.periods_elapsed >= self.time_period:
-            return True, "time based"
+            return True, "TB"
         return False, None

@@ -57,119 +57,53 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
         - Trailing stop exits (trailing_stop_exit): Uses trailing stop loss
     """
 
-    def __init__(self, params: dict):
+    def __init__(self, params=None):
         super().__init__(params)
         self.notify = self.params.get("notify", False)
         use_talib = self.params.get("use_talib", False)
 
-        # Initialize indicators based on use_talib flag
         if use_talib:
             # TA-Lib indicators
-            self.rsi = bt.talib.RSI(timeperiod=self.params.get("rsi_period", 14))
-            self.vol_ma = bt.talib.SMA(
-                self.data.volume, timeperiod=self.params["vol_ma_period"]
-            )
+            self.rsi = bt.talib.RSI(self.data.close, timeperiod=self.params["rsi_period"])
+            self.vol_ma = bt.talib.SMA(self.data.volume, timeperiod=self.params["vol_ma_period"])
         else:
             # Backtrader built-in indicators
-            self.rsi = bt.indicators.RSI(period=self.params.get("rsi_period", 14))
-            self.vol_ma = bt.ind.SMA(
-                self.data.volume, period=self.params["vol_ma_period"]
-            )
+            self.rsi = bt.indicators.RSI(self.data, period=self.params["rsi_period"])
+            self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.params["vol_ma_period"])
 
         # Initialize SuperTrend indicator with params dictionary
         supertrend_params = {
-            "period": self.params.get("supertrend_period", 10),
-            "multiplier": self.params.get("supertrend_multiplier", 3.0),
+            "period": self.params["supertrend_period"],
+            "multiplier": self.params["supertrend_multiplier"],
             "use_talib": use_talib
         }
-        self.supertrend = SuperTrend(self.data, params=supertrend_params)
+        self.supertrend = SuperTrend(params=supertrend_params)
 
     def notify_order(self, order):
         if order.status == order.Completed:
             if order.isbuy():
                 self.entry_price = order.executed.price
-                self.highest_price = order.executed.price
                 self.last_order_type = "buy"
-
-                # Initialize exit logic with entry price and ATR if available
-                if hasattr(self, 'atr'):
-                    self.exit_logic.initialize(self.entry_price, atr_value=self.atr[0])
-                else:
-                    self.exit_logic.initialize(self.entry_price)
+                # Initialize exit logic with entry price
+                self.exit_logic.initialize(self.entry_price)
             else:
-                self.position_closed = True
                 self.last_order_type = "sell"
-        elif order.status in [order.Canceled, order.Margin]:
-            if order.isbuy():
-                self.position_closed = True
-                self.last_order_type = None
-        self.order = None
 
     def next(self):
-        # Call parent class's next method to update ATR values
         super().next()
-        
-        if self.order:
-            return
-        close = self.data.close[0]
-        volume = self.data.volume[0]
         rsi_val = self.rsi[0]
-        prev_rsi_val = self.rsi[-1] if len(self.rsi) > 1 else rsi_val
-        st_direction = self.supertrend.lines.direction[0]
         st_value = self.supertrend.lines.supertrend[0]
         vol_ma_val = self.vol_ma[0]
-        atr_val = self.atr[0]
 
         if not self.position:
-            # Entry Logic
+            # Entry conditions
             if (
-                st_direction == 1
-                and prev_rsi_val < self.params["rsi_entry_long_level"]
-                and rsi_val > prev_rsi_val
-                and volume > vol_ma_val
+                rsi_val < self.params["rsi_oversold"]
+                and st_value < self.data.close[0]
+                and self.data.volume[0] > vol_ma_val
             ):
-
-                self.log(
-                    f"LONG ENTRY SIGNAL: ST Direction: {st_direction}, RSI {rsi_val:.2f} > {prev_rsi_val:.2f}, Volume {volume:.2f} > MA {vol_ma_val:.2f}"
-                )
-
-                # Record trade details
-                self.current_trade = {
-                    "entry_time": self.data.datetime.datetime(0),
-                    "entry_price": "pending_long",
-                    "atr_at_entry": atr_val,
-                    "rsi_at_entry": rsi_val,
-                    "volume_at_entry": volume,
-                    "vol_ma_at_entry": vol_ma_val,
-                    "supertrend_val_at_entry": st_value,
-                    "supertrend_dir_at_entry": st_direction,
-                    "type": "long",
-                }
-
-                size = (self.broker.getvalue() * 0.1) / close
-                self.order = self.buy(size=size)
+                self.buy()
         else:
-            if self.position.size > 0:
-                self.highest_price = max(self.highest_price, close)
-
-                # Check exit conditions using the configured exit logic
-                exit_signal, exit_reason = self.exit_logic.check_exit(close)
-
-                if exit_signal:
-                    self.last_exit_reason = exit_reason
-                    self.order = self.close()
-                    self.log(f"EXIT SIGNAL: {exit_reason}. Closing position.")
-                    if self.current_trade:
-                        self.current_trade.update(
-                            {
-                                "exit_time": self.data.datetime.datetime(0),
-                                "exit_price": close,
-                                "exit_reason": exit_reason,
-                                "atr_at_exit": atr_val,
-                                "rsi_at_exit": rsi_val,
-                                "volume_at_exit": volume,
-                                "vol_ma_at_exit": vol_ma_val,
-                                "supertrend_val_at_exit": st_value,
-                                "supertrend_dir_at_exit": st_direction,
-                            }
-                        )
+            # Exit conditions
+            if self.exit_logic.check_exit(self.data.close[0])[0]:
+                self.sell()

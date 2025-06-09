@@ -3,16 +3,37 @@ ATR-based exit logic for trading strategies. Exits a trade based on ATR-based ta
 """
 
 from src.exit.base_exit import BaseExitLogic
+import backtrader as bt
 
 
 class ATRExit(BaseExitLogic):
-    def __init__(self, params=None):
-        super().__init__(params)
+    def __init__(self, strategy, params=None):
+        super().__init__(strategy, params)
         self.atr_value = None
         self.tp_level = None
         self.sl_level = None
         self.tp_multiplier = self.params.get("tp_multiplier", 2.0)
         self.sl_multiplier = self.params.get("sl_multiplier", 1.0)
+        self.use_talib = self.params.get("use_talib", False)
+        self.atr_period = self.params.get("atr_period", 14)
+
+        # Initialize ATR indicator
+        if self.use_talib:
+            try:
+                import talib
+                # Use TA-Lib ATR for calculation
+                self.atr = bt.talib.ATR(
+                    self.strategy.data.high,
+                    self.strategy.data.low,
+                    self.strategy.data.close,
+                    timeperiod=self.atr_period
+                )
+            except ImportError:
+                self.log("TA-Lib not available, falling back to Backtrader ATR")
+                self.atr = bt.indicators.ATR(self.strategy.data, period=self.atr_period)
+        else:
+            # Use Backtrader's built-in ATR
+            self.atr = bt.indicators.ATR(self.strategy.data, period=self.atr_period)
 
     def initialize(self, entry_price, **kwargs):
         """
@@ -20,25 +41,22 @@ class ATRExit(BaseExitLogic):
 
         Args:
             entry_price (float): The entry price for the trade
-            **kwargs: Additional parameters including:
-                - atr_value (float): Current ATR value
+            **kwargs: Additional parameters (not used, ATR is calculated internally)
         """
         super().initialize(entry_price)
-        self.atr_value = kwargs.get("atr_value")
+        self.atr_value = self.atr[0]
         if self.atr_value is not None:
             self._update_levels()
 
     def next(self, **kwargs):
         """
-        Update ATR-based levels if ATR value is provided.
+        Update ATR-based levels on each new bar.
 
         Args:
-            **kwargs: Additional data including:
-                - atr_value (float): Current ATR value
+            **kwargs: Additional data (not used, ATR is calculated internally)
         """
-        atr_value = kwargs.get("atr_value")
-        if atr_value is not None:
-            self.atr_value = atr_value
+        self.atr_value = self.atr[0]
+        if self.atr_value is not None:
             self._update_levels()
 
     def _update_levels(self):

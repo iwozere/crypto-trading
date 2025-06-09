@@ -616,23 +616,6 @@ class BaseOptimizer:
             self.log_message(f"Error extracting strategy name: {str(e)}", level="error")
             return None
 
-    def optimize_with_skopt(
-        self, n_trials=100, n_random_starts=42, noise=0.01, n_jobs=-1, verbose=False
-    ):
-        """
-        Run optimization using scikit-optimize's gp_minimize.
-        """
-        result = gp_minimize(
-            func=self.objective,
-            dimensions=self.space,
-            n_calls=n_trials,  # Use n_trials for consistency
-            n_random_starts=n_random_starts,
-            noise=noise,
-            n_jobs=n_jobs,
-            verbose=verbose,
-        )
-        return result
-
     def get_optuna_objective(self):
         self.param_ranges = {p["name"]: p for p in self.config.get("search_space", [])}
         exit_logic_config = self.config.get("exit_logic", {})
@@ -713,18 +696,57 @@ class BaseOptimizer:
             # Fill any missing values using recommended methods
             self.current_data = self.current_data.ffill().bfill()
 
-            # Create study
-            study = optuna.create_study(
-                direction="minimize",
-                sampler=optuna.samplers.TPESampler(seed=42),
-            )
+            # Get optimization method from config
+            opt_method = self.optimization_settings.get("optimization_method", "optuna")
 
-            # Run optimization
-            study.optimize(self.get_optuna_objective(), n_trials=n_trials)
+            if opt_method == "optuna":
+                # Create study
+                study = optuna.create_study(
+                    direction="minimize",
+                    sampler=optuna.samplers.TPESampler(seed=42),
+                )
 
-            # Get best parameters
-            best_params = study.best_params
-            self.log_message(f"Best parameters: {best_params}")
+                # Run optimization
+                study.optimize(self.get_optuna_objective(), n_trials=n_trials)
+
+                # Get best parameters
+                best_params = study.best_params
+                self.log_message(f"Best parameters: {best_params}")
+
+            elif opt_method == "skopt":
+                # Convert search space to skopt format
+                dimensions = self._build_skopt_space_from_config(self.search_space)
+                
+                # Run optimization
+                result = gp_minimize(
+                    func=self.objective,
+                    dimensions=dimensions,
+                    n_calls=n_trials,
+                    n_random_starts=42,
+                    noise=0.01,
+                    n_jobs=self.n_jobs,
+                    verbose=True
+                )
+                
+                # Convert result to study-like format for compatibility
+                study = type('Study', (), {
+                    'best_params': dict(zip([d.name for d in dimensions], result.x)),
+                    'best_value': result.fun,
+                    'trials': [type('Trial', (), {'number': i, 'params': dict(zip([d.name for d in dimensions], x)), 'value': y}) 
+                              for i, (x, y) in enumerate(zip(result.x_iters, result.func_vals))],
+                    'best_trial': type('Trial', (), {
+                        'number': result.x_iters.index(result.x),
+                        'params': dict(zip([d.name for d in dimensions], result.x)),
+                        'value': result.fun,
+                        'datetime_start': None,
+                        'datetime_complete': None
+                    })
+                })
+                best_params = study.best_params
+                self.log_message(f"Best parameters: {best_params}")
+
+            else:
+                raise ValueError(f"Unknown optimization method: {opt_method}")
 
             # Run final backtest with best parameters if requested
             try:
@@ -752,9 +774,7 @@ class BaseOptimizer:
         Calls optimize_single_file for each .csv file, collects results, and saves a combined results JSON.
         Subclasses can override for extra summary fields or dynamic loading.
         """
-        self.log_message(
-            f"Starting {self.__class__.__name__} optimization process...", level="info"
-        )
+        self.log_message(f"Starting {self.__class__.__name__} optimization process...", level="info")
         data_files = [
             f
             for f in os.listdir(self.data_dir)
@@ -768,10 +788,7 @@ class BaseOptimizer:
         for data_file in data_files:
             try:
                 if data_file not in self.raw_data:
-                    self.log_message(
-                        f"Data for {data_file} not pre-loaded. Skipping.",
-                        level="warning",
-                    )
+                    self.log_message(f"Data for {data_file} not pre-loaded. Skipping.",level="warning",)
                     continue
                 result = self.optimize_single_file(data_file)
                 if result is not None:
