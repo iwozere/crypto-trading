@@ -76,12 +76,13 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
                 self.data.volume, period=self.params["vol_ma_period"]
             )
 
-        # Initialize SuperTrend indicator
-        self.supertrend = SuperTrend(
-            self.data,
-            period=self.params.get("supertrend_period", 10),
-            multiplier=self.params.get("supertrend_multiplier", 3.0),
-        )
+        # Initialize SuperTrend indicator with params dictionary
+        supertrend_params = {
+            "period": self.params.get("supertrend_period", 10),
+            "multiplier": self.params.get("supertrend_multiplier", 3.0),
+            "use_talib": use_talib
+        }
+        self.supertrend = SuperTrend(self.data, params=supertrend_params)
 
     def notify_order(self, order):
         if order.status == order.Completed:

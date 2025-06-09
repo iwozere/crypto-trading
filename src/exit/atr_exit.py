@@ -8,54 +8,60 @@ from src.exit.base_exit import BaseExitLogic
 class ATRExit(BaseExitLogic):
     def __init__(self, params=None):
         super().__init__(params)
-        self.sl_mult = self.params.get("sl_mult", 1.5)
-        self.tp_mult = self.params.get("tp_mult", 2.0)
-        self.tp_price = None
-        self.sl_price = None
         self.atr_value = None
+        self.tp_level = None
+        self.sl_level = None
+        self.tp_multiplier = self.params.get("tp_multiplier", 2.0)
+        self.sl_multiplier = self.params.get("sl_multiplier", 1.0)
 
-    def initialize(self, entry_price):
-        """Initialize the exit logic with entry price."""
+    def initialize(self, entry_price, **kwargs):
+        """
+        Initialize the exit logic with entry price and ATR value.
+
+        Args:
+            entry_price (float): The entry price for the trade
+            **kwargs: Additional parameters including:
+                - atr_value (float): Current ATR value
+        """
         super().initialize(entry_price)
-        # Initialize with None values - will be updated on first check_exit
-        self.tp_price = None
-        self.sl_price = None
-        self.atr_value = None
+        self.atr_value = kwargs.get("atr_value")
+        if self.atr_value is not None:
+            self._update_levels()
 
-    def _update_levels(self, atr_value):
-        """Update take profit and stop loss levels based on current ATR value."""
-        if atr_value is None:
-            return
-            
-        self.atr_value = atr_value
-        self.tp_price = self.entry_price + (self.tp_mult * atr_value)
-        self.sl_price = self.entry_price - (self.sl_mult * atr_value)
+    def next(self, **kwargs):
+        """
+        Update ATR-based levels if ATR value is provided.
+
+        Args:
+            **kwargs: Additional data including:
+                - atr_value (float): Current ATR value
+        """
+        atr_value = kwargs.get("atr_value")
+        if atr_value is not None:
+            self.atr_value = atr_value
+            self._update_levels()
+
+    def _update_levels(self):
+        """Update TP and SL levels based on current ATR value."""
+        if self.atr_value is not None and self.entry_price is not None:
+            self.tp_level = self.entry_price + (self.atr_value * self.tp_multiplier)
+            self.sl_level = self.entry_price - (self.atr_value * self.sl_multiplier)
 
     def check_exit(self, current_price):
         """
-        Check if price has hit take profit or stop loss levels.
-        
+        Check if price has hit TP or SL levels.
+
         Args:
             current_price (float): Current price
-            
+
         Returns:
             tuple: (bool, str) - (should_exit, exit_reason)
         """
-        # If we don't have ATR value yet, we can't make exit decisions
-        if self.atr_value is None:
+        if self.tp_level is None or self.sl_level is None:
             return False, None
-            
-        if current_price >= self.tp_price:
-            return True, "take profit"
-        elif current_price <= self.sl_price:
-            return True, "stop loss"
-        return False, None
 
-    def on_new_candle(self, **kwargs):
-        """
-        Called on each new candle with any additional data needed.
-        Each exit logic can implement what it needs.
-        """
-        atr_value = kwargs.get('atr_value')
-        if atr_value is not None:
-            self._update_levels(atr_value)
+        if current_price >= self.tp_level:
+            return True, "TP"
+        elif current_price <= self.sl_level:
+            return True, "SL"
+        return False, None

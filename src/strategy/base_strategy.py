@@ -85,6 +85,14 @@ class BaseStrategy(bt.Strategy):
         self.trade_active = False
         self.last_exit_reason = None
 
+    def next(self):
+        """
+        Called on each new bar. Updates exit logic with current ATR value if using ATR-based exits.
+        Should be called on each new bar before check_exit is called.
+        """
+        # Call exit logic's next method with ATR value if using ATR-based exits
+        if hasattr(self, 'atr'):
+            self.exit_logic.next(atr_value=self.atr[0])
 
     def log(
         self,
