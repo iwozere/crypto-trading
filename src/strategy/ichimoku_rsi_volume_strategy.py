@@ -129,80 +129,95 @@ class IchimokuRsiVolumeStrategy(BaseStrategy):
         self.order = None
 
     def next(self):
+        # Call parent class's next method to update ATR values
+        super().next()
+        
         if self.order:
             return
-        close = self.data.close[0]
+
+        # Get indicator values
+        rsi_value = self.rsi[0]
+        vol_ma_value = self.vol_ma[0]
         volume = self.data.volume[0]
-        tenkan = self.ichimoku.tenkan[0]
-        kijun = self.ichimoku.kijun[0]
-        senkou_span_b = self.ichimoku.senkou_span_b[0]
-        rsi = self.rsi[0]
-        atr = self.atr[0]
-        vol_ma = self.vol_ma[0]
+        close = self.data.close[0]
+        atr_value = self.atr[0]
 
-        # Calculate Ichimoku Cloud levels
-        senkou_span_a = (tenkan + kijun) / 2
-        cloud_top = max(senkou_span_a, senkou_span_b)
-        cloud_bot = min(senkou_span_a, senkou_span_b)
+        # Get Ichimoku values
+        tenkan = self.ichimoku.lines.tenkan[0]
+        kijun = self.ichimoku.lines.kijun[0]
+        senkou_span_a = self.ichimoku.lines.senkou_span_a[0]
+        senkou_span_b = self.ichimoku.lines.senkou_span_b[0]
+        chikou = self.ichimoku.lines.chikou[0]
 
-        if not self.position:
-            # Entry Logic
+        # Entry conditions
+        if (
+            not self.position
+            and self.position_closed
+            and (self.last_order_type is None or self.last_order_type == "sell")
+        ):
+            # Long entry
             if (
-                close > cloud_top
+                rsi_value < self.params["rsi_oversold"]
+                and close > senkou_span_a
+                and close > senkou_span_b
                 and tenkan > kijun
-                and rsi > self.params["rsi_entry"]
-                and volume > vol_ma
+                and volume > vol_ma_value
             ):
-
                 self.log(
-                    f'LONG ENTRY SIGNAL: Close {close:.2f} > Cloud Top {cloud_top:.2f}, RSI {rsi:.2f} > {self.params["rsi_entry"]}, Volume {volume:.2f} > MA {vol_ma:.2f}'
+                    f"LONG ENTRY SIGNAL: RSI {rsi_value:.2f} < {self.params['rsi_oversold']}, Close {close:.2f} > Cloud, Tenkan > Kijun, Volume {volume:.2f} > MA {vol_ma_value:.2f}"
                 )
 
                 # Record trade details
                 self.current_trade = {
                     "entry_time": self.data.datetime.datetime(0),
                     "entry_price": "pending_long",
-                    "atr_at_entry": atr,
-                    "rsi_at_entry": rsi,
+                    "atr_at_entry": atr_value,
+                    "rsi_at_entry": rsi_value,
                     "volume_at_entry": volume,
-                    "vol_ma_at_entry": vol_ma,
+                    "vol_ma_at_entry": vol_ma_value,
                     "tenkan_at_entry": tenkan,
                     "kijun_at_entry": kijun,
-                    "senkou_a_at_entry": senkou_span_a,
-                    "senkou_b_at_entry": senkou_span_b,
-                    "cloud_top_at_entry": cloud_top,
-                    "cloud_bot_at_entry": cloud_bot,
+                    "senkou_span_a_at_entry": senkou_span_a,
+                    "senkou_span_b_at_entry": senkou_span_b,
+                    "chikou_at_entry": chikou,
                     "type": "long",
                 }
 
-                size = (self.broker.getvalue() * 0.1) / close
+                # Calculate position size based on risk per trade
+                risk_amount = self.broker.getvalue() * self.risk_per_trade
+                stop_loss = close - (atr_value * self.params.get("sl_atr_mult", 1.0))
+                risk_per_share = close - stop_loss
+                size = risk_amount / risk_per_share if risk_per_share > 0 else 0
+
                 self.order = self.buy(size=size)
-        else:
-            if self.position.size > 0:
-                self.highest_price = max(self.highest_price, close)
+                self.position_closed = False
+                self.last_order_type = "buy"
 
-                # Check exit conditions using the configured exit logic
-                exit_signal, exit_reason = self.exit_logic.check_exit(close)
+        # Exit conditions
+        elif self.position.size > 0:
+            self.highest_price = max(self.highest_price, close)
 
-                if exit_signal:
-                    self.last_exit_reason = exit_reason
-                    self.order = self.close()
-                    self.log(f"EXIT SIGNAL: {exit_reason}. Closing position.")
-                    if self.current_trade:
-                        self.current_trade.update(
-                            {
-                                "exit_time": self.data.datetime.datetime(0),
-                                "exit_price": close,
-                                "exit_reason": exit_reason,
-                                "atr_at_exit": atr,
-                                "rsi_at_exit": rsi,
-                                "volume_at_exit": volume,
-                                "vol_ma_at_exit": vol_ma,
-                                "tenkan_at_exit": tenkan,
-                                "kijun_at_exit": kijun,
-                                "senkou_a_at_exit": senkou_span_a,
-                                "senkou_b_at_exit": senkou_span_b,
-                                "cloud_top_at_exit": cloud_top,
-                                "cloud_bot_at_exit": cloud_bot,
-                            }
-                        )
+            # Check exit conditions using the configured exit logic
+            exit_signal, exit_reason = self.exit_logic.check_exit(close)
+
+            if exit_signal:
+                self.last_exit_reason = exit_reason
+                self.order = self.close()
+                self.log(f"EXIT SIGNAL: {exit_reason}. Closing position.")
+                if self.current_trade:
+                    self.current_trade.update(
+                        {
+                            "exit_time": self.data.datetime.datetime(0),
+                            "exit_price": close,
+                            "exit_reason": exit_reason,
+                            "atr_at_exit": atr_value,
+                            "rsi_at_exit": rsi_value,
+                            "volume_at_exit": volume,
+                            "vol_ma_at_exit": vol_ma_value,
+                            "tenkan_at_exit": tenkan,
+                            "kijun_at_exit": kijun,
+                            "senkou_span_a_at_exit": senkou_span_a,
+                            "senkou_span_b_at_exit": senkou_span_b,
+                            "chikou_at_exit": chikou,
+                        }
+                    )

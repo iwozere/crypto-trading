@@ -134,6 +134,9 @@ class RsiBollVolumeStrategy(BaseStrategy):
         self.order = None
 
     def next(self):
+        # Call parent class's next method to update ATR values
+        super().next()
+        
         if self.order:
             return
 
@@ -159,59 +162,66 @@ class RsiBollVolumeStrategy(BaseStrategy):
             and self.position_closed
             and (self.last_order_type is None or self.last_order_type == "sell")
         ):
+            # Long entry
             if (
                 rsi_value < self.params["rsi_oversold"]
                 and close < bb_low
                 and volume > vol_ma_value
             ):
-                self.entry_price = close
-                self.highest_price = self.entry_price
+                self.log(
+                    f"LONG ENTRY SIGNAL: RSI {rsi_value:.2f} < {self.params['rsi_oversold']}, Close {close:.2f} < BB Low {bb_low:.2f}, Volume {volume:.2f} > MA {vol_ma_value:.2f}"
+                )
 
-                # Initialize exit logic with entry price and ATR value
-                self.exit_logic.initialize(self.entry_price, atr_value)
-
+                # Record trade details
                 self.current_trade = {
                     "entry_time": self.data.datetime.datetime(0),
-                    "entry_price": self.entry_price,
+                    "entry_price": "pending_long",
+                    "atr_at_entry": atr_value,
                     "rsi_at_entry": rsi_value,
                     "volume_at_entry": volume,
                     "vol_ma_at_entry": vol_ma_value,
                     "bb_low_at_entry": bb_low,
                     "bb_mid_at_entry": bb_mid,
                     "bb_high_at_entry": bb_high,
-                    "atr_at_entry": atr_value,
+                    "type": "long",
                 }
 
                 # Calculate position size based on risk per trade
-                cash = self.broker.getcash()
-                risk_amount = cash * self.risk_per_trade
-                stop_loss = self.exit_logic.sl_price  # Access stop loss price directly
-                risk_per_share = self.entry_price - stop_loss
-                if risk_per_share > 0:
-                    size = risk_amount / risk_per_share
-                    self.order = self.buy(size=size)
-                    self.position_closed = False
-                    if self.notify and self.notifier:
-                        self.notifier.send_notification(
-                            f"Buy Signal - Price: {close:.2f}, RSI: {rsi_value:.2f}, Volume: {volume:.2f}"
-                        )
+                risk_amount = self.broker.getvalue() * self.risk_per_trade
+                stop_loss = close - (atr_value * self.params.get("sl_atr_mult", 1.0))
+                risk_per_share = close - stop_loss
+                size = risk_amount / risk_per_share if risk_per_share > 0 else 0
+
+                self.order = self.buy(size=size)
+                self.position_closed = False
+                self.last_order_type = "buy"
 
         # Exit conditions
-        elif self.position and not self.position_closed:
-            # Check exit logic
-            exit_signal, exit_reason = self.exit_logic.check_exit(close)
-            if exit_signal:
-                self.order = self.sell()
-                self.position_closed = True
-                self.last_exit_reason = exit_reason
-                if self.notify and self.notifier:
-                    self.notifier.send_notification(
-                        f"Exit Signal - Price: {close:.2f}, Reason: {exit_reason}"
-                    )
+        elif self.position.size > 0:
+            self.highest_price = max(self.highest_price, close)
 
-            # Update highest price
-            if close > self.highest_price:
-                self.highest_price = close
+            # Check exit conditions using the configured exit logic
+            exit_signal, exit_reason = self.exit_logic.check_exit(close)
+
+            if exit_signal:
+                self.last_exit_reason = exit_reason
+                self.order = self.close()
+                self.log(f"EXIT SIGNAL: {exit_reason}. Closing position.")
+                if self.current_trade:
+                    self.current_trade.update(
+                        {
+                            "exit_time": self.data.datetime.datetime(0),
+                            "exit_price": close,
+                            "exit_reason": exit_reason,
+                            "atr_at_exit": atr_value,
+                            "rsi_at_exit": rsi_value,
+                            "volume_at_exit": volume,
+                            "vol_ma_at_exit": vol_ma_value,
+                            "bb_low_at_exit": bb_low,
+                            "bb_mid_at_exit": bb_mid,
+                            "bb_high_at_exit": bb_high,
+                        }
+                    )
 
     def _record_trade_exit(
         self, close, exit_type, rsi_value, volume, vol_ma_value, bb_low, bb_mid, bb_high

@@ -123,69 +123,87 @@ class MeanReversionRsiBbStrategy(BaseStrategy):
         self.order = None
 
     def next(self):
+        # Call parent class's next method to update ATR values
+        super().next()
+        
         if self.order:
             return
-        close = self.data.close[0]
-        rsi_val = self.rsi[0]
-        if len(self.rsi.lines.rsi) < self.params.get("rsi_period", 14) or len(
-            self.boll.lines.bot
-        ) < self.params.get("bb_period", 20):
-            self.log("Indicators not ready yet.")
-            return
-        bb_lower = self.boll.lines.bot[0]
-        bb_middle = self.boll.lines.mid[0]
 
-        if not self.position:
-            rsi_is_rising = (
-                self.rsi[0] > self.rsi[-1] if len(self.rsi.lines.rsi) > 1 else False
-            )
-            long_rsi_condition = (
-                rsi_is_rising if self.params.get("check_rsi_slope", False) else True
-            )
+        # Get indicator values
+        rsi_value = self.rsi[0]
+        if self.params.get("use_talib", False):
+            bb_low = self.boll[2][0]  # TA-Lib BBANDS returns [upper, middle, lower]
+            bb_mid = self.boll[1][0]
+            bb_high = self.boll[0][0]
+        else:
+            bb_low = self.boll.lines.bot[0]  # Backtrader BBANDS returns [bot, mid, top]
+            bb_mid = self.boll.lines.mid[0]
+            bb_high = self.boll.lines.top[0]
+
+        close = self.data.close[0]
+        atr_value = self.atr[0]
+
+        # Entry conditions
+        if (
+            not self.position
+            and self.position_closed
+            and (self.last_order_type is None or self.last_order_type == "sell")
+        ):
+            # Long entry
             if (
-                close < bb_lower
-                and rsi_val < self.params.get("rsi_oversold", 30)
-                and long_rsi_condition
+                rsi_value < self.params["rsi_oversold"]
+                and close < bb_low
             ):
                 self.log(
-                    f'LONG ENTRY SIGNAL: Close {close:.2f} < BB Low {bb_lower:.2f}, RSI {rsi_val:.2f} < {self.params.get("rsi_oversold", 30)}'
+                    f"LONG ENTRY SIGNAL: RSI {rsi_value:.2f} < {self.params['rsi_oversold']}, Close {close:.2f} < BB Low {bb_low:.2f}"
                 )
-                self.entry_bar_idx = len(self)
 
                 # Record trade details
                 self.current_trade = {
                     "entry_time": self.data.datetime.datetime(0),
                     "entry_price": "pending_long",
-                    "rsi_at_entry": rsi_val,
-                    "bb_lower_at_entry": bb_lower,
-                    "bb_middle_at_entry": bb_middle,
+                    "atr_at_entry": atr_value,
+                    "rsi_at_entry": rsi_value,
+                    "bb_low_at_entry": bb_low,
+                    "bb_mid_at_entry": bb_mid,
+                    "bb_high_at_entry": bb_high,
                     "type": "long",
                 }
 
-                size = (self.broker.getvalue() * 0.1) / close
+                # Calculate position size based on risk per trade
+                risk_amount = self.broker.getvalue() * self.risk_per_trade
+                stop_loss = close - (atr_value * self.params.get("sl_atr_mult", 1.0))
+                risk_per_share = close - stop_loss
+                size = risk_amount / risk_per_share if risk_per_share > 0 else 0
+
                 self.order = self.buy(size=size)
-        else:
-            if self.position.size > 0:
-                self.highest_price = max(self.highest_price, close)
+                self.position_closed = False
+                self.last_order_type = "buy"
 
-                # Check exit conditions using the configured exit logic
-                exit_signal, exit_reason = self.exit_logic.check_exit(close)
+        # Exit conditions
+        elif self.position.size > 0:
+            self.highest_price = max(self.highest_price, close)
 
-                if exit_signal:
-                    self.last_exit_reason = exit_reason
-                    self.order = self.close()
-                    self.log(f"EXIT SIGNAL: {exit_reason}. Closing position.")
-                    if self.current_trade:
-                        self.current_trade.update(
-                            {
-                                "exit_time": self.data.datetime.datetime(0),
-                                "exit_price": close,
-                                "exit_reason": exit_reason,
-                                "rsi_at_exit": rsi_val,
-                                "bb_lower_at_exit": bb_lower,
-                                "bb_middle_at_exit": bb_middle,
-                            }
-                        )
+            # Check exit conditions using the configured exit logic
+            exit_signal, exit_reason = self.exit_logic.check_exit(close)
+
+            if exit_signal:
+                self.last_exit_reason = exit_reason
+                self.order = self.close()
+                self.log(f"EXIT SIGNAL: {exit_reason}. Closing position.")
+                if self.current_trade:
+                    self.current_trade.update(
+                        {
+                            "exit_time": self.data.datetime.datetime(0),
+                            "exit_price": close,
+                            "exit_reason": exit_reason,
+                            "atr_at_exit": atr_value,
+                            "rsi_at_exit": rsi_value,
+                            "bb_low_at_exit": bb_low,
+                            "bb_mid_at_exit": bb_mid,
+                            "bb_high_at_exit": bb_high,
+                        }
+                    )
 
 
 # Example Usage (for testing)

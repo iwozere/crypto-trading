@@ -106,6 +106,9 @@ class RsiVolumeSuperTrendStrategy(BaseStrategy):
         self.order = None
 
     def next(self):
+        # Call parent class's next method to update ATR values
+        super().next()
+        
         if self.order:
             return
         close = self.data.close[0]
