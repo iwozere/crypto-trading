@@ -2,7 +2,7 @@ import backtrader as bt
 from src.entry.entry_mixin import EntryLogicMixin
 from src.exit.exit_mixin import ExitLogicMixin
 
-def make_strategy(entry_mixin : EntryLogicMixin, exit_mixin : ExitLogicMixin):
+def make_strategy(entry_mixin : EntryLogicMixin, exit_mixin : ExitLogicMixin) -> bt.Strategy:
     class CustomStrategy(bt.Strategy, entry_mixin, exit_mixin):
         def __init__(self, params: dict):
             self.trades = []
