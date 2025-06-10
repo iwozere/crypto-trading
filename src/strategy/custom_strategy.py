@@ -1,26 +1,39 @@
 import backtrader as bt
-from src.entry.entry_mixin import EntryLogicMixin
-from src.exit.exit_mixin import ExitLogicMixin
+from src.entry.entry_mixin_factory import EntryMixinFactory
+from src.exit.exit_mixin_factory import ExitMixinFactory
 
-def make_strategy(entry_mixin : EntryLogicMixin, exit_mixin : ExitLogicMixin) -> bt.Strategy:
-    class CustomStrategy(bt.Strategy, entry_mixin, exit_mixin):
-        def __init__(self, params: dict):
+def make_strategy() -> bt.Strategy:
+    class CustomStrategy(bt.Strategy):
+        params = (
+            ('entry_type', None),
+            ('exit_type', None),
+        )
+
+        def __init__(self, params=None):
+            if params is None:
+                params = {}
+            self.p = params
             self.trades = []
             self._open_trade_data = None
-            self.init_entry(params)
-            self.init_exit(params)
-            super().__init__(params)
-
+            
+            # Get entry and exit mixins
+            self.entry_mixin = EntryMixinFactory.get_entry_mixin(self.p.entry_type)
+            self.exit_mixin = ExitMixinFactory.get_exit_mixin(self.p.exit_type)
+            
+            # Initialize mixins with strategy parameters
+            self.entry_mixin.init(self.p)
+            self.exit_mixin.init(self.p)
+            super().__init__()
 
         def next(self):
-            if not self.position and self.should_enter():
+            if not self.position and self.entry_mixin.should_enter():
                 self.buy()
                 self._open_trade_data = {
                     'entry_date': self.data.datetime.date(0).isoformat(),
                     'entry_price': self.data.close[0],
                     'entry_indicators': self.collect_entry_indicators()
                 }
-            elif self.position and self.should_exit():
+            elif self.position and self.exit_mixin.should_exit():
                 self.close()
                 trade_data = self._open_trade_data or {}
                 trade_data.update({

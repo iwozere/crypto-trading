@@ -1,5 +1,8 @@
 import os
 import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+
 import json
 import pandas as pd
 import backtrader as bt
@@ -45,17 +48,13 @@ class CustomOptimizer:
         Returns:
             dict: Dictionary containing metrics and trades
         """
-        # Get entry and exit mixins
-        entry_mixin = EntryMixinFactory.get_entry_mixin(self.entry_logic['name'])
-        exit_mixin = ExitMixinFactory.get_exit_mixin(self.exit_logic['name'])
-        StrategyClass = make_strategy(entry_mixin, exit_mixin)
+        StrategyClass = make_strategy()
 
         # Create cerebro instance
         cerebro = bt.Cerebro()
         
         # Add data
-        data = bt.feeds.PandasData(dataname=self.data)
-        cerebro.adddata(data)
+        cerebro.adddata(self.data)
         
         # Prepare strategy parameters
         strategy_params = {}
@@ -64,22 +63,11 @@ class CustomOptimizer:
         for param_name, param_config in self.entry_logic['params'].items():
             if trial:
                 if param_config['type'] == 'int':
-                    strategy_params[param_name] = trial.suggest_int(
-                        param_name, 
-                        param_config['low'], 
-                        param_config['high']
-                    )
+                    strategy_params[param_name] = trial.suggest_int(param_name, param_config['low'], param_config['high'])
                 elif param_config['type'] == 'float':
-                    strategy_params[param_name] = trial.suggest_float(
-                        param_name, 
-                        param_config['low'], 
-                        param_config['high']
-                    )
+                    strategy_params[param_name] = trial.suggest_float(param_name, param_config['low'], param_config['high'])
                 elif param_config['type'] == 'categorical':
-                    strategy_params[param_name] = trial.suggest_categorical(
-                        param_name, 
-                        param_config['choices']
-                    )
+                    strategy_params[param_name] = trial.suggest_categorical(param_name, param_config['choices'])
             else:
                 strategy_params[param_name] = param_config['default']
         
@@ -87,26 +75,19 @@ class CustomOptimizer:
         for param_name, param_config in self.exit_logic['params'].items():
             if trial:
                 if param_config['type'] == 'int':
-                    strategy_params[param_name] = trial.suggest_int(
-                        param_name, 
-                        param_config['low'], 
-                        param_config['high']
-                    )
+                    strategy_params[param_name] = trial.suggest_int(param_name, param_config['low'], param_config['high'])
                 elif param_config['type'] == 'float':
-                    strategy_params[param_name] = trial.suggest_float(
-                        param_name, 
-                        param_config['low'], 
-                        param_config['high']
-                    )
+                    strategy_params[param_name] = trial.suggest_float(param_name, param_config['low'], param_config['high'])
                 elif param_config['type'] == 'categorical':
-                    strategy_params[param_name] = trial.suggest_categorical(
-                        param_name, 
-                        param_config['choices']
-                    )
+                    strategy_params[param_name] = trial.suggest_categorical(param_name, param_config['choices'])
             else:
                 strategy_params[param_name] = param_config['default']
         
         # Add strategy with parameters
+        strategy_params.update({
+            'entry_type': self.entry_logic['name'],
+            'exit_type': self.exit_logic['name']
+        })
         cerebro.addstrategy(StrategyClass, **strategy_params)
         
         # Set broker parameters
@@ -164,6 +145,39 @@ class CustomOptimizer:
 
 
 
+def prepare_data(data_file):
+    # Load and prepare data
+    df = pd.read_csv(os.path.join("data", data_file))
+    print("Available columns:", df.columns.tolist())
+    
+    # Find datetime column
+    datetime_col = None
+    for col in ['datetime', 'date', 'time', 'timestamp']:
+        if col in df.columns:
+            datetime_col = col
+            break
+    
+    if datetime_col:
+        df['datetime'] = pd.to_datetime(df[datetime_col])
+    else:
+        # If no datetime column found, create one from index
+        df['datetime'] = pd.date_range(start='2020-01-01', periods=len(df), freq='1min')
+    
+    data = bt.feeds.PandasData(
+        dataname=df,
+        datetime='datetime',
+        open='open',
+        high='high',
+        low='low',
+        close='close',
+        volume='volume',
+        openinterest=-1
+    )
+    return data
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -181,9 +195,7 @@ if __name__ == "__main__":
     for data_file in data_files:
         _logger.info(f"Running optimization for {data_file}")
         
-        # Load data
-        data = bt.feeds.GenericCSV(dataname=os.path.join("data", data_file))
-        
+        data = prepare_data(data_file)
         for entry_logic_name in EntryMixinFactory.ENTRY_LOGIC_REGISTRY.keys():
             # Load entry logic configuration
             with open(os.path.join("config", "optimizer", "entry", f"{entry_logic_name}.json"), "r") as f:
