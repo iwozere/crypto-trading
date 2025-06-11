@@ -12,18 +12,36 @@ Parameters:
     sl_multiplier (float): Multiplier for stop loss level (default: 1.0)
     use_dynamic_tp (bool): Whether to adjust TP based on ATR changes (default: False)
     use_dynamic_sl (bool): Whether to adjust SL based on ATR changes (default: False)
+    use_talib (bool): Whether to use TA-Lib for indicator calculations (default: False)
 
 This strategy uses ATR to dynamically adjust take profit and stop loss levels based on market
 volatility. It's particularly effective in volatile markets where fixed percentage stops might
 be too tight or too wide.
 """
 
-from typing import Dict, Any
-from src.exit.exit_mixin import BaseExitMixin
 import backtrader as bt
+from typing import Dict, Any
+from .base_exit_mixin import BaseExitMixin
 
 class ATRExitMixin(BaseExitMixin):
-    """Exit mixin на основе ATR для расчета уровней take profit и stop loss"""
+    """
+    Exit mixin based on ATR (Average True Range).
+    
+    Parameters:
+    -----------
+    atr_period : int
+        Period for ATR calculation (default: 14)
+    atr_multiplier : float
+        Multiplier for ATR to determine stop loss (default: 2.0)
+    use_talib : bool
+        Whether to use TA-Lib for indicator calculations (default: False)
+    """
+    
+    def __init__(self, params: Dict[str, Any]):
+        super().__init__(params)
+        self.atr_period = params.get('atr_period', 14)
+        self.atr_multiplier = params.get('atr_multiplier', 2.0)
+        self.use_talib = params.get('use_talib', False)
     
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -32,49 +50,39 @@ class ATRExitMixin(BaseExitMixin):
     def get_default_params(self) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            'atr_period': 14,  # Period for ATR calculation
-            'tp_multiplier': 2.0,  # Multiplier for take profit level
-            'sl_multiplier': 1.0,  # Multiplier for stop loss level
-            'use_dynamic_tp': False,  # Whether to adjust TP based on ATR changes
-            'use_dynamic_sl': False   # Whether to adjust SL based on ATR changes
+            'atr_period': self.atr_period,
+            'atr_multiplier': self.atr_multiplier,
+            'use_talib': self.use_talib
         }
     
     def _init_indicators(self):
-        """Initialization of ATR indicator"""
-        if self.strategy is None:
-            raise ValueError("Strategy must be set before initializing indicators")
-        
-        # Create ATR indicator with parameters from configuration
-        self.indicators['atr'] = self.strategy.data.atr(
-            period=self.get_param('atr_period')
-        )
+        """Initialize indicators"""
+        if self.use_talib:
+            import talib
+            # Create ATR indicator using TA-Lib
+            self.atr = bt.indicators.TALibIndicator(
+                self.strategy.data,
+                talib.ATR,
+                period=self.atr_period
+            )
+        else:
+            # Create ATR indicator using Backtrader
+            self.atr = bt.indicators.ATR(
+                self.strategy.data,
+                period=self.atr_period
+            )
     
-    def should_exit(self, strategy) -> bool:
+    def should_exit(self) -> bool:
         """
-        Exit logic: Exit when price reaches take profit or stop loss levels
-        based on ATR multipliers
+        Check if we should exit based on ATR-based stop loss.
+        
+        Returns:
+        --------
+        bool
+            True if we should exit, False otherwise
         """
-        if not self.indicators:
-            return False
-            
-        price = strategy.data.close[0]
-        entry_price = strategy.position.price
-        atr = self.indicators['atr'][0]
+        # Calculate stop loss level
+        stop_loss = self.strategy.data.close[0] - (self.atr[0] * self.atr_multiplier)
         
-        # Calculate take profit and stop loss levels
-        if self.get_param('use_dynamic_tp'):
-            # Use current ATR for dynamic TP
-            tp_level = entry_price + (atr * self.get_param('tp_multiplier'))
-        else:
-            # Use entry ATR for fixed TP
-            tp_level = entry_price + (atr * self.get_param('tp_multiplier'))
-            
-        if self.get_param('use_dynamic_sl'):
-            # Use current ATR for dynamic SL
-            sl_level = entry_price - (atr * self.get_param('sl_multiplier'))
-        else:
-            # Use entry ATR for fixed SL
-            sl_level = entry_price - (atr * self.get_param('sl_multiplier'))
-        
-        # Exit if take profit or stop loss is hit
-        return price >= tp_level or price <= sl_level 
+        # Exit if price falls below stop loss
+        return self.strategy.data.close[0] < stop_loss 

@@ -1,6 +1,6 @@
-# Crypto Trading Strategy Framework
+# Trading Framework
 
-A modular framework for developing, testing, and optimizing cryptocurrency trading strategies using Backtrader.
+A modular framework for developing, testing, and optimizing cryptocurrency and shares trading strategies using Backtrader.
 
 ## Project Structure
 

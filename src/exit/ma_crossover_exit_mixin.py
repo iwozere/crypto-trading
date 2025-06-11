@@ -20,12 +20,12 @@ The strategy can be used as a standalone exit or combined with other exit strate
 for more robust position management.
 """
 
+import backtrader as bt
 from typing import Dict, Any
 from src.exit.exit_mixin import BaseExitMixin
-import backtrader as bt
 
 class MACrossoverExitMixin(BaseExitMixin):
-    """Exit mixin на основе пересечения цены и скользящей средней"""
+    """Exit mixin based on price crossing below moving average"""
     
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -46,11 +46,13 @@ class MACrossoverExitMixin(BaseExitMixin):
         # Create MA indicator with parameters from configuration
         ma_type = self.get_param('ma_type').lower()
         if ma_type == 'sma':
-            self.indicators['ma'] = self.strategy.data.sma(
+            self.indicators['ma'] = bt.indicators.SMA(
+                self.strategy.data.close,
                 period=self.get_param('ma_period')
             )
         elif ma_type == 'ema':
-            self.indicators['ma'] = self.strategy.data.ema(
+            self.indicators['ma'] = bt.indicators.EMA(
+                self.strategy.data.close,
                 period=self.get_param('ma_period')
             )
         else:

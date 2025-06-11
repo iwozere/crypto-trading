@@ -20,11 +20,12 @@ This strategy is particularly effective for:
 4. Preventing premature exits in strong trends
 """
 
+import backtrader as bt
 from typing import Dict, Any
 from src.exit.exit_mixin import BaseExitMixin
 
 class TrailingStopExitMixin(BaseExitMixin):
-    """Exit mixin на основе трейлинг-стопа"""
+    """Exit mixin based on trailing stop"""
     
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -46,7 +47,10 @@ class TrailingStopExitMixin(BaseExitMixin):
         if self.get_param('use_atr'):
             if self.strategy is None:
                 raise ValueError("Strategy must be set before initializing indicators")
-            self.indicators['atr'] = self.strategy.data.atr(period=14)
+            self.indicators['atr'] = bt.indicators.ATR(
+                self.strategy.data,
+                period=14
+            )
     
     def should_exit(self, strategy) -> bool:
         """

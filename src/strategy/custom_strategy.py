@@ -16,6 +16,7 @@ class CustomStrategy(bt.Strategy):
         - entry_logic: Entry mixin configuration
         - exit_logic: Exit mixin configuration
         - position_size: Position size as fraction of capital (default: 0.1)
+        - use_talib: Whether to use TA-Lib for indicator calculations (default: False)
     """
     
     params = (
@@ -30,6 +31,7 @@ class CustomStrategy(bt.Strategy):
         self.entry_logic = strategy_config['entry_logic']
         self.exit_logic = strategy_config['exit_logic']
         self.position_size = strategy_config.get('position_size', 0.1)
+        self.use_talib = strategy_config.get('use_talib', False)
         
         # Validate required parameters
         if not strategy_config:
@@ -44,23 +46,46 @@ class CustomStrategy(bt.Strategy):
     
     def _init_common_indicators(self):
         """Initialize common indicators used by multiple mixins"""
-        # Create RSI indicator
-        self.rsi = bt.indicators.RSI(
-            self.data.close,
-            period=self.entry_logic['params'].get('rsi_period', 14)
-        )
-        
-        # Create Bollinger Bands indicator
-        self.bb = bt.indicators.BollingerBands(
-            self.data.close,
-            period=self.entry_logic['params'].get('bb_period', 20)
-        )
-        
-        # Create ATR indicator
-        self.atr = bt.indicators.ATR(
-            self.data,
-            period=self.exit_logic['params'].get('atr_period', 14)
-        )
+        if self.use_talib:
+            import talib
+            # Create RSI indicator using TA-Lib
+            self.rsi = bt.indicators.TALibIndicator(
+                self.data.close,
+                talib.RSI,
+                period=self.entry_logic['params'].get('rsi_period', 14)
+            )
+            
+            # Create Bollinger Bands indicator using TA-Lib
+            self.bb = bt.indicators.TALibIndicator(
+                self.data.close,
+                talib.BBANDS,
+                period=self.entry_logic['params'].get('bb_period', 20)
+            )
+            
+            # Create ATR indicator using TA-Lib
+            self.atr = bt.indicators.TALibIndicator(
+                self.data,
+                talib.ATR,
+                period=self.exit_logic['params'].get('atr_period', 14)
+            )
+        else:
+            # Create RSI indicator using Backtrader
+            self.rsi = bt.indicators.RSI(
+                self.data.close,
+                period=self.entry_logic['params'].get('rsi_period', 14)
+            )
+            
+            # Create Bollinger Bands indicator using Backtrader
+            self.bb = bt.indicators.BollingerBands(
+                self.data.close,
+                period=self.entry_logic['params'].get('bb_period', 20)
+            )
+            
+            # Create ATR indicator using Backtrader
+            self.atr = bt.indicators.ATR(
+                self.data,
+                period=self.exit_logic['params'].get('atr_period', 14)
+            )
     
     def _init_entry_mixin(self):
         """Initialize entry mixin with configuration"""
@@ -69,10 +94,12 @@ class CustomStrategy(bt.Strategy):
         if isinstance(self.entry_logic, dict) and 'name' in self.entry_logic:
             entry_name = self.entry_logic['name']
             entry_params = self.entry_logic.get('params', {})
+            entry_params['use_talib'] = self.use_talib
             self.entry_mixin = get_entry_mixin(entry_name, entry_params)
         
         # Variant 2: Full configuration (preferred)
         elif isinstance(self.entry_logic, dict):
+            self.entry_logic['params']['use_talib'] = self.use_talib
             self.entry_mixin = get_entry_mixin_from_config(self.entry_logic)
         
         else:
@@ -87,9 +114,11 @@ class CustomStrategy(bt.Strategy):
         if isinstance(self.exit_logic, dict) and 'name' in self.exit_logic:
             exit_name = self.exit_logic['name']
             exit_params = self.exit_logic.get('params', {})
+            exit_params['use_talib'] = self.use_talib
             self.exit_mixin = get_exit_mixin(exit_name, exit_params)
         
         elif isinstance(self.exit_logic, dict):
+            self.exit_logic['params']['use_talib'] = self.use_talib
             self.exit_mixin = get_exit_mixin_from_config(self.exit_logic)
         
         else:
