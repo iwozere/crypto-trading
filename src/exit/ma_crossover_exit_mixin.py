@@ -20,53 +20,52 @@ The strategy can be used as a standalone exit or combined with other exit strate
 for more robust position management.
 """
 
+from typing import Any, Dict
+
 import backtrader as bt
-from typing import Dict, Any
 from src.exit.exit_mixin import BaseExitMixin
+
 
 class MACrossoverExitMixin(BaseExitMixin):
     """Exit mixin based on price crossing below moving average"""
-    
+
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
         return []
-    
+
     def get_default_params(self) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            'ma_period': 20,  # Period for Simple Moving Average
-            'ma_type': 'sma'  # Type of moving average (sma, ema, etc.)
+            "ma_period": 20,  # Period for Simple Moving Average
+            "ma_type": "sma",  # Type of moving average (sma, ema, etc.)
         }
-    
+
     def _init_indicators(self):
         """Initialization of Moving Average indicator"""
         if self.strategy is None:
             raise ValueError("Strategy must be set before initializing indicators")
-        
+
         # Create MA indicator with parameters from configuration
-        ma_type = self.get_param('ma_type').lower()
-        if ma_type == 'sma':
-            self.indicators['ma'] = bt.indicators.SMA(
-                self.strategy.data.close,
-                period=self.get_param('ma_period')
+        ma_type = self.get_param("ma_type").lower()
+        if ma_type == "sma":
+            self.indicators["ma"] = bt.indicators.SMA(
+                self.strategy.data.close, period=self.get_param("ma_period")
             )
-        elif ma_type == 'ema':
-            self.indicators['ma'] = bt.indicators.EMA(
-                self.strategy.data.close,
-                period=self.get_param('ma_period')
+        elif ma_type == "ema":
+            self.indicators["ma"] = bt.indicators.EMA(
+                self.strategy.data.close, period=self.get_param("ma_period")
             )
         else:
             raise ValueError(f"Unsupported MA type: {ma_type}")
-    
+
     def should_exit(self, strategy) -> bool:
         """
         Exit logic: Exit when price crosses below the moving average
         """
         if not self.indicators:
             return False
-            
+
         current_price = strategy.data.close[0]
-        ma = self.indicators['ma'][0]
-        
+        ma = self.indicators["ma"][0]
+
         return current_price < ma
- 

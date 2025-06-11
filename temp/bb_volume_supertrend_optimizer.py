@@ -20,8 +20,8 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import json
-import warnings
 import traceback
+import warnings
 from typing import Any, Dict, Optional
 
 import backtrader as bt
@@ -79,7 +79,9 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         self.save_plot = self.visualization_settings.get("save_plot", True)
         self.show_plot = self.visualization_settings.get("show_plot", False)
         self.plot_format = self.visualization_settings.get("plot_format", "png")
-        self.show_equity_curve = self.visualization_settings.get("show_equity_curve", True)
+        self.show_equity_curve = self.visualization_settings.get(
+            "show_equity_curve", True
+        )
         self.show_indicators = self.visualization_settings.get("show_indicators", True)
         self.color_scheme = self.visualization_settings.get("color_scheme", {})
         self.report_metrics = self.visualization_settings.get("report_metrics", [])
@@ -89,8 +91,12 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
         self.metrics_format = self.visualization_settings.get("metrics_format", "json")
         self.print_summary = self.visualization_settings.get("print_summary", True)
         self.report_params = self.visualization_settings.get("report_params", True)
-        self.report_filename_pattern = self.visualization_settings.get("report_filename_pattern", None)
-        self.include_plots_in_report = self.visualization_settings.get("include_plots_in_report", True)
+        self.report_filename_pattern = self.visualization_settings.get(
+            "report_filename_pattern", None
+        )
+        self.include_plots_in_report = self.visualization_settings.get(
+            "include_plots_in_report", True
+        )
         warnings.filterwarnings("ignore", category=UserWarning, module="skopt")
         warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -146,11 +152,17 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
                     data_df["close"].values,
                     timeperiod=params["supertrend_period"],
                 )
-                basic_upper = (data_df["high"] + data_df["low"]) / 2 + params["supertrend_multiplier"] * atr
-                basic_lower = (data_df["high"] + data_df["low"]) / 2 - params["supertrend_multiplier"] * atr
+                basic_upper = (data_df["high"] + data_df["low"]) / 2 + params[
+                    "supertrend_multiplier"
+                ] * atr
+                basic_lower = (data_df["high"] + data_df["low"]) / 2 - params[
+                    "supertrend_multiplier"
+                ] * atr
 
                 # Volume MA
-                vol_ma = talib.SMA(data_df["volume"].values, timeperiod=params["vol_ma_period"])
+                vol_ma = talib.SMA(
+                    data_df["volume"].values, timeperiod=params["vol_ma_period"]
+                )
             else:
                 # Pandas calculations
                 # Bollinger Bands
@@ -165,11 +177,17 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
                 tr3 = abs(data_df["low"] - data_df["close"].shift(1))
                 tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
                 atr = tr.rolling(window=params["supertrend_period"]).mean()
-                basic_upper = (data_df["high"] + data_df["low"]) / 2 + params["supertrend_multiplier"] * atr
-                basic_lower = (data_df["high"] + data_df["low"]) / 2 - params["supertrend_multiplier"] * atr
+                basic_upper = (data_df["high"] + data_df["low"]) / 2 + params[
+                    "supertrend_multiplier"
+                ] * atr
+                basic_lower = (data_df["high"] + data_df["low"]) / 2 - params[
+                    "supertrend_multiplier"
+                ] * atr
 
                 # Volume MA
-                vol_ma = data_df["volume"].rolling(window=params["vol_ma_period"]).mean()
+                vol_ma = (
+                    data_df["volume"].rolling(window=params["vol_ma_period"]).mean()
+                )
 
             # Calculate SuperTrend signals
             supertrend = pd.Series(index=data_df.index, dtype=float)
@@ -178,24 +196,38 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
             lower = pd.Series(index=data_df.index, dtype=float)
 
             for i in range(1, len(data_df)):
-                if data_df["close"][i] > upper[i-1]:
+                if data_df["close"][i] > upper[i - 1]:
                     direction[i] = 1
-                elif data_df["close"][i] < lower[i-1]:
+                elif data_df["close"][i] < lower[i - 1]:
                     direction[i] = -1
                 else:
-                    direction[i] = direction[i-1]
+                    direction[i] = direction[i - 1]
 
                 if direction[i] == 1:
-                    upper[i] = min(basic_upper[i], upper[i-1]) if upper[i-1] is not None else basic_upper[i]
+                    upper[i] = (
+                        min(basic_upper[i], upper[i - 1])
+                        if upper[i - 1] is not None
+                        else basic_upper[i]
+                    )
                     lower[i] = basic_lower[i]
                     supertrend[i] = lower[i]
                 else:
                     upper[i] = basic_upper[i]
-                    lower[i] = max(basic_lower[i], lower[i-1]) if lower[i-1] is not None else basic_lower[i]
+                    lower[i] = (
+                        max(basic_lower[i], lower[i - 1])
+                        if lower[i - 1] is not None
+                        else basic_lower[i]
+                    )
                     supertrend[i] = upper[i]
 
             # Plot price and indicators
-            ax1.plot(data_df.index, data_df["close"], label="Price", color="white", linewidth=2)
+            ax1.plot(
+                data_df.index,
+                data_df["close"],
+                label="Price",
+                color="white",
+                linewidth=2,
+            )
             ax1.plot(
                 data_df.index,
                 bb_high,
@@ -262,7 +294,13 @@ class BBSuperTrendVolumeBreakoutOptimizer(BaseOptimizer):
             )
 
             # Plot volume
-            ax3.bar(data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7)
+            ax3.bar(
+                data_df.index,
+                data_df["volume"],
+                label="Volume",
+                color="blue",
+                alpha=0.7,
+            )
             ax3.plot(
                 data_df.index,
                 vol_ma,

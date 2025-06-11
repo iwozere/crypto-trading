@@ -52,15 +52,15 @@ class BaseOptimizer:
     def _load_config(self, config_path: str) -> dict:
         """
         Load configuration from a JSON file.
-        
+
         Args:
             config_path (str): Path to the configuration file
-            
+
         Returns:
             dict: Configuration dictionary
         """
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 config = json.load(f)
             return config
         except Exception as e:
@@ -71,11 +71,11 @@ class BaseOptimizer:
         strategy_name = self.config.get("strategy_name")
         if not strategy_name:
             raise ValueError("Strategy name not specified in config")
-            
+
         strategy_info = get_strategy_info(strategy_name)
         if not strategy_info:
             raise ValueError(f"Unknown strategy: {strategy_name}")
-            
+
         return strategy_info["class"]
 
     def __init__(self, config_path: Union[str, dict]):
@@ -84,7 +84,7 @@ class BaseOptimizer:
             self.config = self._load_config(config_path)
         else:
             self.config = config_path
-            
+
         self.strategy_class = self._get_strategy_class()
         self.data_dir = self.config["data_dir"]
         self.results_dir = self.config["results_dir"]
@@ -97,29 +97,30 @@ class BaseOptimizer:
         self.risk_free_rate = self.config["risk_free_rate"]
         self.omega_threshold = self.config["omega_threshold"]
         self.use_talib = self.config["use_talib"]
-        
+
         # Get optimization settings from nested structure
         self.optimization_settings = self.config["optimization_settings"]
         self.optimization_method = self.optimization_settings["optimization_method"]
         self.n_trials = self.optimization_settings["n_trials"]
         self.n_jobs = self.optimization_settings["n_jobs"]
         self.random_state = self.optimization_settings["random_state"]
-        
+
         self.exit_logic = self.config["exit_logic"]
         self.parameters = self.config.get("parameters", {})  # Initialize parameters
         self.search_space = self.config["search_space"]
         self.default_params = self.config["default_params"]
-        
+
         # Get visualization settings from nested structure
         self.visualization_settings = self.config["visualization_settings"]
         self.plot = self.visualization_settings["plot"]
         self.save_trades = self.visualization_settings["save_trades"]
         self.plot_size = self.visualization_settings["plot_size"]
-        
+
         # Create a single notifier instance if notifications are enabled
         self.notifier = None
         if self.config.get("notify", False):
             from src.notification.telegram_notifier import create_notifier
+
             self.notifier = create_notifier()
 
         self.strategy_name = self.config.get("strategy_name", "")
@@ -131,7 +132,9 @@ class BaseOptimizer:
         self.save_plot = self.visualization_settings.get("save_plot", True)
         self.show_plot = self.visualization_settings.get("show_plot", False)
         self.plot_format = self.visualization_settings.get("plot_format", "png")
-        self.show_equity_curve = self.visualization_settings.get("show_equity_curve", True)
+        self.show_equity_curve = self.visualization_settings.get(
+            "show_equity_curve", True
+        )
         self.show_indicators = self.visualization_settings.get("show_indicators", True)
         self.color_scheme = self.visualization_settings.get("color_scheme", {})
         self.report_metrics = self.visualization_settings.get("report_metrics", [])
@@ -140,8 +143,12 @@ class BaseOptimizer:
         self.metrics_format = self.visualization_settings.get("metrics_format", "json")
         self.print_summary = self.visualization_settings.get("print_summary", True)
         self.report_params = self.visualization_settings.get("report_params", True)
-        self.report_filename_pattern = self.visualization_settings.get("report_filename_pattern", None)
-        self.include_plots_in_report = self.visualization_settings.get("include_plots_in_report", True)
+        self.report_filename_pattern = self.visualization_settings.get(
+            "report_filename_pattern", None
+        )
+        self.include_plots_in_report = self.visualization_settings.get(
+            "include_plots_in_report", True
+        )
         warnings.filterwarnings("ignore", category=UserWarning, module="skopt")
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         self.current_metrics = {}
@@ -366,6 +373,7 @@ class BaseOptimizer:
             level: Log level (info, warning, error)
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         if level == "error":
@@ -441,21 +449,21 @@ class BaseOptimizer:
     def params_to_dict(self, params, param_types=None):
         """
         Convert parameter list to dictionary with proper types.
-        
+
         Args:
             params: List of parameter values
             param_types: dict of {param_name: type}, e.g. {'rsi_period': int, ...}
                         If not provided, will use int for names containing 'period', else float.
-        
+
         Returns:
             Dictionary of parameters with proper types
         """
         # Get parameter names from search space
         param_names = [p["name"] for p in self.search_space]
-        
+
         # Create dictionary from names and values
         param_dict = dict(zip(param_names, params))
-        
+
         # Convert types
         typed_param_dict = {}
         for name, value in param_dict.items():
@@ -473,7 +481,7 @@ class BaseOptimizer:
                 typed_param_dict[name] = bool(value)
             else:
                 typed_param_dict[name] = float(value)
-        
+
         return typed_param_dict
 
     def get_result_filename(
@@ -524,32 +532,73 @@ class BaseOptimizer:
             trades = []
 
             # Get final results from the best trial
-            final_results = study.best_trial.user_attrs.get('final_results')
+            final_results = study.best_trial.user_attrs.get("final_results")
             if final_results is not None:
                 # Add metrics from analyzers
-                if hasattr(final_results, 'analyzers'):
-                    if hasattr(final_results.analyzers, 'trades'):
+                if hasattr(final_results, "analyzers"):
+                    if hasattr(final_results.analyzers, "trades"):
                         trade_analysis = final_results.analyzers.trades.get_analysis()
-                        metrics.update({
-                            'total_trades': trade_analysis.get('total', {}).get('total', 0),
-                            'winning_trades': trade_analysis.get('won', {}).get('total', 0),
-                            'losing_trades': trade_analysis.get('lost', {}).get('total', 0),
-                            'win_rate': trade_analysis.get('won', {}).get('total', 0) / trade_analysis.get('total', {}).get('total', 1) * 100 if trade_analysis.get('total', {}).get('total', 0) > 0 else 0,
-                            'gross_profit': trade_analysis.get('pnl', {}).get('gross', {}).get('profit', 0),
-                            'gross_loss': trade_analysis.get('pnl', {}).get('gross', {}).get('loss', 0),
-                            'net_profit': trade_analysis.get('pnl', {}).get('net', 0),
-                            'profit_factor': abs(trade_analysis.get('pnl', {}).get('gross', {}).get('profit', 0) / trade_analysis.get('pnl', {}).get('gross', {}).get('loss', 1)) if trade_analysis.get('pnl', {}).get('gross', {}).get('loss', 0) != 0 else float('inf'),
-                        })
-                    
-                    if hasattr(final_results.analyzers, 'drawdown'):
-                        drawdown_analysis = final_results.analyzers.drawdown.get_analysis()
-                        metrics['max_drawdown'] = drawdown_analysis.get('max', {}).get('drawdown', 0)
+                        metrics.update(
+                            {
+                                "total_trades": trade_analysis.get("total", {}).get(
+                                    "total", 0
+                                ),
+                                "winning_trades": trade_analysis.get("won", {}).get(
+                                    "total", 0
+                                ),
+                                "losing_trades": trade_analysis.get("lost", {}).get(
+                                    "total", 0
+                                ),
+                                "win_rate": (
+                                    trade_analysis.get("won", {}).get("total", 0)
+                                    / trade_analysis.get("total", {}).get("total", 1)
+                                    * 100
+                                    if trade_analysis.get("total", {}).get("total", 0)
+                                    > 0
+                                    else 0
+                                ),
+                                "gross_profit": trade_analysis.get("pnl", {})
+                                .get("gross", {})
+                                .get("profit", 0),
+                                "gross_loss": trade_analysis.get("pnl", {})
+                                .get("gross", {})
+                                .get("loss", 0),
+                                "net_profit": trade_analysis.get("pnl", {}).get(
+                                    "net", 0
+                                ),
+                                "profit_factor": (
+                                    abs(
+                                        trade_analysis.get("pnl", {})
+                                        .get("gross", {})
+                                        .get("profit", 0)
+                                        / trade_analysis.get("pnl", {})
+                                        .get("gross", {})
+                                        .get("loss", 1)
+                                    )
+                                    if trade_analysis.get("pnl", {})
+                                    .get("gross", {})
+                                    .get("loss", 0)
+                                    != 0
+                                    else float("inf")
+                                ),
+                            }
+                        )
+
+                    if hasattr(final_results.analyzers, "drawdown"):
+                        drawdown_analysis = (
+                            final_results.analyzers.drawdown.get_analysis()
+                        )
+                        metrics["max_drawdown"] = drawdown_analysis.get("max", {}).get(
+                            "drawdown", 0
+                        )
 
                 # Get trades from strategy
-                if hasattr(final_results, 'strategy'):
+                if hasattr(final_results, "strategy"):
                     strategy = final_results.strategy
-                    if hasattr(strategy, 'trades'):
-                        trades = strategy.trades  # Use the strategy's recorded trades directly
+                    if hasattr(strategy, "trades"):
+                        trades = (
+                            strategy.trades
+                        )  # Use the strategy's recorded trades directly
 
             # Create results dictionary
             results_dict = {
@@ -560,20 +609,22 @@ class BaseOptimizer:
                 "exit_logic_name": self.exit_logic.get("name", "atr_exit"),
                 "best_params": best_params,
                 "metrics": metrics,
-                "trades": trades
+                "trades": trades,
             }
 
             # Save results to JSON
             json_path = os.path.join(self.results_dir, f"{result_filename}.json")
             with open(json_path, "w") as f:
-                json.dump(results_dict, f, indent=4, default=str)  # Use default=str to handle datetime objects
+                json.dump(
+                    results_dict, f, indent=4, default=str
+                )  # Use default=str to handle datetime objects
             self.log_message(f"Results saved to {json_path}", level="info")
 
             # Generate and save plot using optimizer-specific plot_results method
             try:
                 # Convert trades list to DataFrame
                 trades_df = pd.DataFrame(trades) if trades else pd.DataFrame()
-                
+
                 # Ensure current_data is a DataFrame with datetime index
                 if isinstance(current_data, pd.DataFrame):
                     if not isinstance(current_data.index, pd.DatetimeIndex):
@@ -581,21 +632,21 @@ class BaseOptimizer:
                 else:
                     self.log_message("current_data is not a DataFrame", level="error")
                     return
-                
+
                 # Call optimizer-specific plot_results method with consistent parameter names
                 plot_path = self.plot_results(
                     data_df=current_data,
                     trades_df=trades_df,
                     params=best_params,
-                    data_file_name=data_file
+                    data_file_name=data_file,
                 )
-                
+
                 if plot_path:
                     results_dict["plot_path"] = plot_path
                     self.log_message(f"Plot saved to {plot_path}", level="info")
                 else:
                     self.log_message("Failed to generate plot", level="error")
-                    
+
             except Exception as e:
                 self.log_message(f"Error generating plot: {str(e)}", level="error")
                 self.log_message(traceback.format_exc(), level="error")
@@ -611,7 +662,7 @@ class BaseOptimizer:
         """
         try:
             # Split by underscore and take the first part
-            return data_file.split('_')[0]
+            return data_file.split("_")[0]
         except Exception as e:
             self.log_message(f"Error extracting strategy name: {str(e)}", level="error")
             return None
@@ -629,10 +680,10 @@ class BaseOptimizer:
         def objective(trial):
             # --- Suggest strategy parameters ---
             strategy_params = {}
-            
+
             # Get all parameters that need to be optimized
             all_params = {**self.param_ranges, **exit_params_config}
-            
+
             # Suggest values for all parameters
             for pname, pinfo in all_params.items():
                 if pinfo["type"] == "Real":
@@ -654,25 +705,28 @@ class BaseOptimizer:
             try:
                 # --- Run backtest ---
                 results = self.run_backtest(strategy_params)
-                
+
                 # Get net profit from analyzers
                 analysis = results.analyzers.trades.get_analysis()
-                
+
                 # Handle nested dictionary structure
                 try:
-                    pnl = analysis.get('pnl', {})
-                    net_profit = float(pnl.get('net', 0.0))
+                    pnl = analysis.get("pnl", {})
+                    net_profit = float(pnl.get("net", 0.0))
                 except (KeyError, AttributeError, TypeError):
                     net_profit = 0.0
-                
+
                 # Return negative net profit (since we want to maximize)
                 return -net_profit
-                
+
             except Exception as e:
                 import traceback
-                error_msg = f"Error in objective function: {str(e)}\n{traceback.format_exc()}"
+
+                error_msg = (
+                    f"Error in objective function: {str(e)}\n{traceback.format_exc()}"
+                )
                 self.log_message(error_msg, level="error")
-                return float('inf')  # Return worst possible value if anything fails
+                return float("inf")  # Return worst possible value if anything fails
 
         return objective
 
@@ -680,19 +734,21 @@ class BaseOptimizer:
         """Run optimization for a single file."""
         try:
             self.log_message(f"Starting optimization for {file_path}")
-            
+
             # Load data if not already loaded
-            if not hasattr(self, 'raw_data') or self.raw_data is None:
+            if not hasattr(self, "raw_data") or self.raw_data is None:
                 self.load_all_data()
-            
+
             # Set current file and data
             self.current_file = file_path
             self.current_data = self.raw_data[file_path].copy()
-            
+
             if self.current_data.empty:
-                self.log_message(f"No data found for {file_path}. Skipping.", level="error")
+                self.log_message(
+                    f"No data found for {file_path}. Skipping.", level="error"
+                )
                 return None
-                
+
             # Fill any missing values using recommended methods
             self.current_data = self.current_data.ffill().bfill()
 
@@ -716,7 +772,7 @@ class BaseOptimizer:
             elif opt_method == "skopt":
                 # Convert search space to skopt format
                 dimensions = self._build_skopt_space_from_config(self.search_space)
-                
+
                 # Run optimization
                 result = gp_minimize(
                     func=self.objective,
@@ -725,23 +781,49 @@ class BaseOptimizer:
                     n_random_starts=42,
                     noise=0.01,
                     n_jobs=self.n_jobs,
-                    verbose=True
+                    verbose=True,
                 )
-                
+
                 # Convert result to study-like format for compatibility
-                study = type('Study', (), {
-                    'best_params': dict(zip([d.name for d in dimensions], result.x)),
-                    'best_value': result.fun,
-                    'trials': [type('Trial', (), {'number': i, 'params': dict(zip([d.name for d in dimensions], x)), 'value': y}) 
-                              for i, (x, y) in enumerate(zip(result.x_iters, result.func_vals))],
-                    'best_trial': type('Trial', (), {
-                        'number': result.x_iters.index(result.x),
-                        'params': dict(zip([d.name for d in dimensions], result.x)),
-                        'value': result.fun,
-                        'datetime_start': None,
-                        'datetime_complete': None
-                    })
-                })
+                study = type(
+                    "Study",
+                    (),
+                    {
+                        "best_params": dict(
+                            zip([d.name for d in dimensions], result.x)
+                        ),
+                        "best_value": result.fun,
+                        "trials": [
+                            type(
+                                "Trial",
+                                (),
+                                {
+                                    "number": i,
+                                    "params": dict(
+                                        zip([d.name for d in dimensions], x)
+                                    ),
+                                    "value": y,
+                                },
+                            )
+                            for i, (x, y) in enumerate(
+                                zip(result.x_iters, result.func_vals)
+                            )
+                        ],
+                        "best_trial": type(
+                            "Trial",
+                            (),
+                            {
+                                "number": result.x_iters.index(result.x),
+                                "params": dict(
+                                    zip([d.name for d in dimensions], result.x)
+                                ),
+                                "value": result.fun,
+                                "datetime_start": None,
+                                "datetime_complete": None,
+                            },
+                        ),
+                    },
+                )
                 best_params = study.best_params
                 self.log_message(f"Best parameters: {best_params}")
 
@@ -752,7 +834,9 @@ class BaseOptimizer:
             try:
                 if final_backtest_run:
                     final_results = self.run_backtest(best_params)
-                    if hasattr(final_results, 'analyzers') and hasattr(final_results.analyzers, 'trades'):
+                    if hasattr(final_results, "analyzers") and hasattr(
+                        final_results.analyzers, "trades"
+                    ):
                         final_analysis = final_results.analyzers.trades.get_analysis()
                         self.log_message(f"Final backtest results: {final_analysis}")
             except Exception as e:
@@ -774,7 +858,9 @@ class BaseOptimizer:
         Calls optimize_single_file for each .csv file, collects results, and saves a combined results JSON.
         Subclasses can override for extra summary fields or dynamic loading.
         """
-        self.log_message(f"Starting {self.__class__.__name__} optimization process...", level="info")
+        self.log_message(
+            f"Starting {self.__class__.__name__} optimization process...", level="info"
+        )
         data_files = [
             f
             for f in os.listdir(self.data_dir)
@@ -788,7 +874,10 @@ class BaseOptimizer:
         for data_file in data_files:
             try:
                 if data_file not in self.raw_data:
-                    self.log_message(f"Data for {data_file} not pre-loaded. Skipping.",level="warning",)
+                    self.log_message(
+                        f"Data for {data_file} not pre-loaded. Skipping.",
+                        level="warning",
+                    )
                     continue
                 result = self.optimize_single_file(data_file)
                 if result is not None:
@@ -797,13 +886,25 @@ class BaseOptimizer:
                         "best_params": result.best_params,
                         "best_value": result.best_value,
                         "n_trials": len(result.trials),
-                        "best_trial": {
-                            "number": result.best_trial.number,
-                            "params": result.best_trial.params,
-                            "value": result.best_trial.value,
-                            "datetime_start": result.best_trial.datetime_start.isoformat() if result.best_trial.datetime_start else None,
-                            "datetime_complete": result.best_trial.datetime_complete.isoformat() if result.best_trial.datetime_complete else None,
-                        } if result.best_trial else None
+                        "best_trial": (
+                            {
+                                "number": result.best_trial.number,
+                                "params": result.best_trial.params,
+                                "value": result.best_trial.value,
+                                "datetime_start": (
+                                    result.best_trial.datetime_start.isoformat()
+                                    if result.best_trial.datetime_start
+                                    else None
+                                ),
+                                "datetime_complete": (
+                                    result.best_trial.datetime_complete.isoformat()
+                                    if result.best_trial.datetime_complete
+                                    else None
+                                ),
+                            }
+                            if result.best_trial
+                            else None
+                        ),
                     }
                     all_results.append(study_data)
             except Exception as e:
@@ -839,41 +940,41 @@ class BaseOptimizer:
     def _prepare_strategy_params(self, params):
         """
         Prepare strategy parameters including exit logic parameters.
-        
+
         Args:
             params: Dictionary of strategy parameters
-            
+
         Returns:
             Dictionary of prepared parameters for the strategy
         """
         # Start with the base parameters
         strategy_params = params.copy()
-        
+
         # Get exit logic configuration
         exit_logic_config = self.config.get("exit_logic", {})
         exit_logic_name = exit_logic_config.get("name", "atr_exit")
-        
+
         # Extract exit logic parameters from the optimized params
         exit_params = {}
         for param_name, param_value in params.items():
             if param_name in EXIT_PARAM_MAP.get(exit_logic_name, {}):
                 exit_params[param_name] = param_value
-        
+
         # Add exit logic name and params
         strategy_params["exit_logic_name"] = exit_logic_name
         strategy_params["exit_params"] = exit_params
-        
+
         # Add default parameters if not present
         for param_name, param_value in self.default_params.items():
             if param_name not in strategy_params:
                 strategy_params[param_name] = param_value
-        
+
         return strategy_params
 
     def run_backtest(self, params, data=None):
         """
         Run a single backtest with the given parameters.
-        
+
         Args:
             params: Dictionary of strategy parameters
             data: Optional data to use for backtest. If None, will use self.current_data.
@@ -883,20 +984,22 @@ class BaseOptimizer:
         # Add data
         if data is None:
             if self.current_data is None:
-                raise ValueError("No data available for backtest. Call load_all_data() first.")
+                raise ValueError(
+                    "No data available for backtest. Call load_all_data() first."
+                )
             data = self.current_data
-            
+
         # Convert DataFrame to Backtrader data feed
         if isinstance(data, pd.DataFrame):
             data = bt.feeds.PandasData(
                 dataname=data,
                 datetime=None,  # Use index as datetime
-                open='open',
-                high='high',
-                low='low',
-                close='close',
-                volume='volume',
-                openinterest=-1
+                open="open",
+                high="high",
+                low="low",
+                close="close",
+                volume="volume",
+                openinterest=-1,
             )
         cerebro.adddata(data)
 
@@ -1022,27 +1125,33 @@ class BaseOptimizer:
         try:
             # Convert parameters to dictionary
             param_dict = self.params_to_dict(params)
-            
+
             # Run backtest with parameters
             backtest_results = self.run_backtest(param_dict)
-            
+
             # Extract metrics from analyzers
-            sharpe_ratio = backtest_results.analyzers.sharpe.get_analysis().get('sharperatio', 0.0)
-            drawdown = backtest_results.analyzers.drawdown.get_analysis().get('max', {}).get('drawdown', 0.0)
-            returns = backtest_results.analyzers.returns.get_analysis().get('rtot', 0.0)
+            sharpe_ratio = backtest_results.analyzers.sharpe.get_analysis().get(
+                "sharperatio", 0.0
+            )
+            drawdown = (
+                backtest_results.analyzers.drawdown.get_analysis()
+                .get("max", {})
+                .get("drawdown", 0.0)
+            )
+            returns = backtest_results.analyzers.returns.get_analysis().get("rtot", 0.0)
             trades = backtest_results.analyzers.trades.get_analysis()
-            
+
             # Calculate objective value (e.g., Sharpe ratio)
             objective_value = sharpe_ratio if sharpe_ratio is not None else 0.0
-            
+
             # Log results
             self.log_message(
                 f"Parameters: {param_dict}, Objective: {objective_value:.4f}",
-                level="debug"
+                level="debug",
             )
-            
+
             return -objective_value  # Negative because we want to maximize
-            
+
         except Exception as e:
             self.log_message(f"Error in objective function: {str(e)}", level="error")
             return 0.0  # Return worst possible value on error
@@ -1092,9 +1201,13 @@ class BaseOptimizer:
             dimensions = []
             for param in self.search_space:
                 if param["type"] == "Integer":
-                    dimensions.append(Integer(param["low"], param["high"], name=param["name"]))
+                    dimensions.append(
+                        Integer(param["low"], param["high"], name=param["name"])
+                    )
                 elif param["type"] == "Real":
-                    dimensions.append(Real(param["low"], param["high"], name=param["name"]))
+                    dimensions.append(
+                        Real(param["low"], param["high"], name=param["name"])
+                    )
                 elif param["type"] == "Categorical":
                     dimensions.append(Categorical(param["values"], name=param["name"]))
 
@@ -1106,7 +1219,7 @@ class BaseOptimizer:
                 n_random_starts=self.random_state,  # Use random_state from config
                 random_state=self.random_state,
                 n_jobs=self.n_jobs,
-                verbose=True
+                verbose=True,
             )
 
             # Store results

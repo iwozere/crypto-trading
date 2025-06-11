@@ -1,19 +1,20 @@
 # ticker_bot/bot.py
 import os
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
+import asyncio
 import logging
 import tempfile
-import asyncio
 
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import FSInputFile
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import FSInputFile, Message
 from src.analyzer.telegram.combine import analyze_ticker
-from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
 from src.notification.logger import setup_logger
+
+from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
 
 # Set up logger
 logger = setup_logger()
@@ -25,6 +26,7 @@ if not TELEGRAM_BOT_TOKEN:
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 
+
 @dp.message(Command("start", "help"))
 async def send_welcome(message: Message):
     logger.info(f"User {message.from_user.id} started the bot")
@@ -33,6 +35,7 @@ async def send_welcome(message: Message):
         "Available commands:\n"
         "/start or /help - Show this message"
     )
+
 
 @dp.message(lambda message: message.text and message.text.strip().isalnum())
 async def handle_ticker(message: Message):
@@ -66,17 +69,17 @@ async def handle_ticker(message: Message):
         )
 
         # Save chart to temporary file
-        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
             temp_file.write(result.chart_image)
             temp_file.flush()
-            
+
             await bot.send_photo(
                 chat_id=message.chat.id,
                 photo=FSInputFile(temp_file.name),
                 caption=text,
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
-            
+
         # Clean up the temporary file
         os.unlink(temp_file.name)
 
@@ -87,9 +90,11 @@ async def handle_ticker(message: Message):
             f"Please check if the ticker symbol is correct and try again."
         )
 
+
 async def main():
     logger.info("Starting ticker analyzer bot")
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

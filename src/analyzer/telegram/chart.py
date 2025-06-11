@@ -15,7 +15,7 @@ def generate_price_chart(ticker: str) -> bytes:
         # Calculate indicators
         df["SMA_50"] = df["Close"].rolling(window=50).mean()
         df["SMA_200"] = df["Close"].rolling(window=200).mean()
-        
+
         # Bollinger Bands
         bb_period = 20
         bb_std = 2
@@ -31,14 +31,16 @@ def generate_price_chart(ticker: str) -> bytes:
         ax.plot(df.index, df["Close"], label="Close Price", linewidth=2)
         ax.plot(df.index, df["SMA_50"], label="SMA 50", linestyle="--")
         ax.plot(df.index, df["SMA_200"], label="SMA 200", linestyle="--")
-        
+
         # Plot Bollinger Bands
         ax.plot(df.index, df["BB_Upper"], label="BB Upper", color="red", alpha=0.5)
         ax.plot(df.index, df["BB_Middle"], label="BB Middle", color="green", alpha=0.5)
         ax.plot(df.index, df["BB_Lower"], label="BB Lower", color="red", alpha=0.5)
-        
+
         # Fill Bollinger Bands
-        ax.fill_between(df.index, df["BB_Upper"], df["BB_Lower"], color="gray", alpha=0.1)
+        ax.fill_between(
+            df.index, df["BB_Upper"], df["BB_Lower"], color="gray", alpha=0.1
+        )
 
         ax.set_title(f"{ticker} Price Chart with Indicators")
         ax.set_xlabel("Date")

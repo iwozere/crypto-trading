@@ -21,27 +21,29 @@ and risk management. It's often used as a baseline exit strategy that can be enh
 with more sophisticated exit rules.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 from src.exit.exit_mixin import BaseExitMixin
+
 
 class FixedRatioExitMixin(BaseExitMixin):
     """Exit mixin на основе фиксированного соотношения прибыли/убытка"""
-    
+
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
         return []
-    
+
     def get_default_params(self) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            'take_profit': 0.02,  # 2% take profit
-            'stop_loss': 0.01     # 1% stop loss
+            "take_profit": 0.02,  # 2% take profit
+            "stop_loss": 0.01,  # 1% stop loss
         }
-    
+
     def _init_indicators(self):
         """No indicators needed for fixed ratio exit"""
         pass
-    
+
     def should_exit(self, strategy) -> bool:
         """
         Exit logic: Exit when price reaches take profit or stop loss levels
@@ -49,12 +51,14 @@ class FixedRatioExitMixin(BaseExitMixin):
         """
         if not strategy.position:
             return False
-            
+
         price = strategy.data.close[0]
         entry_price = strategy.position.price
-        
+
         # Calculate profit/loss percentage
         pnl_pct = (price - entry_price) / entry_price
-        
+
         # Exit if take profit or stop loss is hit
-        return pnl_pct >= self.get_param('take_profit') or pnl_pct <= -self.get_param('stop_loss')
+        return pnl_pct >= self.get_param("take_profit") or pnl_pct <= -self.get_param(
+            "stop_loss"
+        )

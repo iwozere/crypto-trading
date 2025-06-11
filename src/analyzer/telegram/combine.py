@@ -1,7 +1,9 @@
 from src.analyzer.telegram.chart import generate_price_chart
 from src.analyzer.telegram.fundamentals import get_fundamentals
-from src.analyzer.telegram.models import TickerAnalysis, Fundamentals, Technicals
+from src.analyzer.telegram.models import (Fundamentals, Technicals,
+                                          TickerAnalysis)
 from src.analyzer.telegram.technicals import calculate_technicals
+
 
 def generate_recommendation(technicals: Technicals) -> str:
     """Generate trading recommendation based on technical indicators."""
@@ -16,6 +18,7 @@ def generate_recommendation(technicals: Technicals) -> str:
     else:
         return "Neutral - Hold or wait for better entry"
 
+
 def analyze_ticker(ticker: str) -> TickerAnalysis:
     fundamentals_data = get_fundamentals(ticker)
     technicals_data = calculate_technicals(ticker)
@@ -29,7 +32,7 @@ def analyze_ticker(ticker: str) -> TickerAnalysis:
         pe_ratio=fundamentals_data.get("pe_ratio", 0.0),
         forward_pe=fundamentals_data.get("forward_pe", 0.0),
         dividend_yield=fundamentals_data.get("dividend_yield", 0.0),
-        earnings_per_share=fundamentals_data.get("earnings_per_share", 0.0)
+        earnings_per_share=fundamentals_data.get("earnings_per_share", 0.0),
     )
 
     technicals = Technicals(
@@ -41,7 +44,7 @@ def analyze_ticker(ticker: str) -> TickerAnalysis:
         bb_upper=technicals_data.get("bb_upper", 0.0),
         bb_middle=technicals_data.get("bb_middle", 0.0),
         bb_lower=technicals_data.get("bb_lower", 0.0),
-        bb_width=technicals_data.get("bb_width", 0.0)
+        bb_width=technicals_data.get("bb_width", 0.0),
     )
 
     recommendation = generate_recommendation(technicals)
@@ -51,5 +54,5 @@ def analyze_ticker(ticker: str) -> TickerAnalysis:
         fundamentals=fundamentals,
         technicals=technicals,
         chart_image=chart_image,
-        recommendation=recommendation
+        recommendation=recommendation,
     )

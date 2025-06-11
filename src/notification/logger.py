@@ -4,9 +4,9 @@ Provides logging utilities for the trading system, including console and file lo
 This module sets up application-wide logging configuration and exposes a logger for use throughout the project.
 """
 
+import logging
 import os
 import sys
-import logging
 from logging.handlers import RotatingFileHandler
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))

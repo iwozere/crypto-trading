@@ -15,6 +15,7 @@ class Fundamentals:
     dividend_yield: float
     earnings_per_share: float
 
+
 @dataclass
 class Technicals:
     rsi: float
@@ -26,6 +27,7 @@ class Technicals:
     bb_middle: float
     bb_lower: float
     bb_width: float  # (upper - lower) / middle
+
 
 @dataclass
 class TickerAnalysis:

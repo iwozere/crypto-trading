@@ -14,6 +14,7 @@ Functions/Classes:
 """
 
 import math
+
 import backtrader as bt
 import numpy as np
 
@@ -36,12 +37,13 @@ class SuperTrend(bt.Indicator):
         if self.use_talib:
             try:
                 import talib
+
                 # Use TA-Lib ATR for calculation
                 self.atr = bt.talib.ATR(
                     self.datas[0].high,
                     self.datas[0].low,
                     self.datas[0].close,
-                    timeperiod=self.period
+                    timeperiod=self.period,
                 )
             except ImportError:
                 self.log("TA-Lib not available, falling back to Backtrader ATR")

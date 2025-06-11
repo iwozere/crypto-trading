@@ -11,17 +11,17 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import json
+import traceback
+from typing import Optional
 
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
 import pandas as pd
+import talib
+from matplotlib.dates import DateFormatter
 from src.notification.logger import _logger
 from src.optimizer.base_optimizer import BaseOptimizer
 from src.strategy.liquidity_momentum_strategy import LiquidityMomentumStrategy
-import matplotlib.pyplot as plt
-from matplotlib.dates import DateFormatter
-import matplotlib.gridspec as gridspec
-import talib
-import traceback
-from typing import Optional
 
 
 class LiquidityMomentumOptimizer(BaseOptimizer):
@@ -60,7 +60,9 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
         self.save_plot = self.visualization_settings.get("save_plot", True)
         self.show_plot = self.visualization_settings.get("show_plot", False)
         self.plot_format = self.visualization_settings.get("plot_format", "png")
-        self.show_equity_curve = self.visualization_settings.get("show_equity_curve", True)
+        self.show_equity_curve = self.visualization_settings.get(
+            "show_equity_curve", True
+        )
         self.show_indicators = self.visualization_settings.get("show_indicators", True)
         self.color_scheme = self.visualization_settings.get("color_scheme", {})
 
@@ -73,7 +75,11 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
         self.print_summary = config.get("print_summary", True)
 
     def plot_results(
-        self, data_df: pd.DataFrame, trades_df: pd.DataFrame, params: dict, data_file_name: str
+        self,
+        data_df: pd.DataFrame,
+        trades_df: pd.DataFrame,
+        params: dict,
+        data_file_name: str,
     ) -> Optional[str]:
         """
         Plot the results of the strategy, including price, indicators, trades, and equity curve.
@@ -105,7 +111,9 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
             if use_talib:
                 # TA-Lib indicators
                 # Calculate liquidity ratio
-                typical_price = (data_df["high"] + data_df["low"] + data_df["close"]) / 3
+                typical_price = (
+                    data_df["high"] + data_df["low"] + data_df["close"]
+                ) / 3
                 liquidity_ratio = talib.SMA(
                     (data_df["volume"] * typical_price).values,
                     timeperiod=params["liquidity_period"],
@@ -117,14 +125,20 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
                 momentum_20 = talib.ROC(data_df["close"].values, timeperiod=20)
 
                 # Calculate volume MA
-                vol_ma = talib.SMA(data_df["volume"].values, timeperiod=params["vol_ma_period"])
+                vol_ma = talib.SMA(
+                    data_df["volume"].values, timeperiod=params["vol_ma_period"]
+                )
             else:
                 # Pandas calculations
                 # Calculate liquidity ratio
-                typical_price = (data_df["high"] + data_df["low"] + data_df["close"]) / 3
-                liquidity_ratio = (data_df["volume"] * typical_price).rolling(
-                    window=params["liquidity_period"]
-                ).mean()
+                typical_price = (
+                    data_df["high"] + data_df["low"] + data_df["close"]
+                ) / 3
+                liquidity_ratio = (
+                    (data_df["volume"] * typical_price)
+                    .rolling(window=params["liquidity_period"])
+                    .mean()
+                )
 
                 # Calculate momentum indicators
                 momentum_5 = data_df["close"].pct_change(periods=5) * 100
@@ -132,10 +146,18 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
                 momentum_20 = data_df["close"].pct_change(periods=20) * 100
 
                 # Calculate volume MA
-                vol_ma = data_df["volume"].rolling(window=params["vol_ma_period"]).mean()
+                vol_ma = (
+                    data_df["volume"].rolling(window=params["vol_ma_period"]).mean()
+                )
 
             # Plot price
-            ax1.plot(data_df.index, data_df["close"], label="Price", color="white", linewidth=2)
+            ax1.plot(
+                data_df.index,
+                data_df["close"],
+                label="Price",
+                color="white",
+                linewidth=2,
+            )
 
             # Plot trades
             if not trades_df.empty:
@@ -199,7 +221,13 @@ class LiquidityMomentumOptimizer(BaseOptimizer):
             ax3.axhline(y=0, color="white", linestyle="--", alpha=0.5)
 
             # Plot volume
-            ax4.bar(data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7)
+            ax4.bar(
+                data_df.index,
+                data_df["volume"],
+                label="Volume",
+                color="blue",
+                alpha=0.7,
+            )
             ax4.plot(
                 data_df.index,
                 vol_ma,

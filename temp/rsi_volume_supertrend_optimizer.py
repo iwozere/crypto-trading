@@ -16,6 +16,7 @@ Classes:
 
 import os
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import json
@@ -30,7 +31,8 @@ import pandas as pd
 import seaborn as sns
 import talib
 from src.optimizer.base_optimizer import BaseOptimizer
-from src.strategy.rsi_volume_supertrend_strategy import RsiVolumeSuperTrendStrategy
+from src.strategy.rsi_volume_supertrend_strategy import \
+    RsiVolumeSuperTrendStrategy
 
 
 class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
@@ -78,7 +80,13 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         warnings.filterwarnings("ignore", category=UserWarning, module="skopt")
         warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-    def calculate_supertrend(self, data_df: pd.DataFrame, period: int, multiplier: float, use_talib: bool = False) -> tuple:
+    def calculate_supertrend(
+        self,
+        data_df: pd.DataFrame,
+        period: int,
+        multiplier: float,
+        use_talib: bool = False,
+    ) -> tuple:
         """
         Calculate SuperTrend indicator using either TA-Lib or pandas.
         Args:
@@ -127,7 +135,9 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
 
         return supertrend, direction
 
-    def plot_results(self, data_df: Any, trades_df: Any, params: Dict[str, Any], data_file_name: str) -> Optional[str]:
+    def plot_results(
+        self, data_df: Any, trades_df: Any, params: Dict[str, Any], data_file_name: str
+    ) -> Optional[str]:
         """
         Plot the results of the strategy, including price, indicators, trades, and equity curve.
         Args:
@@ -157,7 +167,7 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
             data_df,
             period=params.get("supertrend_period", 10),
             multiplier=params.get("supertrend_multiplier", 3.0),
-            use_talib=use_talib
+            use_talib=use_talib,
         )
 
         # Plot SuperTrend
@@ -169,9 +179,13 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         if not trades_df.empty:
             trades_df_plot = trades_df.copy()
             if "entry_time" in trades_df_plot.columns:
-                trades_df_plot["entry_time"] = pd.to_datetime(trades_df_plot["entry_time"])
+                trades_df_plot["entry_time"] = pd.to_datetime(
+                    trades_df_plot["entry_time"]
+                )
             if "exit_time" in trades_df_plot.columns:
-                trades_df_plot["exit_time"] = pd.to_datetime(trades_df_plot["exit_time"])
+                trades_df_plot["exit_time"] = pd.to_datetime(
+                    trades_df_plot["exit_time"]
+                )
             long_trades = trades_df_plot[trades_df_plot["direction"] == "long"]
             if not long_trades.empty:
                 ax1.scatter(
@@ -212,7 +226,9 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
             rs = gain / loss
             rsi = 100 - (100 / (1 + rs))
 
-        ax2.plot(data_df.index, rsi, label=f"RSI ({rsi_period})", color="cyan", linewidth=2)
+        ax2.plot(
+            data_df.index, rsi, label=f"RSI ({rsi_period})", color="cyan", linewidth=2
+        )
         ax2.axhline(
             y=rsi_overbought,
             color="red",
@@ -239,7 +255,9 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
 
         # Volume
         vol_ma_period = params.get("volume_ma_period", 20)
-        ax3.bar(data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7)
+        ax3.bar(
+            data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7
+        )
         if use_talib:
             vol_ma = talib.SMA(data_df["volume"].values, timeperiod=vol_ma_period)
         else:
@@ -265,7 +283,9 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
                 .copy()
             )
             if not trades_df_sorted.empty:
-                trades_df_sorted["cumulative_pnl"] = trades_df_sorted["pnl_comm"].cumsum()
+                trades_df_sorted["cumulative_pnl"] = trades_df_sorted[
+                    "pnl_comm"
+                ].cumsum()
                 equity_curve = self.initial_capital + trades_df_sorted["cumulative_pnl"]
                 ax4.plot(
                     trades_df_sorted["exit_time"],
@@ -295,7 +315,9 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
         ax4.set_xlabel("Date", fontsize=12)
 
         # Titles and legends
-        ax1.set_title(f"Trading Results - {data_file_name} - Params: {params}", fontsize=16)
+        ax1.set_title(
+            f"Trading Results - {data_file_name} - Params: {params}", fontsize=16
+        )
         for ax in [ax1, ax2, ax3, ax4]:
             ax.legend(loc="upper left", fontsize=10)
         plt.xticks(rotation=45)
@@ -310,7 +332,9 @@ class RsiVolumeSuperTrendOptimizer(BaseOptimizer):
 
 
 if __name__ == "__main__":
-    with open("config/optimizer/rsi_volume_supertrend_trailing_stop_exit_optimizer.json") as f:
+    with open(
+        "config/optimizer/rsi_volume_supertrend_trailing_stop_exit_optimizer.json"
+    ) as f:
         config = json.load(f)
     optimizer = RsiVolumeSuperTrendOptimizer(config)
     optimizer.run_optimization()

@@ -1,5 +1,5 @@
-import yfinance as yf
 import numpy as np
+import yfinance as yf
 
 
 def calculate_technicals(ticker: str) -> dict:
@@ -60,7 +60,7 @@ def calculate_technicals(ticker: str) -> dict:
             "bb_upper": round(bb_upper, 2),
             "bb_middle": round(bb_middle, 2),
             "bb_lower": round(bb_lower, 2),
-            "bb_width": round(bb_width, 4)
+            "bb_width": round(bb_width, 4),
         }
 
     except Exception as e:

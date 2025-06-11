@@ -19,16 +19,16 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+import traceback
 import warnings
 from typing import Any, Dict, Optional
 
 import backtrader as bt
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
+import talib
 from src.optimizer.base_optimizer import BaseOptimizer
 from src.strategy.rsi_bb_strategy import MeanReversionRsiBbStrategy
-import talib
-import traceback
 
 
 class RsiBBVolumeOptimizer(BaseOptimizer):
@@ -52,7 +52,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         """
         # Call parent class initialization first
         super().__init__(config)
-        
+
         # Set optimizer-specific attributes
         self.data_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data"
@@ -62,7 +62,7 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         )
         self.strategy_name = "MeanReversionRsiBbStrategy"
         self.strategy_class = MeanReversionRsiBbStrategy
-        
+
         # Create results directory
         os.makedirs(self.results_dir, exist_ok=True)
 
@@ -77,7 +77,9 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         self.save_plot = self.visualization_settings.get("save_plot", True)
         self.show_plot = self.visualization_settings.get("show_plot", False)
         self.plot_format = self.visualization_settings.get("plot_format", "png")
-        self.show_equity_curve = self.visualization_settings.get("show_equity_curve", True)
+        self.show_equity_curve = self.visualization_settings.get(
+            "show_equity_curve", True
+        )
         self.show_indicators = self.visualization_settings.get("show_indicators", True)
         self.color_scheme = self.visualization_settings.get("color_scheme", {})
         self.report_metrics = self.visualization_settings.get("report_metrics", [])
@@ -87,17 +89,19 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
         self.metrics_format = self.visualization_settings.get("metrics_format", "json")
         self.print_summary = self.visualization_settings.get("print_summary", True)
         self.report_params = self.visualization_settings.get("report_params", True)
-        self.report_filename_pattern = self.visualization_settings.get("report_filename_pattern", None)
-        self.include_plots_in_report = self.visualization_settings.get("include_plots_in_report", True)
-        
+        self.report_filename_pattern = self.visualization_settings.get(
+            "report_filename_pattern", None
+        )
+        self.include_plots_in_report = self.visualization_settings.get(
+            "include_plots_in_report", True
+        )
+
         # Set plot parameters
         plt.rcParams["figure.figsize"] = self.plot_size
         plt.rcParams["font.size"] = self.font_size
 
         # Read search space from config and convert to skopt space objects
-        self.space = self._build_skopt_space_from_config(
-            config.get("search_space", [])
-        )
+        self.space = self._build_skopt_space_from_config(config.get("search_space", []))
         warnings.filterwarnings("ignore", category=UserWarning, module="skopt")
 
     def plot_results(
@@ -139,8 +143,12 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
                     nbdevdn=params["bb_devfactor"],
                     matype=0,
                 )
-                rsi = talib.RSI(data_df["close"].values, timeperiod=params["rsi_period"])
-                vol_ma = talib.SMA(data_df["volume"].values, timeperiod=params["vol_ma_period"])
+                rsi = talib.RSI(
+                    data_df["close"].values, timeperiod=params["rsi_period"]
+                )
+                vol_ma = talib.SMA(
+                    data_df["volume"].values, timeperiod=params["vol_ma_period"]
+                )
             else:
                 # Pandas calculations
                 # Bollinger Bands
@@ -148,19 +156,35 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
                 bb_std = data_df["close"].rolling(window=params["bb_period"]).std()
                 bb_high = bb_mid + (bb_std * params["bb_devfactor"])
                 bb_low = bb_mid - (bb_std * params["bb_devfactor"])
-                
+
                 # RSI
                 delta = data_df["close"].diff()
-                gain = (delta.where(delta > 0, 0)).rolling(window=params["rsi_period"]).mean()
-                loss = (-delta.where(delta < 0, 0)).rolling(window=params["rsi_period"]).mean()
+                gain = (
+                    (delta.where(delta > 0, 0))
+                    .rolling(window=params["rsi_period"])
+                    .mean()
+                )
+                loss = (
+                    (-delta.where(delta < 0, 0))
+                    .rolling(window=params["rsi_period"])
+                    .mean()
+                )
                 rs = gain / loss
                 rsi = 100 - (100 / (1 + rs))
-                
+
                 # Volume MA
-                vol_ma = data_df["volume"].rolling(window=params["vol_ma_period"]).mean()
+                vol_ma = (
+                    data_df["volume"].rolling(window=params["vol_ma_period"]).mean()
+                )
 
             # Plot price and Bollinger Bands
-            ax1.plot(data_df.index, data_df["close"], label="Price", color="white", linewidth=2)
+            ax1.plot(
+                data_df.index,
+                data_df["close"],
+                label="Price",
+                color="white",
+                linewidth=2,
+            )
             ax1.plot(
                 data_df.index,
                 bb_high,
@@ -215,8 +239,12 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
                 color="cyan",
                 linewidth=2,
             )
-            ax2.axhline(y=params["rsi_overbought"], color="red", linestyle="--", alpha=0.5)
-            ax2.axhline(y=params["rsi_oversold"], color="green", linestyle="--", alpha=0.5)
+            ax2.axhline(
+                y=params["rsi_overbought"], color="red", linestyle="--", alpha=0.5
+            )
+            ax2.axhline(
+                y=params["rsi_oversold"], color="green", linestyle="--", alpha=0.5
+            )
             ax2.fill_between(
                 data_df.index, params["rsi_overbought"], 100, color="red", alpha=0.1
             )
@@ -225,7 +253,13 @@ class RsiBBVolumeOptimizer(BaseOptimizer):
             )
 
             # Plot volume
-            ax3.bar(data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7)
+            ax3.bar(
+                data_df.index,
+                data_df["volume"],
+                label="Volume",
+                color="blue",
+                alpha=0.7,
+            )
             ax3.plot(
                 data_df.index,
                 vol_ma,

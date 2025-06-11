@@ -172,22 +172,22 @@ class Database:
     def insert_trade(self, trade_data: dict) -> bool:
         """
         Insert a trade record into the database.
-        
+
         Args:
             trade_data: Dictionary containing trade information
-            
+
         Returns:
             bool: True if insert was successful, False otherwise
         """
         try:
             # Add timestamp if not present
-            if 'timestamp' not in trade_data:
-                trade_data['timestamp'] = datetime.datetime.now()
-            
+            if "timestamp" not in trade_data:
+                trade_data["timestamp"] = datetime.datetime.now()
+
             # Insert trade data
             self.trades.insert_one(trade_data)
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Error inserting trade: {str(e)}")
             return False

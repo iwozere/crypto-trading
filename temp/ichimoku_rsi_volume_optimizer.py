@@ -21,6 +21,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 
 import datetime
 import json
+import traceback
 import warnings
 from typing import Any, Dict, Optional
 
@@ -33,7 +34,6 @@ import talib
 from skopt.space import Integer, Real
 from src.optimizer.base_optimizer import BaseOptimizer
 from src.strategy.ichimoku_rsi_volume_strategy import IchimokuRsiVolumeStrategy
-import traceback
 
 
 class IchimokuRsiVolumeOptimizer(BaseOptimizer):
@@ -68,7 +68,9 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
         self.save_plot = self.visualization_settings.get("save_plot", True)
         self.show_plot = self.visualization_settings.get("show_plot", False)
         self.plot_format = self.visualization_settings.get("plot_format", "png")
-        self.show_equity_curve = self.visualization_settings.get("show_equity_curve", True)
+        self.show_equity_curve = self.visualization_settings.get(
+            "show_equity_curve", True
+        )
         self.show_indicators = self.visualization_settings.get("show_indicators", True)
         self.color_scheme = self.visualization_settings.get("color_scheme", {})
         self.report_metrics = self.visualization_settings.get("report_metrics", [])
@@ -78,8 +80,12 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
         self.metrics_format = self.visualization_settings.get("metrics_format", "json")
         self.print_summary = self.visualization_settings.get("print_summary", True)
         self.report_params = self.visualization_settings.get("report_params", True)
-        self.report_filename_pattern = self.visualization_settings.get("report_filename_pattern", None)
-        self.include_plots_in_report = self.visualization_settings.get("include_plots_in_report", True)
+        self.report_filename_pattern = self.visualization_settings.get(
+            "report_filename_pattern", None
+        )
+        self.include_plots_in_report = self.visualization_settings.get(
+            "include_plots_in_report", True
+        )
         plt.rcParams["figure.figsize"] = self.plot_size
         plt.rcParams["font.size"] = self.font_size
         # Read search space from config and convert to skopt space objects
@@ -122,21 +128,35 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
             if use_talib:
                 # TA-Lib indicators
                 # RSI
-                rsi = talib.RSI(data_df["close"].values, timeperiod=params["rsi_period"])
+                rsi = talib.RSI(
+                    data_df["close"].values, timeperiod=params["rsi_period"]
+                )
 
                 # Volume MA
-                vol_ma = talib.SMA(data_df["volume"].values, timeperiod=params["vol_ma_period"])
+                vol_ma = talib.SMA(
+                    data_df["volume"].values, timeperiod=params["vol_ma_period"]
+                )
             else:
                 # Pandas calculations
                 # RSI
                 delta = data_df["close"].diff()
-                gain = (delta.where(delta > 0, 0)).rolling(window=params["rsi_period"]).mean()
-                loss = (-delta.where(delta < 0, 0)).rolling(window=params["rsi_period"]).mean()
+                gain = (
+                    (delta.where(delta > 0, 0))
+                    .rolling(window=params["rsi_period"])
+                    .mean()
+                )
+                loss = (
+                    (-delta.where(delta < 0, 0))
+                    .rolling(window=params["rsi_period"])
+                    .mean()
+                )
                 rs = gain / loss
                 rsi = 100 - (100 / (1 + rs))
 
                 # Volume MA
-                vol_ma = data_df["volume"].rolling(window=params["vol_ma_period"]).mean()
+                vol_ma = (
+                    data_df["volume"].rolling(window=params["vol_ma_period"]).mean()
+                )
 
             # Calculate Ichimoku Cloud components
             # Conversion Line (Tenkan-sen)
@@ -158,11 +178,37 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
             senkou_span_b = ((period52_high + period52_low) / 2).shift(26)
 
             # Plot price and Ichimoku Cloud
-            ax1.plot(data_df.index, data_df["close"], label="Price", color="white", linewidth=2)
-            ax1.plot(data_df.index, tenkan_sen, label="Tenkan-sen (9)", color="yellow", alpha=0.7)
-            ax1.plot(data_df.index, kijun_sen, label="Kijun-sen (26)", color="red", alpha=0.7)
-            ax1.plot(data_df.index, senkou_span_a, label="Senkou Span A", color="green", alpha=0.7)
-            ax1.plot(data_df.index, senkou_span_b, label="Senkou Span B", color="red", alpha=0.7)
+            ax1.plot(
+                data_df.index,
+                data_df["close"],
+                label="Price",
+                color="white",
+                linewidth=2,
+            )
+            ax1.plot(
+                data_df.index,
+                tenkan_sen,
+                label="Tenkan-sen (9)",
+                color="yellow",
+                alpha=0.7,
+            )
+            ax1.plot(
+                data_df.index, kijun_sen, label="Kijun-sen (26)", color="red", alpha=0.7
+            )
+            ax1.plot(
+                data_df.index,
+                senkou_span_a,
+                label="Senkou Span A",
+                color="green",
+                alpha=0.7,
+            )
+            ax1.plot(
+                data_df.index,
+                senkou_span_b,
+                label="Senkou Span B",
+                color="red",
+                alpha=0.7,
+            )
 
             # Fill the cloud
             ax1.fill_between(
@@ -211,8 +257,12 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
                 color="cyan",
                 linewidth=2,
             )
-            ax2.axhline(y=params["rsi_overbought"], color="red", linestyle="--", alpha=0.5)
-            ax2.axhline(y=params["rsi_oversold"], color="green", linestyle="--", alpha=0.5)
+            ax2.axhline(
+                y=params["rsi_overbought"], color="red", linestyle="--", alpha=0.5
+            )
+            ax2.axhline(
+                y=params["rsi_oversold"], color="green", linestyle="--", alpha=0.5
+            )
             ax2.fill_between(
                 data_df.index, params["rsi_overbought"], 100, color="red", alpha=0.1
             )
@@ -221,7 +271,13 @@ class IchimokuRsiVolumeOptimizer(BaseOptimizer):
             )
 
             # Plot volume
-            ax3.bar(data_df.index, data_df["volume"], label="Volume", color="blue", alpha=0.7)
+            ax3.bar(
+                data_df.index,
+                data_df["volume"],
+                label="Volume",
+                color="blue",
+                alpha=0.7,
+            )
             ax3.plot(
                 data_df.index,
                 vol_ma,

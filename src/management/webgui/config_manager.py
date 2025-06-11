@@ -138,10 +138,10 @@ class ConfigManager:
     def save_config(self, config: dict) -> bool:
         """
         Save configuration to a file.
-        
+
         Args:
             config: Configuration dictionary to save
-            
+
         Returns:
             bool: True if save was successful, False otherwise
         """
@@ -151,13 +151,13 @@ class ConfigManager:
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 backup_file = f"{self.config_file}.{timestamp}.bak"
                 shutil.copy2(self.config_file, backup_file)
-            
+
             # Save new config
-            with open(self.config_file, 'w') as f:
+            with open(self.config_file, "w") as f:
                 json.dump(config, f, indent=4)
-            
+
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Error saving config: {str(e)}")
             return False
