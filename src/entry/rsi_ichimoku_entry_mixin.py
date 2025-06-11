@@ -1,3 +1,25 @@
+"""
+RSI and Ichimoku Cloud Entry Mixin
+
+This module implements an entry strategy based on the combination of Relative Strength Index (RSI)
+and Ichimoku Cloud indicators. The strategy enters a position when:
+1. RSI is in the oversold zone (below the configured threshold)
+2. Price is below the Ichimoku Cloud (bearish cloud)
+3. Price crosses above the Tenkan-sen (Conversion Line)
+
+Parameters:
+    rsi_period (int): Period for RSI calculation (default: 14)
+    rsi_oversold (float): RSI threshold for oversold condition (default: 30)
+    ichimoku_tenkan (int): Period for Tenkan-sen calculation (default: 9)
+    ichimoku_kijun (int): Period for Kijun-sen calculation (default: 26)
+    ichimoku_senkou_span_b (int): Period for Senkou Span B calculation (default: 52)
+    ichimoku_displacement (int): Displacement for Ichimoku Cloud (default: 26)
+
+This strategy combines mean reversion (RSI) with trend following (Ichimoku) to identify potential
+reversal points in the market. It's particularly effective in trending markets where you want to
+catch the beginning of a new trend after a pullback.
+"""
+
 from typing import Any, Dict
 
 import backtrader as bt
@@ -27,15 +49,40 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         Whether to use TA-Lib for indicator calculations (default: False)
     """
 
+    # Define default values as class constants
+    DEFAULT_RSI_PERIOD = 14
+    DEFAULT_RSI_OVERSOLD = 30
+    DEFAULT_TENKAN_PERIOD = 9
+    DEFAULT_KIJUN_PERIOD = 26
+    DEFAULT_SENKOU_SPAN_B_PERIOD = 52
+    DEFAULT_DISPLACEMENT = 26
+    DEFAULT_USE_TALIB = False
+
     def __init__(self, params: Dict[str, Any]):
         super().__init__(params)
-        self.rsi_period = params.get("rsi_period", 14)
-        self.rsi_oversold = params.get("rsi_oversold", 30)
-        self.tenkan_period = params.get("tenkan_period", 9)
-        self.kijun_period = params.get("kijun_period", 26)
-        self.senkou_span_b_period = params.get("senkou_span_b_period", 52)
-        self.displacement = params.get("displacement", 26)
-        self.use_talib = params.get("use_talib", False)
+        self.rsi_period = params.get("rsi_period", self.DEFAULT_RSI_PERIOD)
+        self.rsi_oversold = params.get("rsi_oversold", self.DEFAULT_RSI_OVERSOLD)
+        self.tenkan_period = params.get("tenkan_period", self.DEFAULT_TENKAN_PERIOD)
+        self.kijun_period = params.get("kijun_period", self.DEFAULT_KIJUN_PERIOD)
+        self.senkou_span_b_period = params.get("senkou_span_b_period", self.DEFAULT_SENKOU_SPAN_B_PERIOD)
+        self.displacement = params.get("displacement", self.DEFAULT_DISPLACEMENT)
+        self.use_talib = params.get("use_talib", self.DEFAULT_USE_TALIB)
+
+    def get_required_params(self) -> list:
+        """There are no required parameters - all have default values"""
+        return []
+
+    def get_default_params(self) -> Dict[str, Any]:
+        """Default parameters"""
+        return {
+            "rsi_period": self.DEFAULT_RSI_PERIOD,
+            "rsi_oversold": self.DEFAULT_RSI_OVERSOLD,
+            "tenkan_period": self.DEFAULT_TENKAN_PERIOD,
+            "kijun_period": self.DEFAULT_KIJUN_PERIOD,
+            "senkou_span_b_period": self.DEFAULT_SENKOU_SPAN_B_PERIOD,
+            "displacement": self.DEFAULT_DISPLACEMENT,
+            "use_talib": self.DEFAULT_USE_TALIB,
+        }
 
     def _init_indicators(self):
         """Initialize indicators"""
@@ -47,10 +94,8 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
                 self.strategy.data.close, talib.RSI, period=self.rsi_period
             )
 
-            # Create Ichimoku Cloud using TA-Lib
-            # Note: TA-Lib doesn't have a direct Ichimoku implementation,
-            # so we'll use Backtrader's implementation for the cloud
-            self.ichimoku = bt.indicators.Ichimoku(
+            # Create Ichimoku Cloud indicator
+            self.ichimoku = bt.indicators.IchimokuCloud(
                 self.strategy.data,
                 tenkan_period=self.tenkan_period,
                 kijun_period=self.kijun_period,
@@ -63,8 +108,8 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
                 self.strategy.data.close, period=self.rsi_period
             )
 
-            # Create Ichimoku Cloud using Backtrader
-            self.ichimoku = bt.indicators.Ichimoku(
+            # Create Ichimoku Cloud indicator
+            self.ichimoku = bt.indicators.IchimokuCloud(
                 self.strategy.data,
                 tenkan_period=self.tenkan_period,
                 kijun_period=self.kijun_period,

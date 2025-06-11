@@ -39,10 +39,16 @@ class ATRExitMixin(BaseExitMixin):
         Whether to use TA-Lib for indicator calculations (default: False)
     """
 
+    # Define default values as class constants
+    DEFAULT_ATR_PERIOD = 14
+    DEFAULT_ATR_MULTIPLIER = 2.0
+    DEFAULT_STOP_LOSS_RATIO = 0.02
+    
     def __init__(self, params: Dict[str, Any]):
         super().__init__(params)
-        self.atr_period = params.get("atr_period", 14)
-        self.atr_multiplier = params.get("atr_multiplier", 2.0)
+        self.atr_period = params.get("atr_period", self.DEFAULT_ATR_PERIOD)
+        self.atr_multiplier = params.get("atr_multiplier", self.DEFAULT_ATR_MULTIPLIER)
+        self.stop_loss_ratio = params.get("stop_loss_ratio", self.DEFAULT_STOP_LOSS_RATIO)
         self.use_talib = params.get("use_talib", False)
 
     def get_required_params(self) -> list:
@@ -52,9 +58,10 @@ class ATRExitMixin(BaseExitMixin):
     def get_default_params(self) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "atr_period": self.atr_period,
-            "atr_multiplier": self.atr_multiplier,
-            "use_talib": self.use_talib,
+            "atr_period": self.DEFAULT_ATR_PERIOD,
+            "atr_multiplier": self.DEFAULT_ATR_MULTIPLIER, 
+            "stop_loss_ratio": self.DEFAULT_STOP_LOSS_RATIO,
+            # Add other default parameters as needed
         }
 
     def _init_indicators(self):

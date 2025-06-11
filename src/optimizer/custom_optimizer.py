@@ -135,26 +135,22 @@ class CustomOptimizer:
 
         # Add analyzers
         cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")
-        cerebro.addanalyzer(
-            bt.analyzers.SharpeRatio, _name="sharpe", riskfreerate=self.risk_free_rate
-        )
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
-        cerebro.addanalyzer(
-            bt.analyzers.TradeAnalyzer, _name="trades", _openinterest=False
-        )
         cerebro.addanalyzer(bt.analyzers.SQN, _name="sqn")
         cerebro.addanalyzer(bt.analyzers.TimeDrawDown, _name="time_drawdown")
         cerebro.addanalyzer(bt.analyzers.TimeReturn, _name="time_return")
         cerebro.addanalyzer(bt.analyzers.VWR, _name="vwr")
+        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trades")
+        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe", riskfreerate=self.risk_free_rate)
 
         # Add custom analyzers
-        cerebro.addanalyzer(CalmarRatio, riskfreerate=self.risk_free_rate)
-        cerebro.addanalyzer(CAGR, timeframe=bt.TimeFrame.Years)
-        cerebro.addanalyzer(SortinoRatio, riskfreerate=self.risk_free_rate)
-        cerebro.addanalyzer(ProfitFactor)
-        cerebro.addanalyzer(WinRate)
-        cerebro.addanalyzer(ConsecutiveWinsLosses, _openinterest=False)
-        cerebro.addanalyzer(PortfolioVolatility, _openinterest=False)
+        cerebro.addanalyzer(ProfitFactor, _name="profit_factor")
+        cerebro.addanalyzer(WinRate, _name="winrate")
+        cerebro.addanalyzer(CalmarRatio, _name="calmar", riskfreerate=self.risk_free_rate)
+        cerebro.addanalyzer(CAGR, _name="cagr", timeframe=bt.TimeFrame.Years)
+        cerebro.addanalyzer(SortinoRatio, _name="sortino", riskfreerate=self.risk_free_rate)
+        cerebro.addanalyzer(ConsecutiveWinsLosses, _name="consecutivewinslosses")
+        cerebro.addanalyzer(PortfolioVolatility, _name="portfoliovolatility")
 
         # Run backtest
         results = cerebro.run()

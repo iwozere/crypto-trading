@@ -29,6 +29,15 @@ from src.exit.exit_mixin import BaseExitMixin
 class MACrossoverExitMixin(BaseExitMixin):
     """Exit mixin based on price crossing below moving average"""
 
+    # Define default values as class constants
+    DEFAULT_MA_PERIOD = 20
+    DEFAULT_MA_TYPE = "sma"
+
+    def __init__(self, params: Dict[str, Any]):
+        super().__init__(params)
+        self.ma_period = params.get("ma_period", self.DEFAULT_MA_PERIOD)
+        self.ma_type = params.get("ma_type", self.DEFAULT_MA_TYPE)
+
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
         return []
@@ -36,8 +45,8 @@ class MACrossoverExitMixin(BaseExitMixin):
     def get_default_params(self) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "ma_period": 20,  # Period for Simple Moving Average
-            "ma_type": "sma",  # Type of moving average (sma, ema, etc.)
+            "ma_period": self.DEFAULT_MA_PERIOD,
+            "ma_type": self.DEFAULT_MA_TYPE,
         }
 
     def _init_indicators(self):
@@ -46,14 +55,14 @@ class MACrossoverExitMixin(BaseExitMixin):
             raise ValueError("Strategy must be set before initializing indicators")
 
         # Create MA indicator with parameters from configuration
-        ma_type = self.get_param("ma_type").lower()
+        ma_type = self.ma_type.lower()
         if ma_type == "sma":
             self.indicators["ma"] = bt.indicators.SMA(
-                self.strategy.data.close, period=self.get_param("ma_period")
+                self.strategy.data.close, period=self.ma_period
             )
         elif ma_type == "ema":
             self.indicators["ma"] = bt.indicators.EMA(
-                self.strategy.data.close, period=self.get_param("ma_period")
+                self.strategy.data.close, period=self.ma_period
             )
         else:
             raise ValueError(f"Unsupported MA type: {ma_type}")

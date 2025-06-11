@@ -27,7 +27,16 @@ from src.exit.exit_mixin import BaseExitMixin
 
 
 class FixedRatioExitMixin(BaseExitMixin):
-    """Exit mixin на основе фиксированного соотношения прибыли/убытка"""
+    """Exit mixin based on fixed ratio take profit and stop loss"""
+
+    # Define default values as class constants
+    DEFAULT_TAKE_PROFIT = 0.02  # 2% take profit
+    DEFAULT_STOP_LOSS = 0.01    # 1% stop loss
+
+    def __init__(self, params: Dict[str, Any]):
+        super().__init__(params)
+        self.take_profit = params.get("take_profit", self.DEFAULT_TAKE_PROFIT)
+        self.stop_loss = params.get("stop_loss", self.DEFAULT_STOP_LOSS)
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -36,8 +45,8 @@ class FixedRatioExitMixin(BaseExitMixin):
     def get_default_params(self) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "take_profit": 0.02,  # 2% take profit
-            "stop_loss": 0.01,  # 1% stop loss
+            "take_profit": self.DEFAULT_TAKE_PROFIT,
+            "stop_loss": self.DEFAULT_STOP_LOSS,
         }
 
     def _init_indicators(self):
@@ -59,6 +68,4 @@ class FixedRatioExitMixin(BaseExitMixin):
         pnl_pct = (price - entry_price) / entry_price
 
         # Exit if take profit or stop loss is hit
-        return pnl_pct >= self.get_param("take_profit") or pnl_pct <= -self.get_param(
-            "stop_loss"
-        )
+        return pnl_pct >= self.take_profit or pnl_pct <= -self.stop_loss

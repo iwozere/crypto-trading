@@ -24,7 +24,16 @@ from src.exit.exit_mixin import BaseExitMixin
 
 
 class TimeBasedExitMixin(BaseExitMixin):
-    """Exit mixin на основе временного периода"""
+    """Exit mixin based on time period"""
+
+    # Define default values as class constants
+    DEFAULT_TIME_PERIOD = 10
+    DEFAULT_USE_CALENDAR_DAYS = False
+
+    def __init__(self, params: Dict[str, Any]):
+        super().__init__(params)
+        self.time_period = params.get("time_period", self.DEFAULT_TIME_PERIOD)
+        self.use_calendar_days = params.get("use_calendar_days", self.DEFAULT_USE_CALENDAR_DAYS)
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -33,8 +42,8 @@ class TimeBasedExitMixin(BaseExitMixin):
     def get_default_params(self) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "time_period": 10,  # Number of bars to hold position
-            "use_calendar_days": False,  # Whether to use calendar days instead of bars
+            "time_period": self.DEFAULT_TIME_PERIOD,
+            "use_calendar_days": self.DEFAULT_USE_CALENDAR_DAYS,
         }
 
     def _init_indicators(self):
@@ -53,11 +62,11 @@ class TimeBasedExitMixin(BaseExitMixin):
             self.entry_bar = len(strategy)
 
         # Calculate elapsed time
-        if self.get_param("use_calendar_days"):
+        if self.use_calendar_days:
             # TODO: Implement calendar days calculation if needed
             elapsed = len(strategy) - self.entry_bar
         else:
             elapsed = len(strategy) - self.entry_bar
 
         # Exit if time period has elapsed
-        return elapsed >= self.get_param("time_period")
+        return elapsed >= self.time_period

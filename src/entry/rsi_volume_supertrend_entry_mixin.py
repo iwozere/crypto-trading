@@ -1,3 +1,26 @@
+"""
+RSI, Volume and SuperTrend Entry Mixin
+
+This module implements an entry strategy based on the combination of Relative Strength Index (RSI),
+Volume, and SuperTrend indicators. The strategy enters a position when:
+1. RSI is in the oversold zone (below the configured threshold)
+2. Volume is above its moving average by the specified multiplier
+3. Price is above the SuperTrend indicator (indicating bullish trend)
+
+Parameters:
+    rsi_period (int): Period for RSI calculation (default: 14)
+    rsi_oversold (float): RSI threshold for oversold condition (default: 30)
+    volume_ma_period (int): Period for Volume Moving Average (default: 20)
+    volume_threshold (float): Volume threshold multiplier (default: 1.5)
+    supertrend_period (int): Period for SuperTrend calculation (default: 10)
+    supertrend_multiplier (float): Multiplier for SuperTrend ATR (default: 3.0)
+    use_talib (bool): Whether to use TA-Lib for indicator calculations (default: False)
+
+This strategy combines mean reversion (RSI), volume confirmation, and trend following (SuperTrend)
+to identify potential entry points. It's particularly effective in trending markets where you want
+to enter on pullbacks with strong volume confirmation.
+"""
+
 from typing import Any, Dict
 
 import backtrader as bt
@@ -27,15 +50,40 @@ class RSIVolumeSuperTrendEntryMixin(BaseEntryMixin):
         Whether to use TA-Lib for indicator calculations (default: False)
     """
 
+    # Define default values as class constants
+    DEFAULT_RSI_PERIOD = 14
+    DEFAULT_RSI_OVERSOLD = 30
+    DEFAULT_VOLUME_MA_PERIOD = 20
+    DEFAULT_VOLUME_THRESHOLD = 1.5
+    DEFAULT_SUPERTREND_PERIOD = 10
+    DEFAULT_SUPERTREND_MULTIPLIER = 3.0
+    DEFAULT_USE_TALIB = False
+
     def __init__(self, params: Dict[str, Any]):
         super().__init__(params)
-        self.rsi_period = params.get("rsi_period", 14)
-        self.rsi_oversold = params.get("rsi_oversold", 30)
-        self.volume_ma_period = params.get("volume_ma_period", 20)
-        self.volume_threshold = params.get("volume_threshold", 1.5)
-        self.supertrend_period = params.get("supertrend_period", 10)
-        self.supertrend_multiplier = params.get("supertrend_multiplier", 3.0)
-        self.use_talib = params.get("use_talib", False)
+        self.rsi_period = params.get("rsi_period", self.DEFAULT_RSI_PERIOD)
+        self.rsi_oversold = params.get("rsi_oversold", self.DEFAULT_RSI_OVERSOLD)
+        self.volume_ma_period = params.get("volume_ma_period", self.DEFAULT_VOLUME_MA_PERIOD)
+        self.volume_threshold = params.get("volume_threshold", self.DEFAULT_VOLUME_THRESHOLD)
+        self.supertrend_period = params.get("supertrend_period", self.DEFAULT_SUPERTREND_PERIOD)
+        self.supertrend_multiplier = params.get("supertrend_multiplier", self.DEFAULT_SUPERTREND_MULTIPLIER)
+        self.use_talib = params.get("use_talib", self.DEFAULT_USE_TALIB)
+
+    def get_required_params(self) -> list:
+        """There are no required parameters - all have default values"""
+        return []
+
+    def get_default_params(self) -> Dict[str, Any]:
+        """Default parameters"""
+        return {
+            "rsi_period": self.DEFAULT_RSI_PERIOD,
+            "rsi_oversold": self.DEFAULT_RSI_OVERSOLD,
+            "volume_ma_period": self.DEFAULT_VOLUME_MA_PERIOD,
+            "volume_threshold": self.DEFAULT_VOLUME_THRESHOLD,
+            "supertrend_period": self.DEFAULT_SUPERTREND_PERIOD,
+            "supertrend_multiplier": self.DEFAULT_SUPERTREND_MULTIPLIER,
+            "use_talib": self.DEFAULT_USE_TALIB,
+        }
 
     def _init_indicators(self):
         """Initialize indicators"""
@@ -72,17 +120,7 @@ class RSIVolumeSuperTrendEntryMixin(BaseEntryMixin):
                 self.strategy.data, period=self.supertrend_period
             )
 
-        # Calculate SuperTrend
-        self._calculate_supertrend()
-
-    def _calculate_supertrend(self):
-        """Calculate SuperTrend indicator"""
-        # Calculate basic upper and lower bands
-        hl2 = (self.strategy.data.high + self.strategy.data.low) / 2
-        basic_upper = hl2 + (self.supertrend_multiplier * self.atr)
-        basic_lower = hl2 - (self.supertrend_multiplier * self.atr)
-
-        # Initialize SuperTrend arrays
+        # Create SuperTrend indicator
         self.supertrend = bt.indicators.SuperTrend(
             self.strategy.data,
             period=self.supertrend_period,
