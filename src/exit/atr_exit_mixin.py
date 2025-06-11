@@ -1,7 +1,7 @@
-from src.exit.exit_mixin import ExitLogicMixin
+from src.exit.exit_mixin import BaseExitMixin
 import backtrader as bt
 
-class ATRExitMixin(ExitLogicMixin):
+class ATRExitMixin(BaseExitMixin):
     def init_exit(self, strategy, params):
         self.strategy = strategy
         self.atr_period = params.get('atr_period', 14)

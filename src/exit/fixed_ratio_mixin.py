@@ -1,6 +1,6 @@
-from src.exit.exit_mixin import ExitLogicMixin
+from src.exit.exit_mixin import BaseExitMixin
 
-class FixedRatioExitMixin(ExitLogicMixin):
+class FixedRatioExitMixin(BaseExitMixin):
     def init_exit(self, strategy, params):
         self.strategy = strategy
         self.take_profit = params.get('take_profit', 0.02)

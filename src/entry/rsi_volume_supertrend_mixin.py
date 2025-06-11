@@ -1,23 +1,63 @@
-from src.entry.entry_mixin import EntryLogicMixin
-import backtrader as bt
+from typing import Dict, Any
+from src.entry.entry_mixin import BaseEntryMixin
 
-class RSIVolumeSuperTrendMixin(EntryLogicMixin):
-    def init_entry(self, strategy, params):
-        self.strategy = strategy
-        self.rsi_period = params.get('rsi_period', 14)
-        self.rsi_oversold = params.get('rsi_oversold', 30)
-        self.vol_ma_period = params.get('vol_ma_period', 20)
-        self.st_period = params.get('st_period', 10)
-        self.st_multiplier = params.get('st_multiplier', 3.0)
+class RSIVolumeSuperTrendEntryMixin(BaseEntryMixin):
+    """Entry mixin на основе RSI, Volume и SuperTrend"""
+    
+    def get_required_params(self) -> list:
+        """There are no required parameters - all have default values"""
+        return []
+    
+    def get_default_params(self) -> Dict[str, Any]:
+        """Default parameters"""
+        return {
+            'rsi_period': 14,
+            'rsi_oversold': 30,
+            'vol_ma_period': 20,
+            'st_period': 10,
+            'st_multiplier': 3.0,
+            'min_volume_multiplier': 1.0  # Minimum volume multiplier compared to MA
+        }
+    
+    def _init_indicators(self):
+        """Initialization of RSI, Volume and SuperTrend indicators"""
+        if self.strategy is None:
+            raise ValueError("Strategy must be set before initializing indicators")
         
-        self.rsi = bt.indicators.RSI(period=self.rsi_period)
-        self.vol_ma = bt.indicators.SMA(self.strategy.data.volume, period=self.vol_ma_period)
-        self.supertrend = bt.indicators.SuperTrend(period=self.st_period, multiplier=self.st_multiplier)
-
-    def should_enter(self):
-        if self.strategy.position:
+        # Create indicators with parameters from configuration
+        self.indicators['rsi'] = self.strategy.data.rsi(
+            period=self.get_param('rsi_period')
+        )
+        self.indicators['vol_ma'] = self.strategy.data.sma(
+            self.strategy.data.volume,
+            period=self.get_param('vol_ma_period')
+        )
+        self.indicators['supertrend'] = self.strategy.data.supertrend(
+            period=self.get_param('st_period'),
+            multiplier=self.get_param('st_multiplier')
+        )
+    
+    def should_enter(self, strategy) -> bool:
+        """
+        Entry logic: RSI in oversold zone, volume above MA,
+        and price above SuperTrend
+        """
+        if not self.indicators:
             return False
-            
-        return (self.rsi[0] < self.rsi_oversold and
-                self.strategy.data.volume[0] > self.vol_ma[0] and
-                self.supertrend[0] < self.strategy.data.close[0]) 
+        
+        rsi = self.indicators['rsi'][0]
+        current_price = strategy.data.close[0]
+        current_volume = strategy.data.volume[0]
+        vol_ma = self.indicators['vol_ma'][0]
+        supertrend = self.indicators['supertrend'][0]
+        
+        # Check RSI
+        rsi_oversold = rsi < self.get_param('rsi_oversold')
+        
+        # Check volume
+        volume_ok = current_volume >= vol_ma * self.get_param('min_volume_multiplier')
+        
+        # Check SuperTrend
+        supertrend_condition = supertrend < current_price
+        
+        return rsi_oversold and volume_ok and supertrend_condition 

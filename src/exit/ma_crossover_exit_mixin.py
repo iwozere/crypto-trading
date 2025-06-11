@@ -1,7 +1,7 @@
-from src.exit.exit_mixin import ExitLogicMixin
+from src.exit.exit_mixin import BaseExitMixin
 import backtrader as bt
 
-class MACrossoverExitMixin(ExitLogicMixin):
+class MACrossoverExitMixin(BaseExitMixin):
     def init_exit(self, strategy, params):
         self.strategy = strategy
         self.ma_period = params.get('ma_period', 20)

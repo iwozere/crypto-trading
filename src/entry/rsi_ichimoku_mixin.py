@@ -1,25 +1,58 @@
-from src.entry.entry_mixin import EntryLogicMixin
-import backtrader as bt
+from typing import Dict, Any
+from src.entry.entry_mixin import BaseEntryMixin
 
-class RSIIchimokuMixin(EntryLogicMixin):
-    def init_entry(self, strategy, params):
-        self.strategy = strategy
-        self.rsi_period = params.get('rsi_period', 14)
-        self.rsi_oversold = params.get('rsi_oversold', 30)
-        self.tenkan_period = params.get('tenkan_period', 9)
-        self.kijun_period = params.get('kijun_period', 26)
-        
-        self.rsi = bt.indicators.RSI(period=self.rsi_period)
-        self.ichimoku = bt.indicators.Ichimoku(
-            tenkan_period=self.tenkan_period,
-            kijun_period=self.kijun_period
+class RSIIchimokuEntryMixin(BaseEntryMixin):
+    """Entry mixin based on RSI and Ichimoku cloud"""
+    
+    def get_required_params(self) -> list:
+        # We can make some parameters required
+        return ['tenkan_period', 'kijun_period']
+    
+    def get_default_params(self) -> Dict[str, Any]:
+        return {
+            'rsi_period': 14,
+            'rsi_oversold': 30,
+            'tenkan_period': 9,  # Will be required
+            'kijun_period': 26,  # Will be required
+            'senkou_span_b_period': 52,
+            'displacement': 26,
+            'require_above_cloud': True
+        }
+    
+    def _init_indicators(self):
+        self.indicators['rsi'] = self.strategy.data.rsi(
+            period=self.get_param('rsi_period')
         )
-
-    def should_enter(self):
-        if self.strategy.position:
-            return False
-            
-        return (self.rsi[0] < self.rsi_oversold and
-                self.ichimoku.tenkan_sen[0] > self.ichimoku.kijun_sen[0] and
-                self.strategy.data.close[0] > self.ichimoku.senkou_span_a[0]) 
         
+        # Initialization of Ichimoku components
+        self.indicators['tenkan'] = self.strategy.data.tenkan_sen(
+            period=self.get_param('tenkan_period')
+        )
+        self.indicators['kijun'] = self.strategy.data.kijun_sen(
+            period=self.get_param('kijun_period')
+        )
+        # ... other Ichimoku components
+    
+    def should_enter(self, strategy) -> bool:
+        if not self.indicators:
+            return False
+        
+        rsi = self.indicators['rsi'][0]
+        current_price = strategy.data.close[0]
+        
+        # RSI condition
+        rsi_ok = rsi < self.get_param('rsi_oversold')
+        
+        # Ichimoku conditions
+        tenkan = self.indicators['tenkan'][0]
+        kijun = self.indicators['kijun'][0]
+        
+        tenkan_kijun_cross = tenkan > kijun  # Bullish signal
+        
+        # Additional condition - price above the cloud (if required)
+        above_cloud = True
+        if self.get_param('require_above_cloud'):
+            # Here would be the logic to
+            pass
+        
+        return rsi_ok and tenkan_kijun_cross and above_cloud

@@ -1,6 +1,6 @@
-from src.exit.exit_mixin import ExitLogicMixin
+from src.exit.exit_mixin import BaseExitMixin
 
-class TrailingStopExitMixin(ExitLogicMixin):
+class TrailingStopExitMixin(BaseExitMixin):
     def init_exit(self, params, strategy):
         self.strategy = strategy
         self.trail_pct = params.get('trail_pct', 0.02)
