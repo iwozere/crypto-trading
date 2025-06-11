@@ -1,3 +1,25 @@
+"""
+RSI and Ichimoku Cloud Entry Mixin
+
+This module implements an entry strategy based on the combination of Relative Strength Index (RSI)
+and Ichimoku Cloud indicators. The strategy enters a position when:
+1. RSI is in the oversold zone (below the configured threshold)
+2. Price is below the Ichimoku Cloud (bearish cloud)
+3. Price crosses above the Tenkan-sen (Conversion Line)
+
+Parameters:
+    rsi_period (int): Period for RSI calculation (default: 14)
+    rsi_oversold (float): RSI threshold for oversold condition (default: 30)
+    ichimoku_tenkan (int): Period for Tenkan-sen calculation (default: 9)
+    ichimoku_kijun (int): Period for Kijun-sen calculation (default: 26)
+    ichimoku_senkou_span_b (int): Period for Senkou Span B calculation (default: 52)
+    ichimoku_displacement (int): Displacement for Ichimoku Cloud (default: 26)
+
+This strategy combines mean reversion (RSI) with trend following (Ichimoku) to identify potential
+reversal points in the market. It's particularly effective in trending markets where you want to
+catch the beginning of a new trend after a pullback.
+"""
+
 from typing import Dict, Any
 from src.entry.entry_mixin import BaseEntryMixin
 

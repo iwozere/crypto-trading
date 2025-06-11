@@ -1,3 +1,26 @@
+"""
+Bollinger Bands, Volume and SuperTrend Entry Mixin
+
+This module implements an entry strategy based on the combination of Bollinger Bands,
+Volume, and SuperTrend indicators. The strategy enters a position when:
+1. Price touches or crosses below the lower Bollinger Band
+2. Volume is above its moving average by the specified multiplier
+3. Price is above the SuperTrend indicator (indicating bullish trend)
+
+Parameters:
+    bb_period (int): Period for Bollinger Bands calculation (default: 20)
+    bb_stddev (float): Standard deviation multiplier for Bollinger Bands (default: 2.0)
+    vol_ma_period (int): Period for Volume Moving Average (default: 20)
+    st_period (int): Period for SuperTrend calculation (default: 10)
+    st_multiplier (float): Multiplier for SuperTrend ATR calculation (default: 3.0)
+    use_bb_touch (bool): Whether to require price touching the lower band (default: True)
+    min_volume_multiplier (float): Minimum volume multiplier compared to MA (default: 1.0)
+
+This strategy combines mean reversion (Bollinger Bands), volume confirmation, and trend following
+(SuperTrend) to identify potential entry points. It's particularly effective in ranging markets
+where you want to enter on oversold conditions with strong volume confirmation and trend support.
+"""
+
 from typing import Dict, Any
 from src.entry.entry_mixin import BaseEntryMixin
 

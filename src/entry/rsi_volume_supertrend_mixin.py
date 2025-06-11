@@ -1,3 +1,25 @@
+"""
+RSI, Volume and SuperTrend Entry Mixin
+
+This module implements an entry strategy based on the combination of Relative Strength Index (RSI),
+Volume, and SuperTrend indicators. The strategy enters a position when:
+1. RSI is in the oversold zone (below the configured threshold)
+2. Volume is above its moving average by the specified multiplier
+3. Price is above the SuperTrend indicator (indicating bullish trend)
+
+Parameters:
+    rsi_period (int): Period for RSI calculation (default: 14)
+    rsi_oversold (float): RSI threshold for oversold condition (default: 30)
+    vol_ma_period (int): Period for Volume Moving Average (default: 20)
+    st_period (int): Period for SuperTrend calculation (default: 10)
+    st_multiplier (float): Multiplier for SuperTrend ATR calculation (default: 3.0)
+    min_volume_multiplier (float): Minimum volume multiplier compared to MA (default: 1.0)
+
+This strategy combines mean reversion (RSI), volume confirmation, and trend following (SuperTrend)
+to identify potential entry points. It's particularly effective in trending markets where you want
+to enter on pullbacks with strong volume confirmation.
+"""
+
 from typing import Dict, Any
 from src.entry.entry_mixin import BaseEntryMixin
 

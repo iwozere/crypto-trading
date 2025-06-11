@@ -1,3 +1,25 @@
+"""
+RSI, Bollinger Bands and Volume Entry Mixin
+
+This module implements an entry strategy based on the combination of Relative Strength Index (RSI),
+Bollinger Bands, and Volume indicators. The strategy enters a position when:
+1. RSI is in the oversold zone (below the configured threshold)
+2. Price touches or crosses below the lower Bollinger Band
+3. Volume is above its moving average by the specified multiplier
+
+Parameters:
+    rsi_period (int): Period for RSI calculation (default: 14)
+    rsi_oversold (float): RSI threshold for oversold condition (default: 30)
+    bb_period (int): Period for Bollinger Bands calculation (default: 20)
+    bb_stddev (float): Standard deviation multiplier for Bollinger Bands (default: 2.0)
+    vol_ma_period (int): Period for Volume Moving Average (default: 20)
+    use_bb_touch (bool): Whether to require price touching the lower band (default: True)
+    min_volume_multiplier (float): Minimum volume multiplier compared to MA (default: 1.0)
+
+This strategy adds volume confirmation to the RSI and Bollinger Bands strategy, making it more
+robust by ensuring there is sufficient market participation for the potential reversal.
+"""
+
 from typing import Dict, Any
 from src.entry.entry_mixin import BaseEntryMixin
 

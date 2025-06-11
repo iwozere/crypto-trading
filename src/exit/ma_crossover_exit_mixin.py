@@ -1,16 +1,70 @@
+"""
+Moving Average Crossover Exit Mixin
+
+This module implements an exit strategy based on price crossing below a moving average.
+The strategy exits when:
+1. Price crosses below the specified moving average
+2. The moving average can be either Simple (SMA) or Exponential (EMA)
+
+Parameters:
+    ma_period (int): Period for moving average calculation (default: 20)
+    ma_type (str): Type of moving average ('sma' or 'ema') (default: 'sma')
+
+This strategy is particularly effective for:
+1. Trend following systems
+2. Exiting when trend momentum weakens
+3. Protecting profits in trending markets
+4. Adapting to different market conditions by using different MA types
+
+The strategy can be used as a standalone exit or combined with other exit strategies
+for more robust position management.
+"""
+
+from typing import Dict, Any
 from src.exit.exit_mixin import BaseExitMixin
 import backtrader as bt
 
 class MACrossoverExitMixin(BaseExitMixin):
-    def init_exit(self, strategy, params):
-        self.strategy = strategy
-        self.ma_period = params.get('ma_period', 20)
+    """Exit mixin на основе пересечения цены и скользящей средней"""
+    
+    def get_required_params(self) -> list:
+        """There are no required parameters - all have default values"""
+        return []
+    
+    def get_default_params(self) -> Dict[str, Any]:
+        """Default parameters"""
+        return {
+            'ma_period': 20,  # Period for Simple Moving Average
+            'ma_type': 'sma'  # Type of moving average (sma, ema, etc.)
+        }
+    
+    def _init_indicators(self):
+        """Initialization of Moving Average indicator"""
+        if self.strategy is None:
+            raise ValueError("Strategy must be set before initializing indicators")
         
-        self.ma = bt.indicators.SMA(self.strategy.data.close, period=self.ma_period)
-
-    def should_exit(self):
-        if not self.strategy.position:
+        # Create MA indicator with parameters from configuration
+        ma_type = self.get_param('ma_type').lower()
+        if ma_type == 'sma':
+            self.indicators['ma'] = self.strategy.data.sma(
+                period=self.get_param('ma_period')
+            )
+        elif ma_type == 'ema':
+            self.indicators['ma'] = self.strategy.data.ema(
+                period=self.get_param('ma_period')
+            )
+        else:
+            raise ValueError(f"Unsupported MA type: {ma_type}")
+    
+    def should_exit(self, strategy) -> bool:
+        """
+        Exit logic: Exit when price crosses below the moving average
+        """
+        if not self.indicators:
             return False
             
-        return self.strategy.data.close[0] < self.ma[0]
+        current_price = strategy.data.close[0]
+        ma = self.indicators['ma'][0]
+        
+        return current_price < ma
  
