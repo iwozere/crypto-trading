@@ -21,11 +21,12 @@ This strategy combines mean reversion (Bollinger Bands), volume confirmation, an
 where you want to enter on oversold conditions with strong volume confirmation and trend support.
 """
 
+import backtrader as bt
 from typing import Dict, Any
 from src.entry.entry_mixin import BaseEntryMixin
 
 class BBVolumeSuperTrendEntryMixin(BaseEntryMixin):
-    """Entry mixin на основе Bollinger Bands, Volume и SuperTrend"""
+    """Entry mixin based on Bollinger Bands, Volume and SuperTrend"""
     
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -49,17 +50,29 @@ class BBVolumeSuperTrendEntryMixin(BaseEntryMixin):
             raise ValueError("Strategy must be set before initializing indicators")
         
         # Create indicators with parameters from configuration
-        self.indicators['bb'] = self.strategy.data.bollinger_bands(
+        self.indicators['bb'] = bt.indicators.BollingerBands(
+            self.strategy.data.close,
             period=self.get_param('bb_period'),
-            stddev=self.get_param('bb_stddev')
+            devfactor=self.get_param('bb_stddev')
         )
-        self.indicators['vol_ma'] = self.strategy.data.sma(
+        
+        self.indicators['vol_ma'] = bt.indicators.SMA(
             self.strategy.data.volume,
             period=self.get_param('vol_ma_period')
         )
-        self.indicators['supertrend'] = self.strategy.data.supertrend(
+        
+        # Create ATR for SuperTrend
+        atr = bt.indicators.ATR(
+            self.strategy.data,
+            period=self.get_param('st_period')
+        )
+        
+        # Create SuperTrend
+        self.indicators['supertrend'] = bt.indicators.SuperTrend(
+            self.strategy.data,
             period=self.get_param('st_period'),
-            multiplier=self.get_param('st_multiplier')
+            multiplier=self.get_param('st_multiplier'),
+            atr=atr
         )
     
     def should_enter(self, strategy) -> bool:

@@ -20,11 +20,12 @@ to identify potential entry points. It's particularly effective in trending mark
 to enter on pullbacks with strong volume confirmation.
 """
 
+import backtrader as bt
 from typing import Dict, Any
 from src.entry.entry_mixin import BaseEntryMixin
 
 class RSIVolumeSuperTrendEntryMixin(BaseEntryMixin):
-    """Entry mixin на основе RSI, Volume и SuperTrend"""
+    """Entry mixin based on RSI, Volume and SuperTrend"""
     
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -47,16 +48,28 @@ class RSIVolumeSuperTrendEntryMixin(BaseEntryMixin):
             raise ValueError("Strategy must be set before initializing indicators")
         
         # Create indicators with parameters from configuration
-        self.indicators['rsi'] = self.strategy.data.rsi(
+        self.indicators['rsi'] = bt.indicators.RSI(
+            self.strategy.data.close,
             period=self.get_param('rsi_period')
         )
-        self.indicators['vol_ma'] = self.strategy.data.sma(
+        
+        self.indicators['vol_ma'] = bt.indicators.SMA(
             self.strategy.data.volume,
             period=self.get_param('vol_ma_period')
         )
-        self.indicators['supertrend'] = self.strategy.data.supertrend(
+        
+        # Create ATR for SuperTrend
+        atr = bt.indicators.ATR(
+            self.strategy.data,
+            period=self.get_param('st_period')
+        )
+        
+        # Create SuperTrend
+        self.indicators['supertrend'] = bt.indicators.SuperTrend(
+            self.strategy.data,
             period=self.get_param('st_period'),
-            multiplier=self.get_param('st_multiplier')
+            multiplier=self.get_param('st_multiplier'),
+            atr=atr
         )
     
     def should_enter(self, strategy) -> bool:

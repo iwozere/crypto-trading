@@ -19,11 +19,12 @@ This strategy is particularly effective in ranging markets where price tends to 
 after reaching extreme levels.
 """
 
+import backtrader as bt
 from typing import Dict, Any
 from src.entry.entry_mixin import BaseEntryMixin
 
 class RSIBBEntryMixin(BaseEntryMixin):
-    """Entry mixin на основе RSI и Bollinger Bands"""
+    """Entry mixin based on RSI and Bollinger Bands"""
     
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -47,12 +48,15 @@ class RSIBBEntryMixin(BaseEntryMixin):
             raise ValueError("Strategy must be set before initializing indicators")
         
         # Create indicators with parameters from configuration
-        self.indicators['rsi'] = self.strategy.data.rsi(
+        self.indicators['rsi'] = bt.indicators.RSI(
+            self.strategy.data.close,
             period=self.get_param('rsi_period')
         )
-        self.indicators['bb'] = self.strategy.data.bollinger_bands(
+        
+        self.indicators['bb'] = bt.indicators.BollingerBands(
+            self.strategy.data.close,
             period=self.get_param('bb_period'),
-            stddev=self.get_param('bb_stddev')
+            devfactor=self.get_param('bb_stddev')
         )
     
     def should_enter(self, strategy) -> bool:
@@ -76,7 +80,7 @@ class RSIBBEntryMixin(BaseEntryMixin):
         bb_condition = True
         if self.get_param('use_bb_touch'):
             bb_lower = self.indicators['bb'].lines.bot[0]
-            bb_condition = current_price <= bb_lower * 1.01  # Small
+            bb_condition = current_price <= bb_lower * 1.01  # Small tolerance for floating point comparison
         
         return rsi_oversold and volume_ok and bb_condition
     

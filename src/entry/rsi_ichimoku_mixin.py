@@ -20,6 +20,7 @@ reversal points in the market. It's particularly effective in trending markets w
 catch the beginning of a new trend after a pullback.
 """
 
+import backtrader as bt
 from typing import Dict, Any
 from src.entry.entry_mixin import BaseEntryMixin
 
@@ -42,20 +43,45 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         }
     
     def _init_indicators(self):
-        self.indicators['rsi'] = self.strategy.data.rsi(
+        """Initialize RSI and Ichimoku Cloud indicators"""
+        if self.strategy is None:
+            raise ValueError("Strategy must be set before initializing indicators")
+        
+        # Create RSI indicator
+        self.indicators['rsi'] = bt.indicators.RSI(
+            self.strategy.data.close,
             period=self.get_param('rsi_period')
         )
         
-        # Initialization of Ichimoku components
-        self.indicators['tenkan'] = self.strategy.data.tenkan_sen(
+        # Create Ichimoku Cloud components
+        self.indicators['tenkan'] = bt.indicators.IchimokuTenkanSen(
+            self.strategy.data,
             period=self.get_param('tenkan_period')
         )
-        self.indicators['kijun'] = self.strategy.data.kijun_sen(
+        
+        self.indicators['kijun'] = bt.indicators.IchimokuKijunSen(
+            self.strategy.data,
             period=self.get_param('kijun_period')
         )
-        # ... other Ichimoku components
+        
+        self.indicators['senkou_span_a'] = bt.indicators.IchimokuSenkouSpanA(
+            self.strategy.data,
+            tenkan_period=self.get_param('tenkan_period'),
+            kijun_period=self.get_param('kijun_period')
+        )
+        
+        self.indicators['senkou_span_b'] = bt.indicators.IchimokuSenkouSpanB(
+            self.strategy.data,
+            period=self.get_param('senkou_span_b_period')
+        )
+        
+        self.indicators['chikou_span'] = bt.indicators.IchimokuChikouSpan(
+            self.strategy.data,
+            displacement=self.get_param('displacement')
+        )
     
     def should_enter(self, strategy) -> bool:
+        """Entry logic: RSI oversold and Ichimoku Cloud conditions"""
         if not self.indicators:
             return False
         
@@ -68,13 +94,16 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         # Ichimoku conditions
         tenkan = self.indicators['tenkan'][0]
         kijun = self.indicators['kijun'][0]
+        senkou_span_a = self.indicators['senkou_span_a'][0]
+        senkou_span_b = self.indicators['senkou_span_b'][0]
         
-        tenkan_kijun_cross = tenkan > kijun  # Bullish signal
+        # Bullish signal: Tenkan-sen crosses above Kijun-sen
+        tenkan_kijun_cross = tenkan > kijun
         
         # Additional condition - price above the cloud (if required)
         above_cloud = True
         if self.get_param('require_above_cloud'):
-            # Here would be the logic to
-            pass
+            cloud_top = max(senkou_span_a, senkou_span_b)
+            above_cloud = current_price > cloud_top
         
         return rsi_ok and tenkan_kijun_cross and above_cloud

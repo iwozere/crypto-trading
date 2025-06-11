@@ -11,12 +11,11 @@ class CustomStrategy(bt.Strategy):
     
     Parameters:
     -----------
-    entry_logic : dict
-        Configuration for entry mixin, containing name and parameters
-    exit_logic : dict
-        Configuration for exit mixin, containing name and parameters
-    position_size : float, optional
-        Position size as a fraction of available capital (default: 0.9)
+    strategy_config : dict
+        Configuration dictionary containing:
+        - entry_logic: Entry mixin configuration
+        - exit_logic: Exit mixin configuration
+        - position_size: Position size as fraction of capital (default: 0.1)
     """
     
     params = (
@@ -36,10 +35,32 @@ class CustomStrategy(bt.Strategy):
         if not strategy_config:
             raise ValueError("strategy_config parameter is required")
         
+        # Initialize common indicators
+        self._init_common_indicators()
         
         # Initialize mixins
         self._init_entry_mixin()
         self._init_exit_mixin()
+    
+    def _init_common_indicators(self):
+        """Initialize common indicators used by multiple mixins"""
+        # Create RSI indicator
+        self.rsi = bt.indicators.RSI(
+            self.data.close,
+            period=self.entry_logic['params'].get('rsi_period', 14)
+        )
+        
+        # Create Bollinger Bands indicator
+        self.bb = bt.indicators.BollingerBands(
+            self.data.close,
+            period=self.entry_logic['params'].get('bb_period', 20)
+        )
+        
+        # Create ATR indicator
+        self.atr = bt.indicators.ATR(
+            self.data,
+            period=self.exit_logic['params'].get('atr_period', 14)
+        )
     
     def _init_entry_mixin(self):
         """Initialize entry mixin with configuration"""
