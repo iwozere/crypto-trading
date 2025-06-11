@@ -1,15 +1,20 @@
 from src.exit.exit_mixin import ExitLogicMixin
 
 class FixedRatioExitMixin(ExitLogicMixin):
-    def init_exit(self):
-        self.entry_price = None
-        self.tp_ratio = self.p.get('take_profit', 0.02)
-        self.sl_ratio = self.p.get('stop_loss', 0.01)
+    def init_exit(self, strategy, params):
+        self.strategy = strategy
+        self.take_profit = params.get('take_profit', 0.02)
+        self.stop_loss = params.get('stop_loss', 0.01)
 
     def should_exit(self):
-        if not self.position:
+        if not self.strategy.position:
             return False
-        if self.entry_price is None:
-            self.entry_price = self.data.close[0]
-        cp = self.data.close[0]
-        return cp >= self.entry_price * (1 + self.tp_ratio) or cp <= self.entry_price * (1 - self.sl_ratio)
+            
+        price = self.strategy.data.close[0]
+        entry_price = self.strategy.position.price
+        
+        # Calculate profit/loss percentage
+        pnl_pct = (price - entry_price) / entry_price
+        
+        # Exit if take profit or stop loss is hit
+        return pnl_pct >= self.take_profit or pnl_pct <= -self.stop_loss

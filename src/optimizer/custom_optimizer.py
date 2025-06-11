@@ -42,7 +42,6 @@ class CustomOptimizer:
         Returns:
             dict: Dictionary containing metrics and trades
         """
-        StrategyClass = make_strategy()
 
         # Create cerebro instance
         cerebro = bt.Cerebro()
@@ -50,38 +49,45 @@ class CustomOptimizer:
         # Add data
         cerebro.adddata(self.data)
         
-        # Prepare strategy parameters
-        strategy_params = {}
-        
         # Add entry logic parameters
+        entry_logic_params = {}
         for param_name, param_config in self.entry_logic['params'].items():
             if trial:
                 if param_config['type'] == 'int':
-                    strategy_params[param_name] = trial.suggest_int(param_name, param_config['low'], param_config['high'])
+                    entry_logic_params[param_name] = trial.suggest_int(param_name, param_config['low'], param_config['high'])
                 elif param_config['type'] == 'float':
-                    strategy_params[param_name] = trial.suggest_float(param_name, param_config['low'], param_config['high'])
+                    entry_logic_params[param_name] = trial.suggest_float(param_name, param_config['low'], param_config['high'])
                 elif param_config['type'] == 'categorical':
-                    strategy_params[param_name] = trial.suggest_categorical(param_name, param_config['choices'])
+                    entry_logic_params[param_name] = trial.suggest_categorical(param_name, param_config['choices'])
             else:
-                strategy_params[param_name] = param_config['default']
+                entry_logic_params[param_name] = param_config['default']
         
         # Add exit logic parameters
+        exit_logic_params = {}
         for param_name, param_config in self.exit_logic['params'].items():
             if trial:
                 if param_config['type'] == 'int':
-                    strategy_params[param_name] = trial.suggest_int(param_name, param_config['low'], param_config['high'])
+                    exit_logic_params[param_name] = trial.suggest_int(param_name, param_config['low'], param_config['high'])
                 elif param_config['type'] == 'float':
-                    strategy_params[param_name] = trial.suggest_float(param_name, param_config['low'], param_config['high'])
+                    exit_logic_params[param_name] = trial.suggest_float(param_name, param_config['low'], param_config['high'])
                 elif param_config['type'] == 'categorical':
-                    strategy_params[param_name] = trial.suggest_categorical(param_name, param_config['choices'])
+                    exit_logic_params[param_name] = trial.suggest_categorical(param_name, param_config['choices'])
             else:
-                strategy_params[param_name] = param_config['default']
+                exit_logic_params[param_name] = param_config['default']
         
-        # Add strategy with parameters
-        strategy_params.update({
-            'entry_type': self.entry_logic['name'],
-            'exit_type': self.exit_logic['name']
-        })
+        # Prepare strategy parameters
+        strategy_params = {
+            'entry_logic': {
+                'name': self.entry_logic['name'],
+                'params': entry_logic_params
+            },
+            'exit_logic': {
+                'name': self.exit_logic['name'],
+                'params': exit_logic_params
+            }
+        }
+            
+        StrategyClass = make_strategy()
         cerebro.addstrategy(StrategyClass, **strategy_params)
         
         # Set broker parameters

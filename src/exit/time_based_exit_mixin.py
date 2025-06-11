@@ -1,17 +1,19 @@
 from src.exit.exit_mixin import ExitLogicMixin
+import backtrader as bt
 
 class TimeBasedExitMixin(ExitLogicMixin):
-    def init_exit(self):
-        self.entry_time = None
-        self.max_bars = self.p.get('max_bars', 10)
-        self.bar_count = 0
+    def init_exit(self, strategy, params):
+        self.strategy = strategy
+        self.time_period = params.get('time_period', 10)
+        self.entry_bar = 0
 
     def should_exit(self):
-        if not self.position:
+        if not self.strategy.position:
             return False
-        if self.entry_time is None:
-            self.entry_time = self.data.datetime.datetime(0)
-            self.bar_count = 0
-        
-        self.bar_count += 1
-        return self.bar_count >= self.max_bars 
+            
+        # Update entry bar if not set
+        if self.entry_bar == 0:
+            self.entry_bar = len(self.strategy)
+            
+        # Exit if time period has elapsed
+        return len(self.strategy) - self.entry_bar >= self.time_period 

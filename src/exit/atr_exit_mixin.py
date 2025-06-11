@@ -2,24 +2,24 @@ from src.exit.exit_mixin import ExitLogicMixin
 import backtrader as bt
 
 class ATRExitMixin(ExitLogicMixin):
-    def init_exit(self):
-        self.entry_price = None
-        self.atr_period = self.p.get('atr_period', 14)
-        self.tp_multiplier = self.p.get('tp_multiplier', 2.0)
-        self.sl_multiplier = self.p.get('sl_multiplier', 1.0)
-        self.atr = bt.indicators.ATR(self.data, period=self.atr_period)
+    def init_exit(self, strategy, params):
+        self.strategy = strategy
+        self.atr_period = params.get('atr_period', 14)
+        self.tp_multiplier = params.get('tp_multiplier', 2.0)
+        self.sl_multiplier = params.get('sl_multiplier', 1.0)
+        
+        self.atr = bt.indicators.ATR(period=self.atr_period)
 
     def should_exit(self):
-        if not self.position:
+        if not self.strategy.position:
             return False
-        if self.entry_price is None:
-            self.entry_price = self.data.close[0]
-        
-        current_price = self.data.close[0]
-        atr_value = self.atr[0]
+            
+        price = self.strategy.data.close[0]
+        entry_price = self.strategy.position.price
         
         # Calculate take profit and stop loss levels
-        tp_level = self.entry_price + (atr_value * self.tp_multiplier)
-        sl_level = self.entry_price - (atr_value * self.sl_multiplier)
+        tp_level = entry_price + (self.atr[0] * self.tp_multiplier)
+        sl_level = entry_price - (self.atr[0] * self.sl_multiplier)
         
-        return current_price >= tp_level or current_price <= sl_level 
+        # Exit if take profit or stop loss is hit
+        return price >= tp_level or price <= sl_level 
