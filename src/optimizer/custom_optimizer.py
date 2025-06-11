@@ -161,7 +161,7 @@ class CustomOptimizer:
             "drawdown": strategy.analyzers.drawdown.get_analysis(),
             "returns": strategy.analyzers.returns.get_analysis(),
             "trades_summary": strategy.analyzers.trades.get_analysis(),
-            "profit_factor": strategy.analyzers.pf.get_analysis(),
+            "profit_factor": strategy.analyzers.profit_factor.get_analysis(),
             "calmar": strategy.analyzers.calmar.get_analysis(),
             "cagr": strategy.analyzers.cagr.get_analysis(),
             "sortino": strategy.analyzers.sortino.get_analysis(),

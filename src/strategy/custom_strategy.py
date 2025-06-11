@@ -23,7 +23,11 @@ class CustomStrategy(bt.Strategy):
         - use_talib: Whether to use TA-Lib for indicator calculations (default: False)
     """
 
-    params = (("strategy_config", None),)  # Strategy configuration
+    params = (
+        ("strategy_config", None),  # Strategy configuration
+        ("position_size", 0.1),     # Default position size
+        ("use_talib", False),       # Whether to use TA-Lib
+    )
 
     def __init__(self):
         super().__init__()
@@ -32,8 +36,14 @@ class CustomStrategy(bt.Strategy):
 
         self.entry_logic = strategy_config["entry_logic"]
         self.exit_logic = strategy_config["exit_logic"]
-        self.position_size = strategy_config.get("position_size", 0.1)
-        self.use_talib = strategy_config.get("use_talib", False)
+        self.trades = []  # List to store trade information
+        self.has_position = False  # Flag to track if we have an open position
+
+        # Update params from config if provided
+        if "position_size" in strategy_config:
+            self.p.position_size = strategy_config["position_size"]
+        if "use_talib" in strategy_config:
+            self.p.use_talib = strategy_config["use_talib"]
 
         # Validate required parameters
         if not strategy_config:
@@ -48,7 +58,7 @@ class CustomStrategy(bt.Strategy):
 
     def _init_common_indicators(self):
         """Initialize common indicators used by multiple mixins"""
-        if self.use_talib:
+        if self.p.use_talib:
             import talib
 
             # Create RSI indicator using TA-Lib
@@ -94,12 +104,12 @@ class CustomStrategy(bt.Strategy):
         if isinstance(self.entry_logic, dict) and "name" in self.entry_logic:
             entry_name = self.entry_logic["name"]
             entry_params = self.entry_logic.get("params", {})
-            entry_params["use_talib"] = self.use_talib
+            entry_params["use_talib"] = self.p.use_talib
             self.entry_mixin = get_entry_mixin(entry_name, entry_params)
 
         # Variant 2: Full configuration (preferred)
         elif isinstance(self.entry_logic, dict):
-            self.entry_logic["params"]["use_talib"] = self.use_talib
+            self.entry_logic["params"]["use_talib"] = self.p.use_talib
             self.entry_mixin = get_entry_mixin_from_config(self.entry_logic)
 
         else:
@@ -114,11 +124,11 @@ class CustomStrategy(bt.Strategy):
         if isinstance(self.exit_logic, dict) and "name" in self.exit_logic:
             exit_name = self.exit_logic["name"]
             exit_params = self.exit_logic.get("params", {})
-            exit_params["use_talib"] = self.use_talib
+            exit_params["use_talib"] = self.p.use_talib
             self.exit_mixin = get_exit_mixin(exit_name, exit_params)
 
         elif isinstance(self.exit_logic, dict):
-            self.exit_logic["params"]["use_talib"] = self.use_talib
+            self.exit_logic["params"]["use_talib"] = self.p.use_talib
             self.exit_mixin = get_exit_mixin_from_config(self.exit_logic)
 
         else:
@@ -126,23 +136,45 @@ class CustomStrategy(bt.Strategy):
 
         self.exit_mixin.init_exit(strategy=self)
 
+    def notify_trade(self, trade):
+        """Called when a trade is completed"""
+        if trade.isclosed:
+            self.has_position = False  # Reset position flag when trade is closed
+            self.trades.append({
+                'entry_date': self.data.datetime.datetime(),
+                'exit_date': self.data.datetime.datetime(),
+                'entry_price': trade.price,
+                'exit_price': trade.pnl,
+                'pnl': trade.pnl,
+                'pnlcomm': trade.pnlcomm,
+                'size': trade.size,
+                'status': 'closed'
+            })
+
     def next(self):
         """Main strategy logic"""
         # Check entry conditions (if no open positions)
-        if not self.position:
+        if not self.has_position:
             if self.entry_mixin.should_enter(self):
                 size = self._calculate_position_size()
                 self.buy(size=size)
+                self.has_position = True  # Set position flag when entering
+                self.trades.append({
+                    'entry_date': self.data.datetime.datetime(),
+                    'entry_price': self.data.close[0],
+                    'size': size,
+                    'status': 'open'
+                })
                 print(
-                    f"BUY signal at {self.data.datetime.date(0)} - Price: {self.data.close[0]:.2f}"
+                    f"BUY signal at {self.data.datetime.datetime()} - Price: {self.data.close[0]:.2f}"
                 )
 
         # Check exit conditions (if there are open positions)
-        elif self.position:
+        elif self.has_position:
             if self.exit_mixin.should_exit(self):
                 self.sell(size=self.position.size)
                 print(
-                    f"SELL signal at {self.data.datetime.date(0)} - Price: {self.data.close[0]:.2f}"
+                    f"SELL signal at {self.data.datetime.datetime()} - Price: {self.data.close[0]:.2f}"
                 )
 
     def _calculate_position_size(self) -> float:
@@ -179,6 +211,8 @@ def create_strategy_example():
             "name": "FixedRatioExitMixin",
             "params": {"profit_ratio": 1.5, "stop_loss_ratio": 0.5},
         },
+        "position_size": 0.1,
+        "use_talib": False,
     }
 
     # Configuration 2: More complex strategy with RSI + Ichimoku
@@ -197,6 +231,8 @@ def create_strategy_example():
             "name": "TrailingStopExitMixin",
             "params": {"trail_percent": 5.0, "min_profit_percent": 2.0},
         },
+        "position_size": 0.1,
+        "use_talib": False,
     }
 
     return strategy_config_1, strategy_config_2
@@ -206,7 +242,12 @@ class StrategyConfigBuilder:
     """Helper for creating strategy configurations"""
 
     def __init__(self):
-        self.config = {"entry_logic": None, "exit_logic": None, "position_size": 0.9}
+        self.config = {
+            "entry_logic": None,
+            "exit_logic": None,
+            "position_size": 0.1,
+            "use_talib": False,
+        }
 
     def set_entry_mixin(self, name: str, params: Dict[str, Any] = None):
         """Set entry mixin configuration"""
@@ -223,6 +264,11 @@ class StrategyConfigBuilder:
         if not 0 < size <= 1:
             raise ValueError("Position size must be between 0 and 1")
         self.config["position_size"] = size
+        return self
+
+    def set_use_talib(self, use_talib: bool):
+        """Set whether to use TA-Lib"""
+        self.config["use_talib"] = use_talib
         return self
 
     def build(self) -> Dict[str, Any]:
