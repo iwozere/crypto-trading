@@ -1,0 +1,39 @@
+{
+    "name": "BBVolumeSuperTrendMixin",
+    "params": {
+        "bb_period": {
+            "type": "int",
+            "low": 10,
+            "high": 50,
+            "default": 20
+        },
+        "bb_dev": {
+            "type": "float",
+            "low": 1.0,
+            "high": 3.0,
+            "default": 2.0
+        },
+        "vol_ma_period": {
+            "type": "int",
+            "low": 5,
+            "high": 50,
+            "default": 20
+        },
+        "st_period": {
+            "type": "int",
+            "low": 5,
+            "high": 30,
+            "default": 10
+        },
+        "st_multiplier": {
+            "type": "float",
+            "low": 1.0,
+            "high": 5.0,
+            "default": 3.0
+        },
+        "use_talib": {
+            "type": "bool",
+            "default": true
+        }
+    }
+} 

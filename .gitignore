@@ -59,3 +59,6 @@ results/
 
 !config/trading/*.json
 !config/optimizer/*.json
+!config/optimizer/entry/*.json
+!config/optimizer/exit/*.json
+

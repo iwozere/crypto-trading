@@ -1,0 +1,29 @@
+{
+    "name": "RSIIchimokuMixin",
+    "params": {
+        "rsi_period": {
+            "type": "int",
+            "low": 5,
+            "high": 30,
+            "default": 14
+        },
+        "tenkan_period": {
+            "type": "int",
+            "low": 5,
+            "high": 20,
+            "default": 9
+        },
+        "kijun_period": {
+            "type": "int",
+            "low": 15,
+            "high": 50,
+            "default": 26
+        },
+        "rsi_oversold": {
+            "type": "int",
+            "low": 20,
+            "high": 40,
+            "default": 30
+        }
+    }
+} 

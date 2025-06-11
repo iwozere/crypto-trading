@@ -1,0 +1,11 @@
+{
+    "name": "TimeBasedExitMixin",
+    "params": {
+        "max_bars": {
+            "type": "int",
+            "low": 5,
+            "high": 100,
+            "default": 20
+        }
+    }
+} 

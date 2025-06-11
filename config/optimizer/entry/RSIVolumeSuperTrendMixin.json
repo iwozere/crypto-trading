@@ -1,0 +1,17 @@
+{
+    "name": "RSIVolumeSuperTrendMixin",
+    "params": {
+        "rsi_period": {
+            "type": "int",
+            "low": 5,
+            "high": 30,
+            "default": 14
+        },
+        "vol_ma_period": {
+            "type": "int",
+            "low": 0.005,
+            "high": 0.05,
+            "default": 0.02
+        }
+    }
+} 

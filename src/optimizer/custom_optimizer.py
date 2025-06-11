@@ -176,6 +176,27 @@ def prepare_data(data_file):
     return data
 
 
+def get_result_filename(data_file, entry_logic_name, exit_logic_name, suffix=""):
+    """
+    Generate a standardized filename for results and plots based on data_file and current_data.
+    """
+    # Extract symbol, interval, and dates from data_file
+    symbol = getattr("current_symbol", "SYMBOL")
+    interval = "INTERVAL"
+    start_date = "STARTDATE"
+    end_date = "ENDDATE"
+
+    if "_" in data_file:
+        parts = data_file.replace(".csv", "").split("_")
+        if len(parts) >= 4:  # We expect at least symbol_interval_startdate_enddate
+            symbol = parts[0]
+            interval = parts[1]
+            start_date = parts[2]
+            end_date = parts[3]
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{entry_logic_name}_{exit_logic_name}_{symbol}_{interval}_{start_date}_{end_date}_{timestamp}{suffix}"
+
 
 
 
@@ -256,11 +277,12 @@ if __name__ == "__main__":
                 }
                 
                 # Save to file
+                output_file_name = get_result_filename(data_file, entry_logic_name=entry_logic_name, exit_logic_name=exit_logic_name, suffix="")
                 output_file = os.path.join(
-                    "studies",
-                    f"{data_file}_{entry_logic_name}_{exit_logic_name}.json"
+                    "results",
+                    f"{output_file_name}.json"
                 )
-                os.makedirs("studies", exist_ok=True)
+                os.makedirs("results", exist_ok=True)
                 
                 with open(output_file, 'w') as f:
                     json.dump(results, f, indent=4)

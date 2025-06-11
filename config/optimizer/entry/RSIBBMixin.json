@@ -1,0 +1,29 @@
+{
+    "name": "RSIBBMixin",
+    "params": {
+        "rsi_period": {
+            "type": "int",
+            "low": 5,
+            "high": 30,
+            "default": 14
+        },
+        "bb_period": {
+            "type": "int",
+            "low": 10,
+            "high": 50,
+            "default": 20
+        },
+        "bb_dev": {
+            "type": "float",
+            "low": 1.0,
+            "high": 3.0,
+            "default": 2.0
+        },
+        "rsi_oversold": {
+            "type": "int",
+            "low": 20,
+            "high": 40,
+            "default": 30
+        }
+    }
+} 
