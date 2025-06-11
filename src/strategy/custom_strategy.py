@@ -7,12 +7,29 @@ def make_strategy() -> bt.Strategy:
         params = (
             ('entry_type', None),
             ('exit_type', None),
+            ('rsi_period', 14),
+            ('bb_period', 20),
+            ('bb_dev', 2.0),
+            ('rsi_oversold', 30),
+            ('atr_period', 14),
+            ('tp_multiplier', 2.0),
+            ('sl_multiplier', 1.0),
+            ('use_talib', True),
+            ('ma_period', 20),
+            ('time_period', 10),
+            ('trail_pct', 0.02),
+            ('sl_pct', 0.02),
+            ('rr', 2.0),
+            ('take_profit', 0.02),
+            ('stop_loss', 0.01),
+            ('vol_ma_period', 20),
+            ('st_period', 10),
+            ('st_multiplier', 3.0),
+            ('tenkan_period', 9),
+            ('kijun_period', 26),
         )
 
-        def __init__(self, params=None):
-            if params is None:
-                params = {}
-            self.p = params
+        def __init__(self):
             self.trades = []
             self._open_trade_data = None
             
@@ -21,8 +38,8 @@ def make_strategy() -> bt.Strategy:
             self.exit_mixin = ExitMixinFactory.get_exit_mixin(self.p.exit_type)
             
             # Initialize mixins with strategy parameters
-            self.entry_mixin.init(self.p)
-            self.exit_mixin.init(self.p)
+            self.entry_mixin.init_entry(self.p)
+            self.exit_mixin.init_exit(self.p)
             super().__init__()
 
         def next(self):

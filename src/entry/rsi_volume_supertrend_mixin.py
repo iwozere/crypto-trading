@@ -3,12 +3,12 @@ import backtrader as bt
 from src.indicator.super_trend import SuperTrend
 
 class RSIVolumeSuperTrendMixin(EntryLogicMixin):
-    def init_entry(self, params=None):
-        self.rsi_period = self.params.get('rsi_period', 14)
-        self.vol_ma_period = self.params.get('vol_ma_period', 20)
-        self.st_period = self.params.get('st_period', 10)
-        self.st_multiplier = self.params.get('st_multiplier', 3.0)
-        self.rsi_oversold = self.params.get('rsi_oversold', 30)
+    def init_entry(self):
+        self.rsi_period = self.p.get('rsi_period', 14)
+        self.vol_ma_period = self.p.get('vol_ma_period', 20)
+        self.st_period = self.parapms.get('st_period', 10)
+        self.st_multiplier = self.p.get('st_multiplier', 3.0)
+        self.rsi_oversold = self.p.get('rsi_oversold', 30)
         
         self.rsi = bt.indicators.RSI(period=self.rsi_period)
         self.vol_ma = bt.indicators.SMA(self.data.volume, period=self.vol_ma_period)
@@ -16,7 +16,7 @@ class RSIVolumeSuperTrendMixin(EntryLogicMixin):
         supertrend_params = {
             "period": self.st_period,
             "multiplier": self.st_multiplier,
-            "use_talib": self.params.get('use_talib', True)
+            "use_talib": self.p.get('use_talib', True)
         }
         self.supertrend = SuperTrend(params=supertrend_params)
 

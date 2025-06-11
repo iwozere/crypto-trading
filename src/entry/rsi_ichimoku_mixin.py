@@ -2,11 +2,11 @@ from src.entry.entry_mixin import EntryLogicMixin
 import backtrader as bt
 
 class RSIIchimokuMixin(EntryLogicMixin):
-    def init_entry(self, params=None):
-        self.rsi_period = self.params.get('rsi_period', 14)
-        self.tenkan_period = self.params.get('tenkan_period', 9)
-        self.kijun_period = self.params.get('kijun_period', 26)
-        self.rsi_oversold = self.params.get('rsi_oversold', 30)
+    def init_entry(self):
+        self.rsi_period = self.p.get('rsi_period', 14)
+        self.tenkan_period = self.p.get('tenkan_period', 9)
+        self.kijun_period = self.p.get('kijun_period', 26)
+        self.rsi_oversold = self.p.get('rsi_oversold', 30)
         
         self.rsi = bt.indicators.RSI(period=self.rsi_period)
         self.ichimoku = bt.indicators.Ichimoku(

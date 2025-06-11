@@ -1,9 +1,9 @@
 from src.exit.exit_mixin import ExitLogicMixin
 
 class TimeBasedExitMixin(ExitLogicMixin):
-    def init_exit(self, params=None):
+    def init_exit(self):
         self.entry_time = None
-        self.max_bars = self.params.get('max_bars', 10)
+        self.max_bars = self.p.get('max_bars', 10)
         self.bar_count = 0
 
     def should_exit(self):

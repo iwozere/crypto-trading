@@ -2,11 +2,11 @@ from src.exit.exit_mixin import ExitLogicMixin
 import backtrader as bt
 
 class ATRExitMixin(ExitLogicMixin):
-    def init_exit(self, params=None):
+    def init_exit(self):
         self.entry_price = None
-        self.atr_period = self.params.get('atr_period', 14)
-        self.tp_multiplier = self.params.get('tp_multiplier', 2.0)
-        self.sl_multiplier = self.params.get('sl_multiplier', 1.0)
+        self.atr_period = self.p.get('atr_period', 14)
+        self.tp_multiplier = self.p.get('tp_multiplier', 2.0)
+        self.sl_multiplier = self.p.get('sl_multiplier', 1.0)
         self.atr = bt.indicators.ATR(self.data, period=self.atr_period)
 
     def should_exit(self):

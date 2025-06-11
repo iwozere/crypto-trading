@@ -1,10 +1,10 @@
 from src.exit.exit_mixin import ExitLogicMixin
 
 class FixedRatioExitMixin(ExitLogicMixin):
-    def init_exit(self, params=None):
+    def init_exit(self):
         self.entry_price = None
-        self.tp_ratio = self.params.take_profit
-        self.sl_ratio = self.params.stop_loss
+        self.tp_ratio = self.p.get('take_profit', 0.02)
+        self.sl_ratio = self.p.get('stop_loss', 0.01)
 
     def should_exit(self):
         if not self.position:

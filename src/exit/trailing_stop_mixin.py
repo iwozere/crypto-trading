@@ -1,8 +1,8 @@
 from src.exit.exit_mixin import ExitLogicMixin
 
 class TrailingStopExitMixin(ExitLogicMixin):
-    def init_exit(self, params=None):
-        self.trailing_stop_pct = self.params.trailing_stop
+    def init_exit(self):
+        self.trailing_stop_pct = self.p.get('trailing_stop', 0.02)
         self.highest_price = None
 
     def should_exit(self):
