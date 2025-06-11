@@ -1,11 +1,37 @@
+"""
+Custom Optimizer Module
+
+This module implements a custom optimization framework for trading strategies using Backtrader
+and Optuna. It provides functionality to:
+1. Run backtests with fixed parameters
+2. Optimize strategy parameters using Optuna
+3. Collect and analyze various performance metrics
+4. Support multiple entry and exit strategies
+
+The optimizer supports:
+- Multiple entry and exit strategy combinations
+- Parameter optimization with different types (int, float, categorical)
+- Comprehensive performance analysis with multiple metrics
+- Custom analyzers for detailed strategy evaluation
+
+Parameters:
+    config (dict): Configuration dictionary containing:
+        - data: pandas DataFrame with OHLCV data
+        - entry_logic: Entry logic configuration
+        - exit_logic: Exit logic configuration
+        - optimizer_settings: Optimization settings
+"""
+
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-
 import backtrader as bt
-from src.analyzer.bt_analyzers import CalmarRatio, CAGR, SortinoRatio, ProfitFactor, WinRate, ConsecutiveWinsLosses, PortfolioVolatility
-from src.strategy.custom_strategy import make_strategy
+from src.analyzer.bt_analyzers import (
+    CalmarRatio, CAGR, SortinoRatio, ProfitFactor, WinRate,
+    ConsecutiveWinsLosses, PortfolioVolatility
+)
+from src.strategy.custom_strategy import CustomStrategy
 from src.notification.logger import _logger
 
 class CustomOptimizer:
@@ -42,7 +68,6 @@ class CustomOptimizer:
         Returns:
             dict: Dictionary containing metrics and trades
         """
-
         # Create cerebro instance
         cerebro = bt.Cerebro()
         
@@ -87,8 +112,8 @@ class CustomOptimizer:
             }
         }
             
-        StrategyClass = make_strategy()
-        cerebro.addstrategy(StrategyClass, **strategy_params)
+        # Add strategy with parameters
+        cerebro.addstrategy(CustomStrategy, strategy_config=strategy_params)
         
         # Set broker parameters
         cerebro.broker.setcash(self.initial_capital)

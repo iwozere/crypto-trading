@@ -8,8 +8,8 @@ import backtrader as bt
 import optuna
 from src.notification.logger import _logger
 from datetime import datetime
-from src.entry.entry_mixin_factory import EntryMixinFactory
-from src.exit.exit_mixin_factory import ExitMixinFactory
+from src.entry.entry_mixin_factory import ENTRY_MIXIN_REGISTRY, get_entry_mixin_from_config
+from src.exit.exit_mixin_factory import EXIT_MIXIN_REGISTRY, get_exit_mixin_from_config
 from src.optimizer.custom_optimizer import CustomOptimizer
 
 
@@ -85,12 +85,12 @@ if __name__ == "__main__":
         _logger.info(f"Running optimization for {data_file}")
         
         data = prepare_data(data_file)
-        for entry_logic_name in EntryMixinFactory.ENTRY_LOGIC_REGISTRY.keys():
+        for entry_logic_name in ENTRY_MIXIN_REGISTRY.keys():
             # Load entry logic configuration
             with open(os.path.join("config", "optimizer", "entry", f"{entry_logic_name}.json"), "r") as f:
                 entry_logic_config = json.load(f)
                     
-            for exit_logic_name in ExitMixinFactory.EXIT_LOGIC_REGISTRY.keys():
+            for exit_logic_name in EXIT_MIXIN_REGISTRY.keys():
                 # Load exit logic configuration
                 with open(os.path.join("config", "optimizer", "exit", f"{exit_logic_name}.json"), "r") as f:
                     exit_logic_config = json.load(f)

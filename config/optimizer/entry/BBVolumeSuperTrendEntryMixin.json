@@ -1,5 +1,5 @@
 {
-    "name": "BBVolumeSuperTrendMixin",
+    "name": "BBVolumeSuperTrendEntryMixin",
     "params": {
         "bb_period": {
             "type": "int",

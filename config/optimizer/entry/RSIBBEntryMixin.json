@@ -1,5 +1,5 @@
 {
-    "name": "RSIBBVolumeMixin",
+    "name": "RSIBBEntryMixin",
     "params": {
         "rsi_period": {
             "type": "int",
@@ -18,12 +18,6 @@
             "low": 1.0,
             "high": 3.0,
             "default": 2.0
-        },
-        "vol_ma_period": {
-            "type": "int",
-            "low": 5,
-            "high": 50,
-            "default": 20
         },
         "rsi_oversold": {
             "type": "int",

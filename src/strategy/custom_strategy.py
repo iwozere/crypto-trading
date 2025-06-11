@@ -2,62 +2,82 @@
 
 import backtrader as bt
 from typing import Dict, Any
-from entry_mixin_factory import get_entry_mixin, get_entry_mixin_from_config
-from exit_mixin_factory import get_exit_mixin, get_exit_mixin_from_config
+from src.entry.entry_mixin_factory import get_entry_mixin, get_entry_mixin_from_config
+from src.exit.exit_mixin_factory import get_exit_mixin, get_exit_mixin_from_config
 
 class CustomStrategy(bt.Strategy):
     """
-    Main strategy with support for modular entry/exit mixins
+    Main strategy with support for modular entry/exit mixins.
+    
+    Parameters:
+    -----------
+    entry_logic : dict
+        Configuration for entry mixin, containing name and parameters
+    exit_logic : dict
+        Configuration for exit mixin, containing name and parameters
+    position_size : float, optional
+        Position size as a fraction of available capital (default: 0.9)
     """
+    
+    params = (
+        ('strategy_config', None),  # Strategy configuration
+    )
     
     def __init__(self):
         super().__init__()
         
-        # Initialization of entry mixin
-        self._init_entry_mixin()
+        strategy_config = self.p.strategy_config
         
-        # Initialization of exit mixin
+        self.entry_logic = strategy_config['entry_logic']
+        self.exit_logic = strategy_config['exit_logic']
+        self.position_size = strategy_config.get('position_size', 0.1)
+        
+        # Validate required parameters
+        if not strategy_config:
+            raise ValueError("strategy_config parameter is required")
+        
+        
+        # Initialize mixins
+        self._init_entry_mixin()
         self._init_exit_mixin()
     
     def _init_entry_mixin(self):
-        """Initialization of entry mixin"""
-        entry_logic = self.p.entry_logic
+        """Initialize entry mixin with configuration"""
         
         # Variant 1: Configuration contains name and parameters separately
-        if isinstance(entry_logic, dict) and 'name' in entry_logic:
-            entry_name = entry_logic['name']
-            entry_params = entry_logic.get('params', {})
+        if isinstance(self.entry_logic, dict) and 'name' in self.entry_logic:
+            entry_name = self.entry_logic['name']
+            entry_params = self.entry_logic.get('params', {})
             self.entry_mixin = get_entry_mixin(entry_name, entry_params)
         
         # Variant 2: Full configuration (preferred)
-        elif isinstance(entry_logic, dict):
-            self.entry_mixin = get_entry_mixin_from_config(entry_logic)
+        elif isinstance(self.entry_logic, dict):
+            self.entry_mixin = get_entry_mixin_from_config(self.entry_logic)
         
         else:
-            raise ValueError(f"Invalid entry_logic format: {entry_logic}")
+            raise ValueError(f"Invalid entry_logic format: {self.entry_logic}")
         
         # Initialize the mixin with the strategy
         self.entry_mixin.init_entry(strategy=self)
     
     def _init_exit_mixin(self):
-        """Initialization of exit mixin"""
-        exit_logic = self.p.exit_logic
+        """Initialize exit mixin with configuration"""
         
-        if isinstance(exit_logic, dict) and 'name' in exit_logic:
-            exit_name = exit_logic['name']
-            exit_params = exit_logic.get('params', {})
+        if isinstance(self.exit_logic, dict) and 'name' in self.exit_logic:
+            exit_name = self.exit_logic['name']
+            exit_params = self.exit_logic.get('params', {})
             self.exit_mixin = get_exit_mixin(exit_name, exit_params)
         
-        elif isinstance(exit_logic, dict):
-            self.exit_mixin = get_exit_mixin_from_config(exit_logic)
+        elif isinstance(self.exit_logic, dict):
+            self.exit_mixin = get_exit_mixin_from_config(self.exit_logic)
         
         else:
-            raise ValueError(f"Invalid exit_logic format: {exit_logic}")
+            raise ValueError(f"Invalid exit_logic format: {self.exit_logic}")
         
         self.exit_mixin.init_exit(strategy=self)
 
     def next(self):
-        """Основной цикл стратегии"""
+        """Main strategy logic"""
         # Check entry conditions (if no open positions)
         if not self.position:
             if self.entry_mixin.should_enter(self):
@@ -73,22 +93,17 @@ class CustomStrategy(bt.Strategy):
     
     def _calculate_position_size(self) -> float:
         """
-        Calculation of position size
-        Can be made customizable or moved to a separate mixin
+        Calculate position size based on available capital and position_size parameter
+        
+        Returns:
+        --------
+        float
+            Number of shares to buy
         """
-        # Simple calculation - use 90% of available capital
         available_cash = self.broker.get_cash()
         price = self.data.close[0]
-        max_shares = int((available_cash * 0.9) / price)
+        max_shares = int((available_cash * self.p.position_size) / price)
         return max_shares
-
-
-
-
-
-
-
-
 
 # Example of creating a strategy with a new approach
 def create_strategy_example():
@@ -137,15 +152,43 @@ def create_strategy_example():
     
     return strategy_config_1, strategy_config_2
 
-# Utilities for working with configurations
 class StrategyConfigBuilder:
     """Helper for creating strategy configurations"""
     
     def __init__(self):
-        self.config = {}
+        self.config = {
+            'entry_logic': None,
+            'exit_logic': None,
+            'position_size': 0.9
+        }
     
     def set_entry_mixin(self, name: str, params: Dict[str, Any] = None):
-        """Set entry mixin"""
+        """Set entry mixin configuration"""
         self.config['entry_logic'] = {
             'name': name,
-            'params': params
+            'params': params or {}
+        }
+        return self
+    
+    def set_exit_mixin(self, name: str, params: Dict[str, Any] = None):
+        """Set exit mixin configuration"""
+        self.config['exit_logic'] = {
+            'name': name,
+            'params': params or {}
+        }
+        return self
+    
+    def set_position_size(self, size: float):
+        """Set position size as fraction of capital"""
+        if not 0 < size <= 1:
+            raise ValueError("Position size must be between 0 and 1")
+        self.config['position_size'] = size
+        return self
+    
+    def build(self) -> Dict[str, Any]:
+        """Build the final strategy configuration"""
+        if not self.config['entry_logic']:
+            raise ValueError("Entry mixin configuration is required")
+        if not self.config['exit_logic']:
+            raise ValueError("Exit mixin configuration is required")
+        return self.config
