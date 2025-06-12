@@ -24,6 +24,7 @@ Parameters:
 
 import os
 import sys
+from datetime import datetime
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
@@ -172,7 +173,7 @@ class CustomOptimizer:
             "portfoliovolatility": strategy.analyzers.portfoliovolatility.get_analysis(),
             "sqn": strategy.analyzers.sqn.get_analysis(),
             "time_drawdown": strategy.analyzers.time_drawdown.get_analysis(),
-            "time_return": strategy.analyzers.time_return.get_analysis(),
+            #"time_return": strategy.analyzers.time_return.get_analysis(), - removed due to datetime objects
             "vwr": strategy.analyzers.vwr.get_analysis(),
         }
 

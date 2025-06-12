@@ -143,18 +143,27 @@ class CustomStrategy(bt.Strategy):
             self.trades.append({
                 'entry_date': self.data.datetime.datetime().strftime('%Y-%m-%d %H:%M:%S'),
                 'exit_date': self.data.datetime.datetime().strftime('%Y-%m-%d %H:%M:%S'),
-                'entry_price': trade.price,
-                'exit_price': trade.pnl,
-                'pnl': trade.pnl,
-                'pnlcomm': trade.pnlcomm,
-                'size': trade.size,
+                'entry_price': float(trade.price),
+                'exit_price': float(trade.pnl),
+                'pnl': float(trade.pnl),
+                'pnlcomm': float(trade.pnlcomm),
+                'size': float(trade.size),
                 'status': 'closed'
             })
 
     def next(self):
         """Main strategy logic"""
+        # Calculate minimum required data length based on indicator parameters
+        min_length = max(
+            self.entry_logic["params"].get("rsi_period", 14),
+            self.entry_logic["params"].get("bb_period", 20),
+            self.entry_logic["params"].get("vol_ma_period", 20),
+            self.entry_logic["params"].get("st_period", 10),
+            self.exit_logic["params"].get("atr_period", 14),
+        )
+        
         # Skip if we don't have enough data points for indicators
-        if len(self.data) < 100:  # Arbitrary minimum length, adjust as needed
+        if len(self.data) < min_length:
             return
 
         # Check entry conditions (if no open positions)
@@ -166,8 +175,8 @@ class CustomStrategy(bt.Strategy):
                     self.has_position = True  # Set position flag when entering
                     self.trades.append({
                         'entry_date': self.data.datetime.datetime().strftime('%Y-%m-%d %H:%M:%S'),
-                        'entry_price': self.data.close[0],
-                        'size': size,
+                        'entry_price': float(self.data.close[0]),
+                        'size': float(size),
                         'status': 'open'
                     })
                     print(

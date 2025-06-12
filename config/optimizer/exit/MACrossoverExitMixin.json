@@ -9,8 +9,12 @@
         },
         "ma_type": {
             "type": "categorical",
-            "choices": ["SMA", "EMA", "WMA"],
+            "choices": ["SMA", "EMA"],
             "default": "SMA"
+        },
+        "use_talib": {
+            "type": "bool",
+            "default": true
         }
     }
 } 

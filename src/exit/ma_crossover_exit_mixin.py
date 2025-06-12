@@ -9,6 +9,7 @@ The strategy exits when:
 Parameters:
     ma_period (int): Period for moving average calculation (default: 20)
     ma_type (str): Type of moving average ('sma' or 'ema') (default: 'sma')
+    use_talib (bool): Whether to use TA-Lib for calculations (default: False)
 
 This strategy is particularly effective for:
 1. Trend following systems
@@ -32,11 +33,13 @@ class MACrossoverExitMixin(BaseExitMixin):
     # Define default values as class constants
     DEFAULT_MA_PERIOD = 20
     DEFAULT_MA_TYPE = "sma"
+    DEFAULT_USE_TALIB = False
 
     def __init__(self, params: Dict[str, Any]):
         super().__init__(params)
         self.ma_period = params.get("ma_period", self.DEFAULT_MA_PERIOD)
         self.ma_type = params.get("ma_type", self.DEFAULT_MA_TYPE)
+        self.use_talib = params.get("use_talib", self.DEFAULT_USE_TALIB)
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -47,6 +50,7 @@ class MACrossoverExitMixin(BaseExitMixin):
         return {
             "ma_period": self.DEFAULT_MA_PERIOD,
             "ma_type": self.DEFAULT_MA_TYPE,
+            "use_talib": self.DEFAULT_USE_TALIB,
         }
 
     def _init_indicators(self):
@@ -56,16 +60,40 @@ class MACrossoverExitMixin(BaseExitMixin):
 
         # Create MA indicator with parameters from configuration
         ma_type = self.ma_type.lower()
-        if ma_type == "sma":
-            self.indicators["ma"] = bt.indicators.SMA(
-                self.strategy.data.close, period=self.ma_period
-            )
-        elif ma_type == "ema":
-            self.indicators["ma"] = bt.indicators.EMA(
-                self.strategy.data.close, period=self.ma_period
-            )
-        else:
-            raise ValueError(f"Unsupported MA type: {ma_type}")
+        
+        if self.use_talib:
+            try:
+                import talib
+                
+                if ma_type == "sma":
+                    self.indicators["ma"] = bt.indicators.TALibIndicator(
+                        self.strategy.data.close,
+                        talib.SMA,
+                        timeperiod=self.ma_period
+                    )
+                elif ma_type == "ema":
+                    self.indicators["ma"] = bt.indicators.TALibIndicator(
+                        self.strategy.data.close,
+                        talib.EMA,
+                        timeperiod=self.ma_period
+                    )
+                else:
+                    raise ValueError(f"Unsupported MA type: {ma_type}")
+            except ImportError:
+                self.log("TA-Lib not available, falling back to Backtrader indicators")
+                self.use_talib = False
+        
+        if not self.use_talib:
+            if ma_type == "sma":
+                self.indicators["ma"] = bt.indicators.SMA(
+                    self.strategy.data.close, period=self.ma_period
+                )
+            elif ma_type == "ema":
+                self.indicators["ma"] = bt.indicators.EMA(
+                    self.strategy.data.close, period=self.ma_period
+                )
+            else:
+                raise ValueError(f"Unsupported MA type: {ma_type}")
 
     def should_exit(self) -> bool:
         """

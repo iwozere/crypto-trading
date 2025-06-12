@@ -10,10 +10,11 @@ and Ichimoku Cloud indicators. The strategy enters a position when:
 Parameters:
     rsi_period (int): Period for RSI calculation (default: 14)
     rsi_oversold (float): RSI threshold for oversold condition (default: 30)
-    ichimoku_tenkan (int): Period for Tenkan-sen calculation (default: 9)
-    ichimoku_kijun (int): Period for Kijun-sen calculation (default: 26)
-    ichimoku_senkou_span_b (int): Period for Senkou Span B calculation (default: 52)
-    ichimoku_displacement (int): Displacement for Ichimoku Cloud (default: 26)
+    tenkan_period (int): Period for Tenkan-sen calculation (default: 9)
+    kijun_period (int): Period for Kijun-sen calculation (default: 26)
+    senkou_span_b_period (int): Period for Senkou Span B calculation (default: 52)
+    displacement (int): Displacement for Ichimoku Cloud (default: 26)
+    use_talib (bool): Whether to use TA-Lib for calculations (default: False)
 
 This strategy combines mean reversion (RSI) with trend following (Ichimoku) to identify potential
 reversal points in the market. It's particularly effective in trending markets where you want to
@@ -23,6 +24,7 @@ catch the beginning of a new trend after a pullback.
 from typing import Any, Dict
 
 import backtrader as bt
+import numpy as np
 from src.entry.entry_mixin import BaseEntryMixin
 
 
@@ -42,6 +44,7 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             "senkou_span_b_period": 52,
             "displacement": 26,
             "require_above_cloud": True,
+            "use_talib": False,
         }
 
     def _init_indicators(self):
@@ -49,30 +52,61 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         if self.strategy is None:
             raise ValueError("Strategy must be set before initializing indicators")
 
-        # Use common indicators from strategy
-        self.indicators["rsi"] = self.strategy.rsi
+        # Initialize RSI based on use_talib flag
+        if self.get_param("use_talib"):
+            try:
+                import talib
+                self.indicators["rsi"] = bt.indicators.TALibIndicator(
+                    self.strategy.data.close,
+                    talib.RSI,
+                    timeperiod=self.get_param("rsi_period")
+                )
+            except ImportError:
+                self.log("TA-Lib not available, falling back to Backtrader RSI")
+                self.indicators["rsi"] = bt.indicators.RSI(
+                    self.strategy.data.close,
+                    period=self.get_param("rsi_period")
+                )
+        else:
+            self.indicators["rsi"] = bt.indicators.RSI(
+                self.strategy.data.close,
+                period=self.get_param("rsi_period")
+            )
 
         # Create Ichimoku Cloud components
-        self.indicators["tenkan"] = bt.indicators.IchimokuTenkanSen(
-            self.strategy.data, period=self.get_param("tenkan_period")
+        data = self.strategy.data
+        
+        # Calculate Tenkan-sen (Conversion Line)
+        tenkan_period = self.get_param("tenkan_period")
+        tenkan_high = bt.indicators.Highest(data.high, period=tenkan_period)
+        tenkan_low = bt.indicators.Lowest(data.low, period=tenkan_period)
+        self.indicators["tenkan"] = (tenkan_high + tenkan_low) / 2
+
+        # Calculate Kijun-sen (Base Line)
+        kijun_period = self.get_param("kijun_period")
+        kijun_high = bt.indicators.Highest(data.high, period=kijun_period)
+        kijun_low = bt.indicators.Lowest(data.low, period=kijun_period)
+        self.indicators["kijun"] = (kijun_high + kijun_low) / 2
+
+        # Calculate Senkou Span A (Leading Span A)
+        self.indicators["senkou_span_a"] = bt.indicators.DisplacedMovingAverage(
+            (self.indicators["tenkan"] + self.indicators["kijun"]) / 2,
+            period=self.get_param("displacement")
         )
 
-        self.indicators["kijun"] = bt.indicators.IchimokuKijunSen(
-            self.strategy.data, period=self.get_param("kijun_period")
+        # Calculate Senkou Span B (Leading Span B)
+        senkou_span_b_period = self.get_param("senkou_span_b_period")
+        senkou_span_b_high = bt.indicators.Highest(data.high, period=senkou_span_b_period)
+        senkou_span_b_low = bt.indicators.Lowest(data.low, period=senkou_span_b_period)
+        self.indicators["senkou_span_b"] = bt.indicators.DisplacedMovingAverage(
+            (senkou_span_b_high + senkou_span_b_low) / 2,
+            period=self.get_param("displacement")
         )
 
-        self.indicators["senkou_span_a"] = bt.indicators.IchimokuSenkouSpanA(
-            self.strategy.data,
-            tenkan_period=self.get_param("tenkan_period"),
-            kijun_period=self.get_param("kijun_period"),
-        )
-
-        self.indicators["senkou_span_b"] = bt.indicators.IchimokuSenkouSpanB(
-            self.strategy.data, period=self.get_param("senkou_span_b_period")
-        )
-
-        self.indicators["chikou_span"] = bt.indicators.IchimokuChikouSpan(
-            self.strategy.data, displacement=self.get_param("displacement")
+        # Calculate Chikou Span (Lagging Span)
+        self.indicators["chikou_span"] = bt.indicators.DisplacedMovingAverage(
+            data.close,
+            period=-self.get_param("displacement")
         )
 
     def should_enter(self) -> bool:
