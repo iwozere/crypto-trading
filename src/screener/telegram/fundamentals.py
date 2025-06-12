@@ -9,7 +9,7 @@ def get_fundamentals(ticker: str) -> dict:
         return {
             "ticker": ticker.upper(),
             "company_name": info.get("shortName", "Unknown"),
-            "current_price": info.get("currentPrice"),
+            "current_price": info.get("currentPrice") or info.get("regularMarketPrice"),
             "market_cap": info.get("marketCap"),
             "pe_ratio": info.get("trailingPE"),
             "forward_pe": info.get("forwardPE"),

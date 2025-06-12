@@ -76,9 +76,7 @@ if __name__ == "__main__":
     _logger.info(f"Starting optimization at {start_time}")
 
     # Get the data files
-    data_files = [
-        f for f in os.listdir("data/") if f.endswith(".csv") and not f.startswith(".")
-    ]
+    data_files = [f for f in os.listdir("data/") if f.endswith(".csv") and not f.startswith(".")]
 
     for data_file in data_files:
         _logger.info(f"Running optimization for {data_file}")
@@ -86,27 +84,15 @@ if __name__ == "__main__":
         data = prepare_data(data_file)
         for entry_logic_name in ENTRY_MIXIN_REGISTRY.keys():
             # Load entry logic configuration
-            with open(
-                os.path.join(
-                    "config", "optimizer", "entry", f"{entry_logic_name}.json"
-                ),
-                "r",
-            ) as f:
+            with open(os.path.join("config", "optimizer", "entry", f"{entry_logic_name}.json"), "r", ) as f:
                 entry_logic_config = json.load(f)
 
             for exit_logic_name in EXIT_MIXIN_REGISTRY.keys():
                 # Load exit logic configuration
-                with open(
-                    os.path.join(
-                        "config", "optimizer", "exit", f"{exit_logic_name}.json"
-                    ),
-                    "r",
-                ) as f:
+                with open(os.path.join("config", "optimizer", "exit", f"{exit_logic_name}.json"), "r", ) as f:
                     exit_logic_config = json.load(f)
 
-                print(
-                    f"Running optimization for {entry_logic_name} and {exit_logic_name}"
-                )
+                print(f"Running optimization for {entry_logic_name} and {exit_logic_name}")
 
                 # Create optimizer configuration
                 optimizer_config = {
