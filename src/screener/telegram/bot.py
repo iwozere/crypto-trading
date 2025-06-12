@@ -11,7 +11,7 @@ import tempfile
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import FSInputFile, Message
-from src.analyzer.telegram.combine import analyze_ticker
+from src.screener.telegram.combine import analyze_ticker
 from src.notification.logger import setup_logger
 
 from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
