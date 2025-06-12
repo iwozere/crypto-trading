@@ -190,6 +190,7 @@ class CustomStrategy(bt.Strategy):
                 print(
                     f"SELL signal at {self.data.datetime.datetime()} - Price: {self.data.close[0]:.2f}"
                 )
+                self.has_position = False  # Set position flag when exiting
 
     def _calculate_position_size(self) -> float:
         """
@@ -202,7 +203,7 @@ class CustomStrategy(bt.Strategy):
         """
         available_cash = self.broker.get_cash()
         price = self.data.close[0]
-        max_shares = int((available_cash * self.p.position_size) / price)
+        max_shares = (available_cash * self.p.position_size) / price
         return max_shares
 
 

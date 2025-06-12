@@ -56,8 +56,10 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         if self.get_param("use_talib"):
             try:
                 import talib
+                # This creates an indicator that will be automatically updated
+                # when new data arrives in the strategy's next() method
                 self.indicators["rsi"] = bt.indicators.TALibIndicator(
-                    self.strategy.data.close,
+                    self.strategy.data.close,  # Uses strategy's data as input
                     talib.RSI,
                     timeperiod=self.get_param("rsi_period")
                 )
@@ -74,8 +76,10 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             )
 
         # Create Ichimoku Cloud components
-        data = self.strategy.data
+        data = self.strategy.data  # Reference to strategy's data
         
+        # All these indicators will be automatically updated
+        # when new data arrives in the strategy's next() method
         # Calculate Tenkan-sen (Conversion Line)
         tenkan_period = self.get_param("tenkan_period")
         tenkan_high = bt.indicators.Highest(data.high, period=tenkan_period)
@@ -89,24 +93,36 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         self.indicators["kijun"] = (kijun_high + kijun_low) / 2
 
         # Calculate Senkou Span A (Leading Span A)
-        self.indicators["senkou_span_a"] = bt.indicators.DisplacedMovingAverage(
+        senkou_span_a = bt.indicators.MovingAverageSimple(
             (self.indicators["tenkan"] + self.indicators["kijun"]) / 2,
-            period=self.get_param("displacement")
+            period=1
+        )
+        self.indicators["senkou_span_a"] = bt.indicators.DisplaceN(
+            senkou_span_a,
+            n=self.get_param("displacement")
         )
 
         # Calculate Senkou Span B (Leading Span B)
         senkou_span_b_period = self.get_param("senkou_span_b_period")
         senkou_span_b_high = bt.indicators.Highest(data.high, period=senkou_span_b_period)
         senkou_span_b_low = bt.indicators.Lowest(data.low, period=senkou_span_b_period)
-        self.indicators["senkou_span_b"] = bt.indicators.DisplacedMovingAverage(
+        senkou_span_b = bt.indicators.MovingAverageSimple(
             (senkou_span_b_high + senkou_span_b_low) / 2,
-            period=self.get_param("displacement")
+            period=1
+        )
+        self.indicators["senkou_span_b"] = bt.indicators.DisplaceN(
+            senkou_span_b,
+            n=self.get_param("displacement")
         )
 
         # Calculate Chikou Span (Lagging Span)
-        self.indicators["chikou_span"] = bt.indicators.DisplacedMovingAverage(
+        chikou_span = bt.indicators.MovingAverageSimple(
             data.close,
-            period=-self.get_param("displacement")
+            period=1
+        )
+        self.indicators["chikou_span"] = bt.indicators.DisplaceN(
+            chikou_span,
+            n=-self.get_param("displacement")  # Negative displacement for lagging
         )
 
     def should_enter(self) -> bool:
