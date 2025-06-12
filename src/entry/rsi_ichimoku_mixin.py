@@ -93,37 +93,31 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         self.indicators["kijun"] = (kijun_high + kijun_low) / 2
 
         # Calculate Senkou Span A (Leading Span A)
-        senkou_span_a = bt.indicators.MovingAverageSimple(
+        self.indicators["senkou_span_a"] = bt.indicators.MovingAverageSimple(
             (self.indicators["tenkan"] + self.indicators["kijun"]) / 2,
-            period=1
+            period=1,
+            subplot=False
         )
-        self.indicators["senkou_span_a"] = bt.indicators.DisplaceN(
-            senkou_span_a,
-            n=self.get_param("displacement")
-        )
+        self.indicators["senkou_span_a"].plotinfo.plotdelay = self.get_param("displacement")
 
         # Calculate Senkou Span B (Leading Span B)
         senkou_span_b_period = self.get_param("senkou_span_b_period")
         senkou_span_b_high = bt.indicators.Highest(data.high, period=senkou_span_b_period)
         senkou_span_b_low = bt.indicators.Lowest(data.low, period=senkou_span_b_period)
-        senkou_span_b = bt.indicators.MovingAverageSimple(
+        self.indicators["senkou_span_b"] = bt.indicators.MovingAverageSimple(
             (senkou_span_b_high + senkou_span_b_low) / 2,
-            period=1
+            period=1,
+            subplot=False
         )
-        self.indicators["senkou_span_b"] = bt.indicators.DisplaceN(
-            senkou_span_b,
-            n=self.get_param("displacement")
-        )
+        self.indicators["senkou_span_b"].plotinfo.plotdelay = self.get_param("displacement")
 
         # Calculate Chikou Span (Lagging Span)
-        chikou_span = bt.indicators.MovingAverageSimple(
+        self.indicators["chikou_span"] = bt.indicators.MovingAverageSimple(
             data.close,
-            period=1
+            period=1,
+            subplot=False
         )
-        self.indicators["chikou_span"] = bt.indicators.DisplaceN(
-            chikou_span,
-            n=-self.get_param("displacement")  # Negative displacement for lagging
-        )
+        self.indicators["chikou_span"].plotinfo.plotdelay = -self.get_param("displacement")  # Negative displacement for lagging
 
     def should_enter(self) -> bool:
         """Entry logic: RSI oversold and Ichimoku Cloud conditions"""

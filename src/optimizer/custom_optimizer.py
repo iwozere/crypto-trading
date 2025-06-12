@@ -37,6 +37,7 @@ from src.analyzer.bt_analyzers import (CAGR, CalmarRatio,
 from src.notification.logger import _logger
 from src.strategy.custom_strategy import CustomStrategy
 from src.util.date_time_encoder import DateTimeEncoder
+from src.plotter.rsi_ichimoku_plotter import RSIIchimokuPlotter
 
 
 class CustomOptimizer:
@@ -56,12 +57,15 @@ class CustomOptimizer:
         self.entry_logic = config.get("entry_logic")
         self.exit_logic = config.get("exit_logic")
         self.optimizer_settings = config.get("optimizer_settings", {})
+        self.visualization_settings = config.get("visualization_settings", {})
 
         # Initialize settings
         self.initial_capital = self.optimizer_settings.get("initial_capital", 1000.0)
         self.commission = self.optimizer_settings.get("commission", 0.001)
         self.risk_free_rate = self.optimizer_settings.get("risk_free_rate", 0.01)
         self.use_talib = self.optimizer_settings.get("use_talib", True)
+        self.output_dir = self.optimizer_settings.get("output_dir", "output")
+        os.makedirs(self.output_dir, exist_ok=True)
 
     def run_optimization(self, trial=None):
         """
@@ -159,6 +163,15 @@ class CustomOptimizer:
         results = cerebro.run()
         strategy = results[0]
 
+        # Create plot
+        plotter = self._create_plotter(strategy)
+        if plotter:
+            plot_path = os.path.join(
+                self.output_dir,
+                f"backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            )
+            plotter.plot(plot_path)
+
         analyzers = {
             "sharpe": strategy.analyzers.sharpe.get_analysis(),
             "drawdown": strategy.analyzers.drawdown.get_analysis(),
@@ -179,16 +192,32 @@ class CustomOptimizer:
 
         # Collect metrics
         trades_analysis = strategy.analyzers.trades.get_analysis()
+        total_profit = trades_analysis.get("pnl", {}).get("net", {}).get("total", 0.0)
+        total_commission = trades_analysis.get("pnl", {}).get("comm", {}).get("total", 0.0)
+        total_profit_with_comm = total_profit - total_commission
+
         output = {
             "best_params": strategy_params,
+            "total_profit": total_profit,
+            "total_profit_with_commission": total_profit_with_comm,
             "analyzers": analyzers,
             "trades": strategy.trades,  # what is collected in notify_trade or in next()
-            "total_profit": trades_analysis.get("pnl", {}).get("net", {}).get("total", 0.0),
-            "total_profit_with_commission": (
-                trades_analysis.get("pnl", {}).get("net", {}).get("total", 0.0) -
-                trades_analysis.get("pnl", {}).get("comm", {}).get("total", 0.0)
-            ),
         }
 
         # Convert to JSON and back to handle datetime serialization
         return json.loads(json.dumps(output, cls=DateTimeEncoder))
+
+    def _create_plotter(self, strategy):
+        """Create appropriate plotter based on strategy configuration"""
+        entry_name = self.entry_logic["name"]
+        exit_name = self.exit_logic["name"]
+
+        if entry_name == "RSIIchimokuEntryMixin":
+            return RSIIchimokuPlotter(
+                self.data, 
+                strategy.trades, 
+                strategy,
+                self.visualization_settings
+            )
+        # Add more plotters for other strategy combinations
+        return None

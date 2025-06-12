@@ -29,15 +29,16 @@ class CustomStrategy(bt.Strategy):
         ("use_talib", False),       # Whether to use TA-Lib
     )
 
-    def __init__(self):
+    def __init__(self, strategy_config: dict):
+        """Initialize strategy with configuration"""
         super().__init__()
-
-        strategy_config = self.p.strategy_config
+        self.strategy_config = strategy_config
+        self.trades = []  # List to store trade information
+        self.current_trade = None  # Track current trade
+        self.position_open = False  # Flag to track if we have an open position
 
         self.entry_logic = strategy_config["entry_logic"]
         self.exit_logic = strategy_config["exit_logic"]
-        self.trades = []  # List to store trade information
-        self.has_position = False  # Flag to track if we have an open position
 
         # Update params from config if provided
         if "position_size" in strategy_config:
@@ -137,62 +138,61 @@ class CustomStrategy(bt.Strategy):
         self.exit_mixin.init_exit(strategy=self)
 
     def notify_trade(self, trade):
-        """Called when a trade is completed"""
+        """Called when a trade is closed"""
         if trade.isclosed:
-            self.has_position = False  # Reset position flag when trade is closed
-            self.trades.append({
-                'entry_date': self.data.datetime.datetime().strftime('%Y-%m-%d %H:%M:%S'),
-                'exit_date': self.data.datetime.datetime().strftime('%Y-%m-%d %H:%M:%S'),
-                'entry_price': float(trade.price),
-                'exit_price': float(trade.pnl),
-                'pnl': float(trade.pnl),
-                'pnlcomm': float(trade.pnlcomm),
-                'size': float(trade.size),
-                'status': 'closed'
-            })
+            # Find the corresponding open trade
+            for t in self.trades:
+                if t["entry_date"] == trade.dtopen.strftime('%Y-%m-%d %H:%M:%S'):
+                    # Update the existing trade with exit information
+                    t["exit_date"] = trade.dtclose.strftime('%Y-%m-%d %H:%M:%S')
+                    t["exit_price"] = trade.price  # Actual exit price
+                    t["pnl"] = trade.pnl
+                    t["pnlcomm"] = trade.pnlcomm
+                    t["size"] = 0  # Position is closed
+                    t["status"] = "closed"
+                    t["exit_reason"] = self._get_exit_reason(trade)
+                    break
+            self.position_open = False
+            self.current_trade = None
+
+    def _get_exit_reason(self, trade):
+        """Determine the reason for trade exit"""
+        if hasattr(trade, 'stop_loss') and trade.stop_loss:
+            return "stop_loss"
+        elif hasattr(trade, 'take_profit') and trade.take_profit:
+            return "take_profit"
+        elif hasattr(trade, 'trailing_stop') and trade.trailing_stop:
+            return "trailing_stop"
+        else:
+            return "signal"  # Default exit reason
 
     def next(self):
         """Main strategy logic"""
-        # Calculate minimum required data length based on indicator parameters
-        min_length = max(
-            self.entry_logic["params"].get("rsi_period", 14),
-            self.entry_logic["params"].get("bb_period", 20),
-            self.entry_logic["params"].get("vol_ma_period", 20),
-            self.entry_logic["params"].get("st_period", 10),
-            self.exit_logic["params"].get("atr_period", 14),
-        )
-        
-        # Skip if we don't have enough data points for indicators
-        if len(self.data) < min_length:
+        if len(self.data) < 100:  # Arbitrary minimum length, adjust as needed
             return
 
-        # Check entry conditions (if no open positions)
-        if not self.has_position:
-            if self.entry_mixin.should_enter():
-                size = self._calculate_position_size()
-                if size > 0:  # Only enter if we can buy at least 1 unit
-                    self.buy(size=size)
-                    self.has_position = True  # Set position flag when entering
-                    self.trades.append({
-                        'entry_date': self.data.datetime.datetime().strftime('%Y-%m-%d %H:%M:%S'),
-                        'entry_price': float(self.data.close[0]),
-                        'size': float(size),
-                        'status': 'open'
-                    })
-                    print(
-                        f"BUY signal at {self.data.datetime.datetime()} - Price: {self.data.close[0]:.2f}"
-                    )
+        # Check for entry signals
+        if not self.position_open and self.entry_mixin.should_enter():
+            size = self.calculate_position_size()
+            if size > 0:  # Only enter if we can buy at least 1 unit
+                self.buy(size=size)
+                self.position_open = True
+                # Create new trade entry
+                self.current_trade = {
+                    "entry_date": self.data.datetime.datetime(0).strftime('%Y-%m-%d %H:%M:%S'),
+                    "entry_price": self.data.close[0],
+                    "size": size,
+                    "status": "open"
+                }
+                self.trades.append(self.current_trade)
 
-        # Check exit conditions (if there are open positions)
-        elif self.has_position:
-            if self.exit_mixin.should_exit():
-                self.sell(size=self.position.size)
-                print(
-                    f"SELL signal at {self.data.datetime.datetime()} - Price: {self.data.close[0]:.2f}"
-                )
-                self.has_position = False  # Set position flag when exiting
+        # Check for exit signals
+        elif self.position_open and self.exit_mixin.should_exit():
+            self.close()
+            self.position_open = False
+            self.current_trade = None
 
-    def _calculate_position_size(self) -> float:
+    def calculate_position_size(self) -> float:
         """
         Calculate position size based on available capital and position_size parameter
 
