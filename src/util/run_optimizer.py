@@ -145,6 +145,21 @@ if __name__ == "__main__":
                     print(f"Parameters: {best_result['best_params']}")
                     print(f"Total Profit: {best_result['total_profit']:.2f}")
                     print(f"Total Profit (with commission): {best_result['total_profit_with_commission']:.2f}")
+
+                    # Create plot with custom name
+                    plot_name = get_result_filename(
+                        data_file,
+                        entry_logic_name=entry_logic_name,
+                        exit_logic_name=exit_logic_name,
+                        suffix="_plot",
+                    )
+                    plot_path = os.path.join("results", f"{plot_name}.png")
+                    
+                    # Get the plotter from the optimizer and plot
+                    plotter = optimizer._create_plotter(best_result['strategy'])
+                    if plotter:
+                        plotter.plot(plot_path)
+                        print(f"Plot saved to: {plot_path}")
                 else:
                     print("No trials were completed successfully.")
 
