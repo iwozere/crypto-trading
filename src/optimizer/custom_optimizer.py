@@ -37,7 +37,6 @@ from src.analyzer.bt_analyzers import (CAGR, CalmarRatio,
 from src.notification.logger import _logger
 from src.strategy.custom_strategy import CustomStrategy
 from src.util.date_time_encoder import DateTimeEncoder
-from src.plotter.rsi_ichimoku_plotter import RSIIchimokuPlotter
 from src.plotter.indicators.rsi_plotter import RSIPlotter
 from src.plotter.indicators.ichimoku_plotter import IchimokuPlotter
 from src.plotter.indicators.bollinger_bands_plotter import BollingerBandsPlotter
@@ -168,15 +167,6 @@ class CustomOptimizer:
         # Run backtest
         results = cerebro.run()
         strategy = results[0]
-
-        # Create plot
-        plotter = self._create_plotter(strategy)
-        if plotter:
-            plot_path = os.path.join(
-                self.output_dir,
-                f"backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-            )
-            plotter.plot(plot_path)
 
         analyzers = {
             "sharpe": strategy.analyzers.sharpe.get_analysis(),

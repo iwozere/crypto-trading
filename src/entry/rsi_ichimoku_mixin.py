@@ -30,11 +30,11 @@ from src.entry.entry_mixin import BaseEntryMixin
 
 class RSIIchimokuEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI and Ichimoku cloud"""
-
+    
     def get_required_params(self) -> list:
         # We can make some parameters required
         return ["tenkan_period", "kijun_period"]
-
+    
     def get_default_params(self) -> Dict[str, Any]:
         return {
             "rsi_period": 14,
@@ -46,7 +46,7 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             "require_above_cloud": True,
             "use_talib": False,
         }
-
+    
     def _init_indicators(self):
         """Initialize RSI and Ichimoku Cloud indicators"""
         if self.strategy is None:
@@ -123,13 +123,13 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         """Entry logic: RSI oversold and Ichimoku Cloud conditions"""
         if not self.indicators:
             return False
-
+        
         rsi = self.indicators["rsi"][0]
         current_price = self.strategy.data.close[0]
-
+        
         # RSI condition
         rsi_ok = rsi < self.get_param("rsi_oversold")
-
+        
         # Ichimoku conditions
         tenkan = self.indicators["tenkan"][0]
         kijun = self.indicators["kijun"][0]
@@ -138,11 +138,11 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
 
         # Bullish signal: Tenkan-sen crosses above Kijun-sen
         tenkan_kijun_cross = tenkan > kijun
-
+        
         # Additional condition - price above the cloud (if required)
         above_cloud = True
         if self.get_param("require_above_cloud"):
             cloud_top = max(senkou_span_a, senkou_span_b)
             above_cloud = current_price > cloud_top
-
+        
         return rsi_ok and tenkan_kijun_cross and above_cloud

@@ -122,7 +122,7 @@ if __name__ == "__main__":
                     return result["total_profit_with_commission"]
 
                 # Run optimization
-                study.optimize(objective, n_trials=100, show_progress_bar=False)
+                study.optimize(objective, n_trials=100, n_jobs=-1, show_progress_bar=False)
 
                 # Get best trial and run it again to get detailed results
                 if study.best_trial is not None:

@@ -29,25 +29,25 @@ class CustomStrategy(bt.Strategy):
         ("use_talib", False),       # Whether to use TA-Lib
     )
 
-    def __init__(self, strategy_config: dict):
+    def __init__(self):
         """Initialize strategy with configuration"""
         super().__init__()
-        self.strategy_config = strategy_config
+        self.strategy_config = self.p.strategy_config
         self.trades = []  # List to store trade information
         self.current_trade = None  # Track current trade
         self.position_open = False  # Flag to track if we have an open position
 
-        self.entry_logic = strategy_config["entry_logic"]
-        self.exit_logic = strategy_config["exit_logic"]
+        self.entry_logic = self.strategy_config["entry_logic"]
+        self.exit_logic = self.strategy_config["exit_logic"]
 
         # Update params from config if provided
-        if "position_size" in strategy_config:
-            self.p.position_size = strategy_config["position_size"]
-        if "use_talib" in strategy_config:
-            self.p.use_talib = strategy_config["use_talib"]
+        if "position_size" in self.strategy_config:
+            self.p.position_size = self.strategy_config["position_size"]
+        if "use_talib" in self.strategy_config:
+            self.p.use_talib = self.strategy_config["use_talib"]
 
         # Validate required parameters
-        if not strategy_config:
+        if not self.strategy_config:
             raise ValueError("strategy_config parameter is required")
 
         # Initialize common indicators
