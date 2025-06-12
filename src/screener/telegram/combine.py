@@ -1,8 +1,8 @@
-from src.analyzer.telegram.chart import generate_price_chart
-from src.analyzer.telegram.fundamentals import get_fundamentals
-from src.analyzer.telegram.models import (Fundamentals, Technicals,
+from src.screener.telegram.chart import generate_price_chart
+from src.screener.telegram.fundamentals import get_fundamentals
+from src.screener.telegram.models import (Fundamentals, Technicals,
                                           TickerAnalysis)
-from src.analyzer.telegram.technicals import calculate_technicals
+from src.screener.telegram.technicals import calculate_technicals
 
 
 def generate_recommendation(technicals: Technicals) -> str:
