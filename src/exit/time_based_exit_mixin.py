@@ -50,23 +50,23 @@ class TimeBasedExitMixin(BaseExitMixin):
         """No indicators needed for time-based exit"""
         self.entry_bar = 0
 
-    def should_exit(self, strategy) -> bool:
+    def should_exit(self) -> bool:
         """
         Exit logic: Exit after specified number of bars or calendar days
         """
-        if not strategy.position:
+        if not self.strategy.position:
             return False
 
         # Update entry bar if not set
         if self.entry_bar == 0:
-            self.entry_bar = len(strategy)
+            self.entry_bar = len(self.strategy)
 
         # Calculate elapsed time
         if self.use_calendar_days:
             # TODO: Implement calendar days calculation if needed
-            elapsed = len(strategy) - self.entry_bar
+            elapsed = len(self.strategy) - self.entry_bar
         else:
-            elapsed = len(strategy) - self.entry_bar
+            elapsed = len(self.strategy) - self.entry_bar
 
         # Exit if time period has elapsed
         return elapsed >= self.time_period

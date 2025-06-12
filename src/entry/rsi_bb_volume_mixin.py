@@ -60,7 +60,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             self.strategy.data.volume, period=self.get_param("vol_ma_period")
         )
 
-    def should_enter(self, strategy) -> bool:
+    def should_enter(self) -> bool:
         """
         Entry logic: RSI in the oversold zone, touching the lower BB band,
         and volume above the moving average
@@ -69,8 +69,8 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             return False
 
         rsi = self.indicators["rsi"][0]
-        current_price = strategy.data.close[0]
-        current_volume = strategy.data.volume[0]
+        current_price = self.strategy.data.close[0]
+        current_volume = self.strategy.data.volume[0]
         vol_ma = self.indicators["vol_ma"][0]
 
         # Check RSI

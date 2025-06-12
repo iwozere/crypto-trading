@@ -51,29 +51,23 @@ class BBVolumeSuperTrendEntryMixin(BaseEntryMixin):
         if self.strategy is None:
             raise ValueError("Strategy must be set before initializing indicators")
 
-        # Create indicators with parameters from configuration
-        self.indicators["bb"] = bt.indicators.BollingerBands(
-            self.strategy.data.close,
-            period=self.get_param("bb_period"),
-            devfactor=self.get_param("bb_stddev"),
-        )
+        # Use common indicators from strategy
+        self.indicators["bb"] = self.strategy.bb
+        self.indicators["atr"] = self.strategy.atr
 
         self.indicators["vol_ma"] = bt.indicators.SMA(
             self.strategy.data.volume, period=self.get_param("vol_ma_period")
         )
-
-        # Create ATR for SuperTrend
-        atr = bt.indicators.ATR(self.strategy.data, period=self.get_param("st_period"))
 
         # Create SuperTrend
         self.indicators["supertrend"] = bt.indicators.SuperTrend(
             self.strategy.data,
             period=self.get_param("st_period"),
             multiplier=self.get_param("st_multiplier"),
-            atr=atr,
+            atr=self.indicators["atr"],
         )
 
-    def should_enter(self, strategy) -> bool:
+    def should_enter(self) -> bool:
         """
         Entry logic: Price touching lower BB band, volume above MA,
         and price above SuperTrend
@@ -81,8 +75,8 @@ class BBVolumeSuperTrendEntryMixin(BaseEntryMixin):
         if not self.indicators:
             return False
 
-        current_price = strategy.data.close[0]
-        current_volume = strategy.data.volume[0]
+        current_price = self.strategy.data.close[0]
+        current_volume = self.strategy.data.volume[0]
         vol_ma = self.indicators["vol_ma"][0]
         supertrend = self.indicators["supertrend"][0]
 

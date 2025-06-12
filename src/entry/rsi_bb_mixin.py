@@ -49,18 +49,11 @@ class RSIBBEntryMixin(BaseEntryMixin):
         if self.strategy is None:
             raise ValueError("Strategy must be set before initializing indicators")
 
-        # Create indicators with parameters from configuration
-        self.indicators["rsi"] = bt.indicators.RSI(
-            self.strategy.data.close, period=self.get_param("rsi_period")
-        )
+        # Use common indicators from strategy
+        self.indicators["rsi"] = self.strategy.rsi
+        self.indicators["bb"] = self.strategy.bb
 
-        self.indicators["bb"] = bt.indicators.BollingerBands(
-            self.strategy.data.close,
-            period=self.get_param("bb_period"),
-            devfactor=self.get_param("bb_stddev"),
-        )
-
-    def should_enter(self, strategy) -> bool:
+    def should_enter(self) -> bool:
         """
         Entry logic: RSI in the oversold zone and (optionally) touching the lower BB band
         """
@@ -68,8 +61,8 @@ class RSIBBEntryMixin(BaseEntryMixin):
             return False
 
         rsi = self.indicators["rsi"][0]
-        current_price = strategy.data.close[0]
-        volume = strategy.data.volume[0]
+        current_price = self.strategy.data.close[0]
+        volume = self.strategy.data.volume[0]
 
         # Check RSI
         rsi_oversold = rsi < self.get_param("rsi_oversold")

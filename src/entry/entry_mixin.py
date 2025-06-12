@@ -71,7 +71,7 @@ class BaseEntryMixin(ABC):
         pass
 
     @abstractmethod
-    def should_enter(self, strategy) -> bool:
+    def should_enter(self) -> bool:
         """
         Determines if the mixin should enter a position
 

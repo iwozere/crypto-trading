@@ -175,9 +175,12 @@ class CustomOptimizer:
         }
 
         # Collect metrics
+        trades_analysis = strategy.analyzers.trades.get_analysis()
         output = {
             "best_params": strategy_params,
             "analyzers": analyzers,
             "trades": strategy.trades,  # what is collected in notify_trade or in next()
+            "total_profit": trades_analysis["pnl"]["net"]["total"],
+            "total_profit_with_commission": trades_analysis["pnl"]["net"]["total"] - trades_analysis["pnl"]["comm"]["total"],
         }
         return output

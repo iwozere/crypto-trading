@@ -49,7 +49,7 @@ class BaseExitMixin(ABC):
         pass
 
     @abstractmethod
-    def should_exit(self, strategy) -> bool:
+    def should_exit(self) -> bool:
         pass
 
     def get_param(self, key: str, default=None):

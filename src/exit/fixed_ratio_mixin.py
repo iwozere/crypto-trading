@@ -53,16 +53,16 @@ class FixedRatioExitMixin(BaseExitMixin):
         """No indicators needed for fixed ratio exit"""
         pass
 
-    def should_exit(self, strategy) -> bool:
+    def should_exit(self) -> bool:
         """
         Exit logic: Exit when price reaches take profit or stop loss levels
         based on fixed percentage ratios
         """
-        if not strategy.position:
+        if not self.strategy.position:
             return False
 
-        price = strategy.data.close[0]
-        entry_price = strategy.position.price
+        price = self.strategy.data.close[0]
+        entry_price = self.strategy.position.price
 
         # Calculate profit/loss percentage
         pnl_pct = (price - entry_price) / entry_price

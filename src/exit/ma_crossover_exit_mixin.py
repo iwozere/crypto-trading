@@ -67,14 +67,14 @@ class MACrossoverExitMixin(BaseExitMixin):
         else:
             raise ValueError(f"Unsupported MA type: {ma_type}")
 
-    def should_exit(self, strategy) -> bool:
+    def should_exit(self) -> bool:
         """
         Exit logic: Exit when price crosses below the moving average
         """
         if not self.indicators:
             return False
 
-        current_price = strategy.data.close[0]
+        current_price = self.strategy.data.close[0]
         ma = self.indicators["ma"][0]
 
         return current_price < ma

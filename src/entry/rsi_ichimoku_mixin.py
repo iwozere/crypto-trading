@@ -49,10 +49,8 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         if self.strategy is None:
             raise ValueError("Strategy must be set before initializing indicators")
 
-        # Create RSI indicator
-        self.indicators["rsi"] = bt.indicators.RSI(
-            self.strategy.data.close, period=self.get_param("rsi_period")
-        )
+        # Use common indicators from strategy
+        self.indicators["rsi"] = self.strategy.rsi
 
         # Create Ichimoku Cloud components
         self.indicators["tenkan"] = bt.indicators.IchimokuTenkanSen(
@@ -77,13 +75,13 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             self.strategy.data, displacement=self.get_param("displacement")
         )
 
-    def should_enter(self, strategy) -> bool:
+    def should_enter(self) -> bool:
         """Entry logic: RSI oversold and Ichimoku Cloud conditions"""
         if not self.indicators:
             return False
 
         rsi = self.indicators["rsi"][0]
-        current_price = strategy.data.close[0]
+        current_price = self.strategy.data.close[0]
 
         # RSI condition
         rsi_ok = rsi < self.get_param("rsi_oversold")

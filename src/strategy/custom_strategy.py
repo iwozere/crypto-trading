@@ -155,7 +155,7 @@ class CustomStrategy(bt.Strategy):
         """Main strategy logic"""
         # Check entry conditions (if no open positions)
         if not self.has_position:
-            if self.entry_mixin.should_enter(self):
+            if self.entry_mixin.should_enter():
                 size = self._calculate_position_size()
                 self.buy(size=size)
                 self.has_position = True  # Set position flag when entering
@@ -171,7 +171,7 @@ class CustomStrategy(bt.Strategy):
 
         # Check exit conditions (if there are open positions)
         elif self.has_position:
-            if self.exit_mixin.should_exit(self):
+            if self.exit_mixin.should_exit():
                 self.sell(size=self.position.size)
                 print(
                     f"SELL signal at {self.data.datetime.datetime()} - Price: {self.data.close[0]:.2f}"

@@ -64,15 +64,15 @@ class TrailingStopExitMixin(BaseExitMixin):
                 raise ValueError("Strategy must be set before initializing indicators")
             self.indicators["atr"] = bt.indicators.ATR(self.strategy.data, period=14)
 
-    def should_exit(self, strategy) -> bool:
+    def should_exit(self) -> bool:
         """
         Exit logic: Exit when price falls below trailing stop level
         """
-        if not strategy.position:
+        if not self.strategy.position:
             return False
 
-        price = strategy.data.close[0]
-        entry_price = strategy.position.price
+        price = self.strategy.data.close[0]
+        entry_price = self.strategy.position.price
 
         # Update highest price if current price is higher
         if price > self.highest_price:
