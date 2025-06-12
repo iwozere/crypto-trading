@@ -141,8 +141,8 @@ class CustomStrategy(bt.Strategy):
         if trade.isclosed:
             self.has_position = False  # Reset position flag when trade is closed
             self.trades.append({
-                'entry_date': self.data.datetime.datetime(),
-                'exit_date': self.data.datetime.datetime(),
+                'entry_date': self.data.datetime.datetime().strftime('%Y-%m-%d %H:%M:%S'),
+                'exit_date': self.data.datetime.datetime().strftime('%Y-%m-%d %H:%M:%S'),
                 'entry_price': trade.price,
                 'exit_price': trade.pnl,
                 'pnl': trade.pnl,
@@ -153,21 +153,26 @@ class CustomStrategy(bt.Strategy):
 
     def next(self):
         """Main strategy logic"""
+        # Skip if we don't have enough data points for indicators
+        if len(self.data) < 100:  # Arbitrary minimum length, adjust as needed
+            return
+
         # Check entry conditions (if no open positions)
         if not self.has_position:
             if self.entry_mixin.should_enter():
                 size = self._calculate_position_size()
-                self.buy(size=size)
-                self.has_position = True  # Set position flag when entering
-                self.trades.append({
-                    'entry_date': self.data.datetime.datetime(),
-                    'entry_price': self.data.close[0],
-                    'size': size,
-                    'status': 'open'
-                })
-                print(
-                    f"BUY signal at {self.data.datetime.datetime()} - Price: {self.data.close[0]:.2f}"
-                )
+                if size > 0:  # Only enter if we can buy at least 1 unit
+                    self.buy(size=size)
+                    self.has_position = True  # Set position flag when entering
+                    self.trades.append({
+                        'entry_date': self.data.datetime.datetime().strftime('%Y-%m-%d %H:%M:%S'),
+                        'entry_price': self.data.close[0],
+                        'size': size,
+                        'status': 'open'
+                    })
+                    print(
+                        f"BUY signal at {self.data.datetime.datetime()} - Price: {self.data.close[0]:.2f}"
+                    )
 
         # Check exit conditions (if there are open positions)
         elif self.has_position:

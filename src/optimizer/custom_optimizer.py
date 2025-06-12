@@ -27,6 +27,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+import json
 import backtrader as bt
 from src.analyzer.bt_analyzers import (CAGR, CalmarRatio,
                                        ConsecutiveWinsLosses,
@@ -34,6 +35,7 @@ from src.analyzer.bt_analyzers import (CAGR, CalmarRatio,
                                        SortinoRatio, WinRate)
 from src.notification.logger import _logger
 from src.strategy.custom_strategy import CustomStrategy
+from src.util.date_time_encoder import DateTimeEncoder
 
 
 class CustomOptimizer:
@@ -180,7 +182,12 @@ class CustomOptimizer:
             "best_params": strategy_params,
             "analyzers": analyzers,
             "trades": strategy.trades,  # what is collected in notify_trade or in next()
-            "total_profit": trades_analysis["pnl"]["net"]["total"],
-            "total_profit_with_commission": trades_analysis["pnl"]["net"]["total"] - trades_analysis["pnl"]["comm"]["total"],
+            "total_profit": trades_analysis.get("pnl", {}).get("net", {}).get("total", 0.0),
+            "total_profit_with_commission": (
+                trades_analysis.get("pnl", {}).get("net", {}).get("total", 0.0) -
+                trades_analysis.get("pnl", {}).get("comm", {}).get("total", 0.0)
+            ),
         }
-        return output
+
+        # Convert to JSON and back to handle datetime serialization
+        return json.loads(json.dumps(output, cls=DateTimeEncoder))

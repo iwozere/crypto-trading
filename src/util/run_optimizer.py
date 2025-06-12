@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import json
-from datetime import datetime
+from datetime import datetime as dt
 
 import backtrader as bt
 import optuna
@@ -53,7 +53,7 @@ def get_result_filename(data_file, entry_logic_name, exit_logic_name, suffix="")
     Generate a standardized filename for results and plots based on data_file and current_data.
     """
     # Extract symbol, interval, and dates from data_file
-    symbol = getattr("current_symbol", "SYMBOL")
+    symbol = "SYMBOL"
     interval = "INTERVAL"
     start_date = "STARTDATE"
     end_date = "ENDDATE"
@@ -66,13 +66,13 @@ def get_result_filename(data_file, entry_logic_name, exit_logic_name, suffix="")
             start_date = parts[2]
             end_date = parts[3]
 
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    return f"{entry_logic_name}_{exit_logic_name}_{symbol}_{interval}_{start_date}_{end_date}_{timestamp}{suffix}"
+    timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
+    return f"{symbol}_{interval}_{start_date}_{end_date}_{entry_logic_name}_{exit_logic_name}_{timestamp}{suffix}"
 
 
 if __name__ == "__main__":
     """Run all optimizers with their respective configurations."""
-    start_time = datetime.now()
+    start_time = dt.now()
     _logger.info(f"Starting optimization at {start_time}")
 
     # Get the data files
@@ -133,14 +133,20 @@ if __name__ == "__main__":
                 # Define objective function
                 def objective(trial):
                     result = optimizer.run_optimization(trial)
-                    # Use Sharpe ratio as the optimization metric
-                    return result["analyzers"]["sharpe"].get("sharperatio", 0.0)
+                    return result["total_profit_with_commission"]
 
                 # Run optimization
-                study.optimize(objective, n_trials=100, show_progress_bar=True)
+                study.optimize(objective, n_trials=100, show_progress_bar=False)
 
-                # Get best results
-                best_result = optimizer.run_optimization(study.best_trial)
+                # Get best trial and run it again to get detailed results
+                if study.best_trial is not None:
+                    best_result = optimizer.run_optimization(study.best_trial)
+                    print("\nBest trial results:")
+                    print(f"Parameters: {best_result['best_params']}")
+                    print(f"Total Profit: {best_result['total_profit']:.2f}")
+                    print(f"Total Profit (with commission): {best_result['total_profit_with_commission']:.2f}")
+                else:
+                    print("No trials were completed successfully.")
 
                 # Save results
                 results = {
