@@ -19,6 +19,7 @@ from src.plotter.indicators.rsi_plotter import RSIPlotter
 from src.plotter.indicators.bollinger_bands_plotter import BollingerBandsPlotter
 from src.plotter.indicators.volume_plotter import VolumePlotter
 from src.plotter.indicators.supertrend_plotter import SuperTrendPlotter
+from src.notification.logger import setup_logger
 
 
 class BasePlotter:
@@ -38,6 +39,7 @@ class BasePlotter:
         self.vis_settings = vis_settings
         self.fig = None
         self.axes = None
+        self.logger = setup_logger()
         
         # Initialize indicator plotters
         self.indicator_plotters = self._create_indicator_plotters()
@@ -119,10 +121,27 @@ class BasePlotter:
         # Get datetime and price data from Backtrader data feed
         dates = []
         prices = []
-        for i in range(len(self.data)):
-            dates.append(self.data.datetime.datetime(i))
-            prices.append(self.data.close[i])
+        data_len = len(self.data)
         
+        # Ensure we have data to plot
+        if data_len == 0:
+            self.logger.warning("No data available for plotting")
+            return
+            
+        # Get data within valid range
+        for i in range(data_len):
+            try:
+                dates.append(self.data.datetime.datetime(i))
+                prices.append(self.data.close[i])
+            except IndexError:
+                self.logger.warning(f"Index {i} out of range, stopping data collection")
+                break
+        
+        # Ensure we have data to plot
+        if not dates or not prices:
+            self.logger.warning("No valid data points collected for plotting")
+            return
+            
         # Convert to pandas datetime
         dates = pd.to_datetime(dates)
         

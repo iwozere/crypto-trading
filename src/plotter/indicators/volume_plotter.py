@@ -2,31 +2,25 @@ from src.plotter.indicators.base_indicator_plotter import BaseIndicatorPlotter
 import numpy as np
 
 class VolumePlotter(BaseIndicatorPlotter):
+    def plot(self, ax):
+        """Plot Volume indicator"""
+        try:
+            volume = self.indicators['volume']
+            dates = [self.data.datetime.datetime(i) for i in range(len(self.data))]
+            
+            # Plot volume bars
+            ax.bar(dates, volume, label='Volume', color='gray', alpha=0.5)
+            ax.set_ylabel('Volume')
+            
+            # Plot volume MA if available
+            if 'vol_ma' in self.indicators:
+                vol_ma = self.indicators['vol_ma']
+                ax.plot(dates, vol_ma, label='Volume MA', color='blue', alpha=0.7)
+            
+            self._apply_style(ax)
+        except Exception as e:
+            self.logger.error(f"Error plotting Volume: {str(e)}")
+
     @property
     def subplot_type(self):
-        return 'separate'
-
-    def plot(self, ax):
-        """Plot Volume on a separate axis"""
-        # Plot volume bars
-        volume = self.indicators["volume"].array
-        dates = self.data.datetime.array
-        
-        # Color bars based on price movement
-        colors = np.where(
-            self.data.close.array > self.data.open.array,
-            'green',  # Up day
-            'red'     # Down day
-        )
-        
-        ax.bar(dates, volume, color=colors, alpha=0.7, label='Volume')
-        
-        # Plot volume MA if available
-        if "vol_ma" in self.indicators:
-            ax.plot(dates, self.indicators["vol_ma"].array,
-                   label='Volume MA', color='blue', alpha=0.7)
-        
-        ax.set_ylabel('Volume')
-        ax.set_ylim(bottom=0)  # Start y-axis from 0
-        
-        self._apply_style(ax) 
+        return 'separate' 

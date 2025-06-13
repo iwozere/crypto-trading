@@ -1,5 +1,266 @@
 # Developer Guide
 
+## Core Components
+
+### System Architecture
+```mermaid
+graph TD
+    A[Data Feed] --> B[Strategy]
+    B --> C[Entry Mixins]
+    B --> D[Exit Mixins]
+    B --> E[Plotter]
+    F[Optimizer] --> B
+    G[Configuration] --> F
+    G --> B
+```
+
+### Strategy
+The Strategy is the main container and orchestrator of the trading system. It:
+- Holds the data feed (test or live market data)
+- Manages the entry and exit mixins
+- Tracks positions and trades
+- Maintains the equity curve
+- Handles order execution
+- Provides logging and monitoring capabilities
+
+Example Strategy Configuration:
+```python
+strategy_config = {
+    "data": {
+        "type": "csv",
+        "path": "data/btc_usdt_1h.csv",
+        "timeframe": "1h"
+    },
+    "entry_logic": {
+        "name": "RSIBBEntryMixin",
+        "params": {
+            "rsi_period": 14,
+            "rsi_oversold": 30,
+            "bb_period": 20,
+            "bb_stddev": 2.0
+        }
+    },
+    "exit_logic": {
+        "name": "TrailingStopExitMixin",
+        "params": {
+            "atr_period": 14,
+            "atr_multiplier": 2.0
+        }
+    }
+}
+```
+
+### Optimizer
+The Optimizer is responsible for finding the optimal parameter combinations for strategies. It:
+- Takes configuration files defining parameter ranges
+- Generates parameter combinations to test
+- Runs backtests with different parameter sets
+- Evaluates results using specified metrics (e.g., profit, Sharpe ratio)
+- Identifies the best performing parameter combinations
+- Can use different optimization methods (grid search, genetic algorithms, etc.)
+
+Example Optimization Configuration:
+```json
+{
+    "strategy": {
+        "entry_logic": {
+            "name": "RSIBBEntryMixin",
+            "params": {
+                "rsi_period": {
+                    "type": "int",
+                    "min": 5,
+                    "max": 30,
+                    "step": 1
+                },
+                "rsi_oversold": {
+                    "type": "float",
+                    "min": 20,
+                    "max": 40,
+                    "step": 1
+                }
+            }
+        }
+    },
+    "optimization": {
+        "method": "grid_search",
+        "metric": "sharpe_ratio",
+        "timeframe": "1h",
+        "start_date": "2023-01-01",
+        "end_date": "2023-12-31"
+    }
+}
+```
+
+### Entry Mixins
+Entry Mixins define when to enter trades. Each mixin:
+- Implements a specific entry strategy (e.g., RSI, Bollinger Bands)
+- Manages its own technical indicators
+- Defines entry conditions through the `should_enter()` method
+- Handles parameter validation and defaults
+- Can be combined with other mixins for complex strategies
+
+Example Entry Mixin Flow:
+```mermaid
+sequenceDiagram
+    participant S as Strategy
+    participant E as Entry Mixin
+    participant I as Indicators
+    participant D as Data Feed
+
+    S->>E: should_enter()
+    E->>I: Get indicator values
+    I->>D: Request price data
+    D-->>I: Return price data
+    I-->>E: Return indicator values
+    E->>E: Check entry conditions
+    E-->>S: Return entry decision
+```
+
+### Exit Mixins
+Exit Mixins determine when to exit trades. Each mixin:
+- Implements a specific exit strategy (e.g., trailing stop, time-based)
+- Manages its own technical indicators
+- Defines exit conditions through the `should_exit()` method
+- Handles parameter validation and defaults
+- Can be combined with other mixins for complex strategies
+
+Example Exit Mixin Flow:
+```mermaid
+sequenceDiagram
+    participant S as Strategy
+    participant E as Exit Mixin
+    participant I as Indicators
+    participant P as Position
+
+    S->>E: should_exit()
+    E->>I: Get indicator values
+    E->>P: Get position data
+    E->>E: Check exit conditions
+    E-->>S: Return exit decision
+```
+
+### Data Feed
+The Data Feed provides market data to the strategy. It:
+- Can be historical data for backtesting
+- Can be live market data for trading
+- Provides OHLCV (Open, High, Low, Close, Volume) data
+- Handles data normalization and preprocessing
+- Manages data timeframes and resampling
+
+Example Data Feed Configuration:
+```python
+data_config = {
+    "type": "csv",  # or "live" for real-time data
+    "path": "data/btc_usdt_1h.csv",
+    "timeframe": "1h",
+    "columns": {
+        "datetime": "timestamp",
+        "open": "open",
+        "high": "high",
+        "low": "low",
+        "close": "close",
+        "volume": "volume"
+    },
+    "preprocessing": {
+        "normalize": True,
+        "fill_missing": True
+    }
+}
+```
+
+### Plotter
+The Plotter visualizes strategy results. It:
+- Creates price charts with indicators
+- Shows entry and exit points
+- Displays the equity curve
+- Supports multiple subplots for different indicators
+- Provides customization options for visualization
+
+Example Plot Configuration:
+```python
+plot_config = {
+    "style": "dark_background",
+    "size": [15, 10],
+    "dpi": 300,
+    "show_grid": True,
+    "show_equity_curve": True,
+    "indicators": {
+        "rsi": {"subplot": "separate", "color": "blue"},
+        "bb": {"subplot": "price", "color": "red"},
+        "volume": {"subplot": "separate", "color": "green"}
+    }
+}
+```
+
+### Component Interaction Example
+Here's how the components work together in a typical trading scenario:
+
+1. **Strategy Initialization**:
+```python
+# Create strategy with configuration
+strategy = CustomStrategy(strategy_config)
+
+# Initialize data feed
+data_feed = DataFeed(data_config)
+strategy.add_data(data_feed)
+
+# Initialize entry and exit mixins
+entry_mixin = EntryMixinFactory.create(entry_config)
+exit_mixin = ExitMixinFactory.create(exit_config)
+strategy.set_entry_mixin(entry_mixin)
+strategy.set_exit_mixin(exit_mixin)
+```
+
+2. **Trading Loop**:
+```python
+# Strategy processes each bar
+for bar in strategy.data:
+    # Check entry conditions
+    if not strategy.position and entry_mixin.should_enter():
+        strategy.buy()
+    
+    # Check exit conditions
+    if strategy.position and exit_mixin.should_exit():
+        strategy.sell()
+    
+    # Update indicators and metrics
+    strategy.update_indicators()
+    strategy.update_metrics()
+```
+
+3. **Optimization Process**:
+```python
+# Create optimizer
+optimizer = Optimizer(optimization_config)
+
+# Run optimization
+results = optimizer.optimize(strategy_config)
+
+# Get best parameters
+best_params = results.get_best_parameters()
+
+# Create strategy with optimized parameters
+optimized_strategy = CustomStrategy({
+    **strategy_config,
+    "entry_logic": {"params": best_params["entry"]},
+    "exit_logic": {"params": best_params["exit"]}
+})
+```
+
+4. **Result Visualization**:
+```python
+# Create plotter
+plotter = BasePlotter(
+    data=strategy.data,
+    trades=strategy.trades,
+    strategy=strategy,
+    vis_settings=plot_config
+)
+
+# Generate and save plot
+plotter.plot("results/strategy_backtest.png")
+```
+
 ## Adding New Entry/Exit Mixins
 
 ### Creating a New Mixin
