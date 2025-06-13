@@ -4,6 +4,10 @@ class BollingerBandsPlotter(BaseIndicatorPlotter):
     def plot(self, ax):
         """Plot Bollinger Bands indicator"""
         try:
+            if 'bb' not in self.indicators:
+                self.logger.warning("Bollinger Bands indicator not found")
+                return
+                
             bb = self.indicators['bb']
             dates = [self.data.datetime.datetime(i) for i in range(len(self.data))]
             

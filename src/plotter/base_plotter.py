@@ -52,26 +52,80 @@ class BasePlotter:
         # Add plotters based on available indicators
         if hasattr(entry_mixin, 'indicators'):
             indicators = entry_mixin.indicators
+            self.logger.info(f"Found indicators: {list(indicators.keys())}")
             
             # RSI
             if 'rsi' in indicators:
-                plotters.append(RSIPlotter(self.data, indicators, self.vis_settings))
+                self.logger.debug("Creating RSI plotter")
+                try:
+                    rsi_data = indicators['rsi']
+                    if not hasattr(rsi_data, 'array') and not hasattr(rsi_data, 'lines'):
+                        self.logger.warning("RSI indicator has invalid data structure")
+                    else:
+                        plotters.append(RSIPlotter(self.data, indicators, self.vis_settings))
+                        self.logger.debug("RSI plotter created successfully")
+                except Exception as e:
+                    self.logger.error(f"Error creating RSI plotter: {str(e)}")
             
             # Ichimoku
             if all(k in indicators for k in ['tenkan', 'kijun', 'senkou_span_a', 'senkou_span_b']):
-                plotters.append(IchimokuPlotter(self.data, indicators, self.vis_settings))
+                self.logger.debug("Creating Ichimoku plotter")
+                try:
+                    # Validate Ichimoku data structure
+                    valid = all(
+                        hasattr(indicators[k], 'array') or hasattr(indicators[k], 'lines')
+                        for k in ['tenkan', 'kijun', 'senkou_span_a', 'senkou_span_b']
+                    )
+                    if not valid:
+                        self.logger.warning("Ichimoku indicators have invalid data structure")
+                    else:
+                        plotters.append(IchimokuPlotter(self.data, indicators, self.vis_settings))
+                        self.logger.debug("Ichimoku plotter created successfully")
+                except Exception as e:
+                    self.logger.error(f"Error creating Ichimoku plotter: {str(e)}")
             
             # Bollinger Bands
-            if all(k in indicators for k in ['bb_upper', 'bb_middle', 'bb_lower']):
-                plotters.append(BollingerBandsPlotter(self.data, indicators, self.vis_settings))
+            if 'bb' in indicators:
+                self.logger.debug("Creating Bollinger Bands plotter")
+                try:
+                    bb_data = indicators['bb']
+                    if not hasattr(bb_data, 'lines') or len(bb_data.lines) < 3:
+                        self.logger.warning("Bollinger Bands indicator has invalid data structure")
+                    else:
+                        plotters.append(BollingerBandsPlotter(self.data, indicators, self.vis_settings))
+                        self.logger.debug("Bollinger Bands plotter created successfully")
+                except Exception as e:
+                    self.logger.error(f"Error creating Bollinger Bands plotter: {str(e)}")
             
             # Volume
             if 'volume' in indicators:
-                plotters.append(VolumePlotter(self.data, indicators, self.vis_settings))
+                self.logger.debug("Creating Volume plotter")
+                try:
+                    volume_data = indicators['volume']
+                    if not hasattr(volume_data, 'array') and not hasattr(volume_data, 'lines'):
+                        self.logger.warning("Volume indicator has invalid data structure")
+                    else:
+                        plotters.append(VolumePlotter(self.data, indicators, self.vis_settings))
+                        self.logger.debug("Volume plotter created successfully")
+                except Exception as e:
+                    self.logger.error(f"Error creating Volume plotter: {str(e)}")
             
             # SuperTrend
             if 'supertrend' in indicators:
-                plotters.append(SuperTrendPlotter(self.data, indicators, self.vis_settings))
+                self.logger.debug("Creating SuperTrend plotter")
+                try:
+                    supertrend_data = indicators['supertrend']
+                    if not hasattr(supertrend_data, 'array') and not hasattr(supertrend_data, 'lines'):
+                        self.logger.warning("SuperTrend indicator has invalid data structure")
+                    else:
+                        plotters.append(SuperTrendPlotter(self.data, indicators, self.vis_settings))
+                        self.logger.debug("SuperTrend plotter created successfully")
+                except Exception as e:
+                    self.logger.error(f"Error creating SuperTrend plotter: {str(e)}")
+            
+            self.logger.info(f"Created {len(plotters)} indicator plotters")
+        else:
+            self.logger.warning("No indicators found in entry mixin")
         
         return plotters
 
@@ -164,11 +218,17 @@ class BasePlotter:
         """Plot all indicators using their respective plotters"""
         current_ax = 0
         for plotter in self.indicator_plotters:
-            if plotter.subplot_type == 'price':
-                plotter.plot(self.axes[0])
-            else:
-                current_ax += 1
-                plotter.plot(self.axes[current_ax])
+            try:
+                if plotter.subplot_type == 'price':
+                    self.logger.debug(f"Plotting {plotter.__class__.__name__} on price axis")
+                    plotter.plot(self.axes[0])
+                else:
+                    current_ax += 1
+                    self.logger.debug(f"Plotting {plotter.__class__.__name__} on separate axis {current_ax}")
+                    plotter.plot(self.axes[current_ax])
+            except Exception as e:
+                self.logger.error(f"Error plotting {plotter.__class__.__name__}: {str(e)}")
+                continue
 
     def _plot_trades(self):
         """Plot trade markers"""
