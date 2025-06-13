@@ -19,7 +19,7 @@ This strategy is particularly effective in ranging markets where price tends to 
 after reaching extreme levels.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import backtrader as bt
 import numpy as np
@@ -29,23 +29,22 @@ from src.entry.base_entry_mixin import BaseEntryMixin
 class RSIBBEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI and Bollinger Bands"""
 
-    def __init__(self, params=None):
+    def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
-        super().__init__()
-        self.params = params or self.get_default_params()
+        super().__init__(params)
 
     def get_required_params(self) -> list:
-        """There are no required parameters - all have default values"""
+        """Returns a list of required parameters"""
         return []
 
-    @classmethod
-    def get_default_params(cls) -> Dict[str, Any]:
-        """Default parameters"""
+    def get_default_params(self) -> Dict[str, Any]:
+        """Returns a dictionary of default parameters"""
         return {
             "rsi_period": 14,
             "rsi_oversold": 30,
             "bb_period": 20,
             "bb_std": 2.0,
+            "use_talib": False,
         }
 
     def _init_indicators(self):
@@ -56,19 +55,19 @@ class RSIBBEntryMixin(BaseEntryMixin):
         # Initialize RSI if not already initialized
         if not hasattr(self.strategy, 'rsi'):
             # Check if TA-Lib should be used based on strategy settings
-            use_talib = getattr(self.strategy, 'use_talib', False)
+            use_talib = self.get_param("use_talib", False)
             
             if use_talib:
                 try:
                     import talib
                     # Calculate RSI using TA-Lib
                     close_prices = np.array([self.strategy.data.close[i] for i in range(len(self.strategy.data))])
-                    rsi_values = talib.RSI(close_prices, timeperiod=self.params["rsi_period"])
+                    rsi_values = talib.RSI(close_prices, timeperiod=self.get_param("rsi_period"))
                     
                     # Initialize Backtrader RSI
                     self.strategy.rsi = bt.indicators.RSI(
                         self.strategy.data,
-                        period=self.params["rsi_period"]
+                        period=self.get_param("rsi_period")
                     )
                     
                     # Update RSI values one by one
@@ -79,16 +78,16 @@ class RSIBBEntryMixin(BaseEntryMixin):
                     self.strategy.logger.warning("TA-Lib not available, using Backtrader's RSI")
                     self.strategy.rsi = bt.indicators.RSI(
                         self.strategy.data,
-                        period=self.params["rsi_period"]
+                        period=self.get_param("rsi_period")
                     )
             else:
                 self.strategy.rsi = bt.indicators.RSI(
                     self.strategy.data,
-                    period=self.params["rsi_period"]
+                    period=self.get_param("rsi_period")
                 )
         
         # Initialize Bollinger Bands
-        use_talib = getattr(self.strategy, 'use_talib', False)
+        use_talib = self.get_param("use_talib", False)
         if use_talib:
             try:
                 import talib
@@ -96,16 +95,16 @@ class RSIBBEntryMixin(BaseEntryMixin):
                 close_prices = np.array([self.strategy.data.close[i] for i in range(len(self.strategy.data))])
                 upper, middle, lower = talib.BBANDS(
                     close_prices,
-                    timeperiod=self.params["bb_period"],
-                    nbdevup=self.params["bb_std"],
-                    nbdevdn=self.params["bb_std"]
+                    timeperiod=self.get_param("bb_period"),
+                    nbdevup=self.get_param("bb_std"),
+                    nbdevdn=self.get_param("bb_std")
                 )
                 
                 # Initialize Backtrader Bollinger Bands
                 self.strategy.bb = bt.indicators.BollingerBands(
                     self.strategy.data,
-                    period=self.params["bb_period"],
-                    devfactor=self.params["bb_std"]
+                    period=self.get_param("bb_period"),
+                    devfactor=self.get_param("bb_std")
                 )
                 
                 # Update BB values one by one
@@ -118,14 +117,14 @@ class RSIBBEntryMixin(BaseEntryMixin):
                 self.strategy.logger.warning("TA-Lib not available, using Backtrader's Bollinger Bands")
                 self.strategy.bb = bt.indicators.BollingerBands(
                     self.strategy.data,
-                    period=self.params["bb_period"],
-                    devfactor=self.params["bb_std"]
+                    period=self.get_param("bb_period"),
+                    devfactor=self.get_param("bb_std")
                 )
         else:
             self.strategy.bb = bt.indicators.BollingerBands(
                 self.strategy.data,
-                period=self.params["bb_period"],
-                devfactor=self.params["bb_std"]
+                period=self.get_param("bb_period"),
+                devfactor=self.get_param("bb_std")
             )
 
     def should_enter(self) -> bool:
@@ -134,7 +133,7 @@ class RSIBBEntryMixin(BaseEntryMixin):
             return False
 
         # Check RSI condition
-        rsi_oversold = self.strategy.rsi[0] < self.params["rsi_oversold"]
+        rsi_oversold = self.strategy.rsi[0] < self.get_param("rsi_oversold")
         
         # Check Bollinger Bands condition
         bb = self.strategy.bb

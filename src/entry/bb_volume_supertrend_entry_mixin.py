@@ -24,7 +24,7 @@ This strategy combines mean reversion (BB) with volume confirmation and trend fo
 to identify potential reversal points with strong momentum.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import backtrader as bt
 import numpy as np
@@ -33,6 +33,9 @@ from src.entry.base_entry_mixin import BaseEntryMixin
 
 class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
     """Entry mixin based on Bollinger Bands, Volume, and Supertrend"""
+
+    def __init__(self, params: Optional[Dict[str, Any]] = None):
+        super().__init__(params)
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -43,22 +46,21 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
         return {
             "bb_period": 20,
             "bb_stddev": 2.0,
-            "atr_period": 10,
-            "atr_multiplier": 3.0,
+            "use_bb_touch": True,
             "volume_ma_period": 20,
-            "min_volume_ratio": 1.5,
-            "use_bb_touch": True,  # Require touching the Bollinger Bands
+            "min_volume": 1.0,
+            "supertrend_period": 10,
+            "supertrend_multiplier": 3.0,
+            "use_talib": False,
         }
 
     def _init_indicators(self):
         """Initialize Bollinger Bands, Volume, and Supertrend indicators"""
-        if self.strategy is None:
-            raise ValueError("Strategy must be set before initializing indicators")
-
+        if not hasattr(self, 'strategy'):
+            return
         data = self.strategy.data
-
-        # Initialize indicators
-        if self.strategy.p.use_talib:
+        use_talib = self.get_param("use_talib", False)
+        if use_talib:
             try:
                 import talib
                 # Convert data to numpy arrays
@@ -68,7 +70,7 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
                 volume_data = np.array(data.volume.get(size=len(data)))
                 
                 # Create Bollinger Bands using TA-Lib
-                bb_upper, bb_middle, bb_lower = talib.BBANDS(
+                upper, middle, lower = talib.BBANDS(
                     close_data,
                     timeperiod=self.get_param("bb_period"),
                     nbdevup=self.get_param("bb_stddev"),
@@ -83,28 +85,28 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
                     devfactor=self.get_param("bb_stddev"),
                     plot=False
                 )
-                self.indicators["bb_upper"] = bb.lines.top
-                self.indicators["bb_middle"] = bb.lines.mid
-                self.indicators["bb_lower"] = bb.lines.bot
-                
-                # Update the arrays with TA-Lib values
-                self.indicators["bb_upper"].array = bb_upper
-                self.indicators["bb_middle"].array = bb_middle
-                self.indicators["bb_lower"].array = bb_lower
+                self.indicators["bb"] = bb
+                for i, (u, m, l) in enumerate(zip(upper, middle, lower)):
+                    if i < len(bb.lines[0]):
+                        bb.lines[0][i] = u
+                        bb.lines[1][i] = m
+                        bb.lines[2][i] = l
 
                 # Create ATR using TA-Lib
                 atr_values = talib.ATR(
                     high_data,
                     low_data,
                     close_data,
-                    timeperiod=self.get_param("atr_period")
+                    timeperiod=self.get_param("supertrend_period")
                 )
                 self.indicators["atr"] = bt.indicators.ATR(
                     data,
-                    period=self.get_param("atr_period"),
+                    period=self.get_param("supertrend_period"),
                     plot=False
                 )
-                self.indicators["atr"].lines[0].array = atr_values
+                for i, value in enumerate(atr_values):
+                    if i < len(self.indicators["atr"].lines[0]):
+                        self.indicators["atr"].lines[0][i] = value
 
                 # Create Volume MA using TA-Lib
                 vol_ma_values = talib.SMA(
@@ -116,17 +118,19 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
                     period=self.get_param("volume_ma_period"),
                     plot=False
                 )
-                self.indicators["vol_ma"].lines[0].array = vol_ma_values
+                for i, value in enumerate(vol_ma_values):
+                    if i < len(self.indicators["vol_ma"].lines[0]):
+                        self.indicators["vol_ma"].lines[0][i] = value
 
             except ImportError:
-                self.log("TA-Lib not available, falling back to Backtrader indicators")
+                self.strategy.logger.warning("TA-Lib not available, using Backtrader's indicators")
                 self._init_backtrader_indicators()
         else:
             self._init_backtrader_indicators()
 
         # Calculate Supertrend
         atr = self.indicators["atr"]
-        multiplier = self.get_param("atr_multiplier")
+        multiplier = self.get_param("supertrend_multiplier")
 
         # Calculate basic upper and lower bands
         hl2 = (data.high + data.low) / 2
@@ -162,22 +166,23 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
         bb = bt.indicators.BollingerBands(
             data.close,
             period=self.get_param("bb_period"),
-            devfactor=self.get_param("bb_stddev")
+            devfactor=self.get_param("bb_stddev"),
+            plot=False
         )
-        self.indicators["bb_upper"] = bb.lines.top
-        self.indicators["bb_middle"] = bb.lines.mid
-        self.indicators["bb_lower"] = bb.lines.bot
+        self.indicators["bb"] = bb
 
         # Create ATR indicator
         self.indicators["atr"] = bt.indicators.ATR(
             data,
-            period=self.get_param("atr_period")
+            period=self.get_param("supertrend_period"),
+            plot=False
         )
 
         # Create Volume MA indicator
         self.indicators["vol_ma"] = bt.indicators.SMA(
             data.volume,
-            period=self.get_param("volume_ma_period")
+            period=self.get_param("volume_ma_period"),
+            plot=False
         )
 
     def should_enter(self) -> bool:
@@ -188,18 +193,16 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
             return False
 
         current_price = self.strategy.data.close[0]
-        volume = self.strategy.data.volume[0]
+        current_volume = self.strategy.data.volume[0]
         vol_ma = self.indicators["vol_ma"][0]
         direction = self.indicators["direction"][0]
+        bb = self.indicators["bb"]
 
         # Check volume
-        volume_ok = volume >= vol_ma * self.get_param("min_volume_ratio")
+        volume_ok = current_volume >= vol_ma * self.get_param("min_volume")
 
         # Check touching the Bollinger Bands (if enabled)
-        bb_condition = True
-        if self.get_param("use_bb_touch"):
-            bb_lower = self.indicators["bb_lower"][0]
-            bb_condition = current_price <= bb_lower * 1.01  # Small tolerance
+        bb_condition = not self.get_param("use_bb_touch") or current_price <= bb.lines[2][0] * 1.01  # Small tolerance
 
         # Check Supertrend (bullish when price is above Supertrend)
         supertrend_bullish = direction > 0

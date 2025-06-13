@@ -12,6 +12,7 @@ Parameters:
     activation_pct (float): Minimum profit percentage before trailing stop activates (default: 0.0)
     use_atr (bool): Whether to use ATR for dynamic trailing stop (default: False)
     atr_multiplier (float): Multiplier for ATR-based trailing stop (default: 2.0)
+    use_talib (bool): Whether to use TA-Lib for ATR calculation (default: False)
 
 This strategy is particularly effective for:
 1. Capturing trends while protecting profits
@@ -20,27 +21,20 @@ This strategy is particularly effective for:
 4. Preventing premature exits in strong trends
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import backtrader as bt
 from src.exit.base_exit_mixin import BaseExitMixin
+import numpy as np
 
 
 class TrailingStopExitMixin(BaseExitMixin):
     """Exit mixin based on trailing stop"""
 
-    # Define default values as class constants
-    DEFAULT_TRAIL_PCT = 0.02
-    DEFAULT_ACTIVATION_PCT = 0.0
-    DEFAULT_USE_ATR = False
-    DEFAULT_ATR_MULTIPLIER = 2.0
-
-    def __init__(self, params: Dict[str, Any]):
+    def __init__(self, params: Optional[Dict[str, Any]] = None):
+        """Initialize the mixin with parameters"""
         super().__init__(params)
-        self.trail_pct = params.get("trail_pct", self.DEFAULT_TRAIL_PCT)
-        self.activation_pct = params.get("activation_pct", self.DEFAULT_ACTIVATION_PCT)
-        self.use_atr = params.get("use_atr", self.DEFAULT_USE_ATR)
-        self.atr_multiplier = params.get("atr_multiplier", self.DEFAULT_ATR_MULTIPLIER)
+        self.highest_price = 0
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -49,25 +43,57 @@ class TrailingStopExitMixin(BaseExitMixin):
     def get_default_params(self) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "trail_pct": self.DEFAULT_TRAIL_PCT,
-            "activation_pct": self.DEFAULT_ACTIVATION_PCT,
-            "use_atr": self.DEFAULT_USE_ATR,
-            "atr_multiplier": self.DEFAULT_ATR_MULTIPLIER,
+            "trail_pct": 0.02,
+            "activation_pct": 0.0,
+            "use_atr": False,
+            "atr_multiplier": 2.0,
+            "use_talib": False,
         }
 
     def _init_indicators(self):
-        """Initialization of indicators if needed"""
-        self.highest_price = 0.0
+        """Initialize trailing stop indicators"""
+        if not hasattr(self, 'strategy'):
+            return
 
-        if self.use_atr:
-            if self.strategy is None:
-                raise ValueError("Strategy must be set before initializing indicators")
-            self.indicators["atr"] = bt.indicators.ATR(self.strategy.data, period=14)
+        if self.get_param("use_atr", False):
+            use_talib = self.get_param("use_talib", False)
+            if use_talib:
+                try:
+                    import talib
+                    # Calculate ATR using TA-Lib
+                    high_prices = np.array([self.strategy.data.high[i] for i in range(len(self.strategy.data))])
+                    low_prices = np.array([self.strategy.data.low[i] for i in range(len(self.strategy.data))])
+                    close_prices = np.array([self.strategy.data.close[i] for i in range(len(self.strategy.data))])
+                    
+                    atr_values = talib.ATR(high_prices, low_prices, close_prices, timeperiod=14)
+                    
+                    # Initialize Backtrader ATR
+                    self.indicators["atr"] = bt.indicators.ATR(
+                        self.strategy.data,
+                        period=14,
+                        plot=False
+                    )
+                    
+                    # Update ATR values one by one
+                    for i, value in enumerate(atr_values):
+                        if i < len(self.indicators["atr"].lines[0]):
+                            self.indicators["atr"].lines[0][i] = value
+                except ImportError:
+                    self.strategy.logger.warning("TA-Lib not available, using Backtrader's ATR")
+                    self.indicators["atr"] = bt.indicators.ATR(
+                        self.strategy.data,
+                        period=14,
+                        plot=False
+                    )
+            else:
+                self.indicators["atr"] = bt.indicators.ATR(
+                    self.strategy.data,
+                    period=14,
+                    plot=False
+                )
 
     def should_exit(self) -> bool:
-        """
-        Exit logic: Exit when price falls below trailing stop level
-        """
+        """Check if we should exit a position"""
         if not self.strategy.position:
             return False
 
@@ -79,16 +105,16 @@ class TrailingStopExitMixin(BaseExitMixin):
             self.highest_price = price
 
         # Calculate trailing stop level
-        if self.use_atr:
+        if self.get_param("use_atr", False):
             atr = self.indicators["atr"][0]
-            stop_level = self.highest_price - (atr * self.atr_multiplier)
+            stop_level = self.highest_price - (atr * self.get_param("atr_multiplier"))
         else:
-            stop_level = self.highest_price * (1 - self.trail_pct)
+            stop_level = self.highest_price * (1 - self.get_param("trail_pct"))
 
         # Check if trailing stop should be activated
-        if self.activation_pct > 0:
+        if self.get_param("activation_pct", 0.0) > 0:
             profit_pct = (price - entry_price) / entry_price
-            if profit_pct < self.activation_pct:
+            if profit_pct < self.get_param("activation_pct"):
                 return False
 
         # Exit if price falls below trailing stop

@@ -18,7 +18,7 @@ This strategy is particularly effective for:
 3. Protecting profits with trailing stops
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import backtrader as bt
 import numpy as np
@@ -26,12 +26,11 @@ from src.exit.base_exit_mixin import BaseExitMixin
 
 
 class FixedRatioExitMixin(BaseExitMixin):
-    """Exit mixin based on fixed profit and loss ratios"""
+    """Exit mixin based on a fixed ratio of profit or loss"""
 
-    def __init__(self, params=None):
+    def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
-        super().__init__()
-        self.params = params or self.get_default_params()
+        super().__init__(params)
         self.highest_price = 0
         self.lowest_price = float('inf')
 
@@ -39,11 +38,12 @@ class FixedRatioExitMixin(BaseExitMixin):
         """There are no required parameters - all have default values"""
         return []
 
-    def get_default_params(self) -> Dict[str, Any]:
+    @classmethod
+    def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "profit_ratio": 0.02,  # 2% profit target
-            "stop_loss_ratio": 0.01,  # 1% stop loss
+            "profit_ratio": 0.1,
+            "loss_ratio": 0.05,
             "use_trailing_stop": False,
             "trail_percent": 0.5,
         }
@@ -54,44 +54,14 @@ class FixedRatioExitMixin(BaseExitMixin):
             return
 
     def should_exit(self) -> bool:
-        """
-        Exit logic: Price reaches take profit or stop loss level
-        """
+        """Check if we should exit a position"""
         if not self.strategy.position:
             return False
-
+        entry_price = self.strategy.position.price
         current_price = self.strategy.data.close[0]
-        position = self.strategy.position
-        entry_price = position.price
-
-        if position.size > 0:  # Long position
-            # Update highest price for trailing stop
-            self.highest_price = max(self.highest_price, current_price)
-
-            # Check take profit
-            take_profit = entry_price * (1 + self.params["profit_ratio"])
-            if current_price >= take_profit:
-                return True
-
-            # Check stop loss
-            if self.params["use_trailing_stop"]:
-                stop_price = self.highest_price * (1 - self.params["trail_percent"] / 100)
-            else:
-                stop_price = entry_price * (1 - self.params["stop_loss_ratio"])
-            return current_price <= stop_price
-
-        else:  # Short position
-            # Update lowest price for trailing stop
-            self.lowest_price = min(self.lowest_price, current_price)
-
-            # Check take profit
-            take_profit = entry_price * (1 - self.params["profit_ratio"])
-            if current_price <= take_profit:
-                return True
-
-            # Check stop loss
-            if self.params["use_trailing_stop"]:
-                stop_price = self.lowest_price * (1 + self.params["trail_percent"] / 100)
-            else:
-                stop_price = entry_price * (1 + self.params["stop_loss_ratio"])
-            return current_price >= stop_price 
+        profit_ratio = (current_price - entry_price) / entry_price
+        if profit_ratio >= self.get_param("profit_ratio"):
+            return True
+        if profit_ratio <= -self.get_param("loss_ratio"):
+            return True
+        return False 

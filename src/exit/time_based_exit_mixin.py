@@ -18,22 +18,19 @@ Note: When use_calendar_days is True, the strategy will need to be adapted to ha
 calendar day calculations based on the data feed's timeframe.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
+import backtrader as bt
 from src.exit.base_exit_mixin import BaseExitMixin
 
 
 class TimeBasedExitMixin(BaseExitMixin):
-    """Exit mixin based on time period"""
+    """Exit mixin based on time"""
 
-    # Define default values as class constants
-    DEFAULT_TIME_PERIOD = 10
-    DEFAULT_USE_CALENDAR_DAYS = False
-
-    def __init__(self, params: Dict[str, Any]):
+    def __init__(self, params: Optional[Dict[str, Any]] = None):
+        """Initialize the mixin with parameters"""
         super().__init__(params)
-        self.time_period = params.get("time_period", self.DEFAULT_TIME_PERIOD)
-        self.use_calendar_days = params.get("use_calendar_days", self.DEFAULT_USE_CALENDAR_DAYS)
+        self.entry_bar = 0
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -42,35 +39,26 @@ class TimeBasedExitMixin(BaseExitMixin):
     def get_default_params(self) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "time_period": self.DEFAULT_TIME_PERIOD,
-            "use_calendar_days": self.DEFAULT_USE_CALENDAR_DAYS,
+            "max_bars": 20,
+            "use_time": False,
+            "max_minutes": 60,
         }
 
     def _init_indicators(self):
         """Initialize time-based exit indicators"""
-        if self.strategy is None:
-            raise ValueError("Strategy must be set before initializing indicators")
-
-        # No indicators needed for time-based exit
-        pass
+        if not hasattr(self, 'strategy'):
+            return
 
     def should_exit(self) -> bool:
-        """
-        Exit logic: Exit after specified number of bars or calendar days
-        """
+        """Check if we should exit a position"""
         if not self.strategy.position:
             return False
 
-        # Update entry bar if not set
-        if self.entry_bar == 0:
-            self.entry_bar = len(self.strategy)
-
-        # Calculate elapsed time
-        if self.use_calendar_days:
-            # TODO: Implement calendar days calculation if needed
-            elapsed = len(self.strategy) - self.entry_bar
+        if self.get_param("use_time", False):
+            current_time = self.strategy.data.datetime.datetime(0)
+            entry_time = self.strategy.position.dtopen
+            time_diff = (current_time - entry_time).total_seconds() / 60
+            return time_diff >= self.get_param("max_minutes")
         else:
-            elapsed = len(self.strategy) - self.entry_bar
-
-        # Exit if time period has elapsed
-        return elapsed >= self.time_period
+            bars_held = len(self.strategy.data) - self.strategy.position.dtopen
+            return bars_held >= self.get_param("max_bars")

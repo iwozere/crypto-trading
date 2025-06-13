@@ -23,7 +23,7 @@ This strategy combines mean reversion (RSI), volume confirmation, and trend foll
 to identify potential reversal points with strong momentum.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import backtrader as bt
 import numpy as np
@@ -33,17 +33,15 @@ from src.entry.base_entry_mixin import BaseEntryMixin
 class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI, Volume, and Supertrend"""
 
-    def __init__(self, params=None):
+    def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
-        super().__init__()
-        self.params = params or self.get_default_params()
+        super().__init__(params)
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
         return []
 
-    @classmethod
-    def get_default_params(cls) -> Dict[str, Any]:
+    def get_default_params(self) -> Dict[str, Any]:
         """Default parameters"""
         return {
             "rsi_period": 14,
@@ -51,6 +49,7 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             "volume_ma_period": 20,
             "supertrend_period": 10,
             "supertrend_multiplier": 3.0,
+            "use_talib": False,
         }
 
     def _init_indicators(self):
@@ -58,151 +57,99 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
         if not hasattr(self, 'strategy'):
             return
             
-        # Initialize RSI if not already initialized
-        if not hasattr(self.strategy, 'rsi'):
-            # Check if TA-Lib should be used based on strategy settings
-            use_talib = getattr(self.strategy, 'use_talib', False)
-            
-            if use_talib:
-                try:
-                    import talib
-                    # Calculate RSI using TA-Lib
-                    close_prices = np.array([self.strategy.data.close[i] for i in range(len(self.strategy.data))])
-                    rsi_values = talib.RSI(close_prices, timeperiod=self.params["rsi_period"])
-                    
-                    # Initialize Backtrader RSI
-                    self.strategy.rsi = bt.indicators.RSI(
-                        self.strategy.data,
-                        period=self.params["rsi_period"]
-                    )
-                    
-                    # Update RSI values one by one
-                    for i in range(len(self.strategy.data)):
-                        if i < len(rsi_values):
-                            self.strategy.rsi.array[i] = rsi_values[i]
-                except ImportError:
-                    self.strategy.logger.warning("TA-Lib not available, using Backtrader's RSI")
-                    self.strategy.rsi = bt.indicators.RSI(
-                        self.strategy.data,
-                        period=self.params["rsi_period"]
-                    )
-            else:
-                self.strategy.rsi = bt.indicators.RSI(
-                    self.strategy.data,
-                    period=self.params["rsi_period"]
-                )
-        
-        # Initialize Volume MA
-        use_talib = getattr(self.strategy, 'use_talib', False)
+        use_talib = self.get_param("use_talib", False)
         if use_talib:
             try:
                 import talib
-                # Calculate Volume MA using TA-Lib
+                # RSI
+                close_prices = np.array([self.strategy.data.close[i] for i in range(len(self.strategy.data))])
+                rsi_values = talib.RSI(close_prices, timeperiod=self.get_param("rsi_period"))
+                self.indicators["rsi"] = bt.indicators.RSI(self.strategy.data, period=self.get_param("rsi_period"), plot=False)
+                for i, value in enumerate(rsi_values):
+                    if i < len(self.indicators["rsi"].lines[0]):
+                        self.indicators["rsi"].lines[0][i] = value
+
+                # Volume MA
                 volume = np.array([self.strategy.data.volume[i] for i in range(len(self.strategy.data))])
-                volume_ma = talib.SMA(volume, timeperiod=self.params["volume_ma_period"])
-                
-                # Initialize Backtrader Volume MA
-                self.strategy.volume_ma = bt.indicators.SMA(
+                volume_ma = talib.SMA(volume, timeperiod=self.get_param("volume_ma_period"))
+                self.indicators["volume_ma"] = bt.indicators.SMA(
                     self.strategy.data.volume,
-                    period=self.params["volume_ma_period"]
+                    period=self.get_param("volume_ma_period"),
+                    plot=False
                 )
-                
-                # Update Volume MA values one by one
-                for i in range(len(self.strategy.data)):
-                    if i < len(volume_ma):
-                        self.strategy.volume_ma.array[i] = volume_ma[i]
-            except ImportError:
-                self.strategy.logger.warning("TA-Lib not available, using Backtrader's Volume MA")
-                self.strategy.volume_ma = bt.indicators.SMA(
-                    self.strategy.data.volume,
-                    period=self.params["volume_ma_period"]
-                )
-        else:
-            self.strategy.volume_ma = bt.indicators.SMA(
-                self.strategy.data.volume,
-                period=self.params["volume_ma_period"]
-            )
-        
-        # Initialize Supertrend
-        use_talib = getattr(self.strategy, 'use_talib', False)
-        if use_talib:
-            try:
-                import talib
-                # Calculate ATR using TA-Lib
+                for i, value in enumerate(volume_ma):
+                    if i < len(self.indicators["volume_ma"].lines[0]):
+                        self.indicators["volume_ma"].lines[0][i] = value
+
+                # Supertrend
                 high_prices = np.array([self.strategy.data.high[i] for i in range(len(self.strategy.data))])
                 low_prices = np.array([self.strategy.data.low[i] for i in range(len(self.strategy.data))])
                 close_prices = np.array([self.strategy.data.close[i] for i in range(len(self.strategy.data))])
                 
-                atr = talib.ATR(high_prices, low_prices, close_prices, timeperiod=self.params["supertrend_period"])
+                atr = talib.ATR(high_prices, low_prices, close_prices, timeperiod=self.get_param("supertrend_period"))
                 
-                # Calculate Supertrend
                 supertrend = np.zeros_like(close_prices)
                 direction = np.zeros_like(close_prices)
                 
                 for i in range(1, len(close_prices)):
-                    # Calculate basic upper and lower bands
-                    basic_upper = (high_prices[i] + low_prices[i]) / 2 + self.params["supertrend_multiplier"] * atr[i]
-                    basic_lower = (high_prices[i] + low_prices[i]) / 2 - self.params["supertrend_multiplier"] * atr[i]
+                    basic_upper = (high_prices[i] + low_prices[i]) / 2 + self.get_param("supertrend_multiplier") * atr[i]
+                    basic_lower = (high_prices[i] + low_prices[i]) / 2 - self.get_param("supertrend_multiplier") * atr[i]
                     
-                    # Initialize direction
                     if i == 1:
                         direction[i] = 1 if close_prices[i] > basic_upper else -1
                         supertrend[i] = basic_lower if direction[i] == 1 else basic_upper
                     else:
-                        # Adjust final upper and lower bands
                         final_upper = basic_upper if (basic_upper < supertrend[i-1] or close_prices[i-1] > supertrend[i-1]) else supertrend[i-1]
                         final_lower = basic_lower if (basic_lower > supertrend[i-1] or close_prices[i-1] < supertrend[i-1]) else supertrend[i-1]
                         
-                        # Determine trend direction
                         if supertrend[i-1] == final_upper:
                             direction[i] = 1 if close_prices[i] > final_upper else -1
                         else:
                             direction[i] = -1 if close_prices[i] < final_lower else 1
                         
-                        # Set Supertrend value
                         supertrend[i] = final_lower if direction[i] == 1 else final_upper
                 
-                # Initialize Backtrader Supertrend
-                self.strategy.supertrend = bt.indicators.Supertrend(
+                self.indicators["supertrend"] = bt.indicators.Supertrend(
                     self.strategy.data,
-                    period=self.params["supertrend_period"],
-                    multiplier=self.params["supertrend_multiplier"]
+                    period=self.get_param("supertrend_period"),
+                    multiplier=self.get_param("supertrend_multiplier"),
+                    plot=False
                 )
-                
-                # Update Supertrend values one by one
-                for i in range(len(self.strategy.data)):
-                    if i < len(supertrend):
-                        self.strategy.supertrend.array[i] = supertrend[i]
+                for i, value in enumerate(supertrend):
+                    if i < len(self.indicators["supertrend"].lines[0]):
+                        self.indicators["supertrend"].lines[0][i] = value
             except ImportError:
-                self.strategy.logger.warning("TA-Lib not available, using Backtrader's Supertrend")
-                self.strategy.supertrend = bt.indicators.Supertrend(
-                    self.strategy.data,
-                    period=self.params["supertrend_period"],
-                    multiplier=self.params["supertrend_multiplier"]
-                )
+                self.strategy.logger.warning("TA-Lib not available, using Backtrader's indicators")
+                self._init_backtrader_indicators()
         else:
-            self.strategy.supertrend = bt.indicators.Supertrend(
-                self.strategy.data,
-                period=self.params["supertrend_period"],
-                multiplier=self.params["supertrend_multiplier"]
-            )
+            self._init_backtrader_indicators()
+
+    def _init_backtrader_indicators(self):
+        self.indicators["rsi"] = bt.indicators.RSI(self.strategy.data, period=self.get_param("rsi_period"), plot=False)
+        self.indicators["volume_ma"] = bt.indicators.SMA(
+            self.strategy.data.volume,
+            period=self.get_param("volume_ma_period"),
+            plot=False
+        )
+        self.indicators["supertrend"] = bt.indicators.Supertrend(
+            self.strategy.data,
+            period=self.get_param("supertrend_period"),
+            multiplier=self.get_param("supertrend_multiplier"),
+            plot=False
+        )
 
     def should_enter(self) -> bool:
         """Check if we should enter a position"""
-        if not hasattr(self.strategy, 'rsi') or not hasattr(self.strategy, 'volume_ma') or not hasattr(self.strategy, 'supertrend'):
+        if not self.indicators:
             return False
-
-        # Check RSI condition
-        rsi_oversold = self.strategy.rsi[0] < self.params["rsi_oversold"]
-        
-        # Check Volume condition
-        volume_increasing = self.strategy.data.volume[0] > self.strategy.volume_ma[0]
-        
-        # Check Supertrend condition
+        rsi = self.indicators["rsi"][0]
+        volume_ma = self.indicators["volume_ma"][0]
+        supertrend = self.indicators["supertrend"][0]
         current_price = self.strategy.data.close[0]
-        supertrend_value = self.strategy.supertrend[0]
+        current_volume = self.strategy.data.volume[0]
         
-        # Check if price is above Supertrend (bullish)
-        above_supertrend = current_price > supertrend_value
+        rsi_condition = rsi < self.get_param("rsi_oversold")
+        volume_condition = current_volume > volume_ma
+        supertrend_condition = current_price > supertrend
         
-        return rsi_oversold and volume_increasing and above_supertrend
+        return rsi_condition and volume_condition and supertrend_condition

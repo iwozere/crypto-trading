@@ -17,7 +17,7 @@ Parameters:
     min_volume (float): Minimum volume required for entry (default: 1.0)
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import backtrader as bt
 import numpy as np
@@ -26,6 +26,9 @@ from src.entry.base_entry_mixin import BaseEntryMixin
 
 class RSIBBVolumeEntryMixin(BaseEntryMixin):
     """Entry mixin combining RSI, Bollinger Bands, and Volume indicators"""
+
+    def __init__(self, params: Optional[Dict[str, Any]] = None):
+        super().__init__(params)
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -41,14 +44,16 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             "use_bb_touch": True,
             "volume_ma_period": 20,
             "min_volume": 1.0,
+            "use_talib": False,
         }
 
     def _init_indicators(self):
         """Initialize RSI, Bollinger Bands, and Volume indicators"""
+        if not hasattr(self, 'strategy'):
+            return
         data = self.strategy.data
-
-        # Initialize indicators
-        if self.strategy.p.use_talib:
+        use_talib = self.get_param("use_talib", False)
+        if use_talib:
             try:
                 import talib
                 # Convert data to numpy arrays
@@ -71,7 +76,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
                         self.indicators["rsi"].lines[0][i] = value
 
                 # Create Bollinger Bands using TA-Lib
-                bb_upper, bb_middle, bb_lower = talib.BBANDS(
+                upper, middle, lower = talib.BBANDS(
                     close_data,
                     timeperiod=self.get_param("bb_period"),
                     nbdevup=self.get_param("bb_stddev"),
@@ -86,16 +91,12 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
                     devfactor=self.get_param("bb_stddev"),
                     plot=False
                 )
-                self.indicators["bb_upper"] = bb.lines.top
-                self.indicators["bb_middle"] = bb.lines.mid
-                self.indicators["bb_lower"] = bb.lines.bot
-                
-                # Update BB values one by one
-                for i in range(len(bb_upper)):
-                    if i < len(self.indicators["bb_upper"]):
-                        self.indicators["bb_upper"][i] = bb_upper[i]
-                        self.indicators["bb_middle"][i] = bb_middle[i]
-                        self.indicators["bb_lower"][i] = bb_lower[i]
+                self.indicators["bb"] = bb
+                for i, (u, m, l) in enumerate(zip(upper, middle, lower)):
+                    if i < len(bb.lines[0]):
+                        bb.lines[0][i] = u
+                        bb.lines[1][i] = m
+                        bb.lines[2][i] = l
 
                 # Create Volume MA using TA-Lib
                 vol_ma_values = talib.SMA(
@@ -113,7 +114,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
                         self.indicators["vol_ma"].lines[0][i] = value
                 
             except ImportError:
-                self.log("TA-Lib not available, falling back to Backtrader indicators")
+                self.strategy.logger.warning("TA-Lib not available, using Backtrader's indicators")
                 self._init_backtrader_indicators()
         else:
             self._init_backtrader_indicators()
@@ -125,38 +126,38 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         # Initialize RSI
         self.indicators["rsi"] = bt.indicators.RSI(
             data.close,
-            period=self.get_param("rsi_period")
+            period=self.get_param("rsi_period"),
+            plot=False
         )
         
         # Initialize Bollinger Bands
         bb = bt.indicators.BollingerBands(
             data.close,
             period=self.get_param("bb_period"),
-            devfactor=self.get_param("bb_stddev")
+            devfactor=self.get_param("bb_stddev"),
+            plot=False
         )
-        self.indicators["bb_upper"] = bb.lines.top
-        self.indicators["bb_middle"] = bb.lines.mid
-        self.indicators["bb_lower"] = bb.lines.bot
+        self.indicators["bb"] = bb
         
         # Initialize Volume MA
         self.indicators["vol_ma"] = bt.indicators.SMA(
             data.volume,
-            period=self.get_param("volume_ma_period")
+            period=self.get_param("volume_ma_period"),
+            plot=False
         )
 
     def should_enter(self) -> bool:
         """Check if we should enter a position"""
-        # Check RSI condition
-        rsi_oversold = self.indicators["rsi"][0] < self.get_param("rsi_oversold")
+        if not self.indicators:
+            return False
+        rsi = self.indicators["rsi"][0]
+        bb = self.indicators["bb"]
+        vol_ma = self.indicators["vol_ma"][0]
+        current_price = self.strategy.data.close[0]
+        current_volume = self.strategy.data.volume[0]
         
-        # Check Bollinger Bands condition if enabled
-        bb_condition = True
-        if self.get_param("use_bb_touch"):
-            bb_condition = self.strategy.data.close[0] <= self.indicators["bb_lower"][0]
+        rsi_condition = rsi < self.get_param("rsi_oversold")
+        bb_condition = not self.get_param("use_bb_touch") or current_price <= bb.lines[2][0]
+        volume_condition = current_volume > vol_ma * self.get_param("min_volume")
         
-        # Check Volume condition
-        volume_condition = (
-            self.strategy.data.volume[0] > self.indicators["vol_ma"][0] * self.get_param("min_volume")
-        )
-        
-        return rsi_oversold and bb_condition and volume_condition
+        return rsi_condition and bb_condition and volume_condition
