@@ -106,7 +106,7 @@ common_parameters:
   
   use_talib:
     type: bool
-    default: true
+    default: false
     description: "Whether to use TA-Lib for calculations"
 
 # Example valid configurations

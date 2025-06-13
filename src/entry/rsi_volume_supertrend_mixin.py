@@ -1,33 +1,37 @@
 """
-RSI, Volume and SuperTrend Entry Mixin
+RSI, Volume, and Supertrend Entry Mixin
 
-This module implements an entry strategy based on the combination of Relative Strength Index (RSI),
-Volume, and SuperTrend indicators. The strategy enters a position when:
+This module implements an entry strategy based on the combination of:
+1. Relative Strength Index (RSI)
+2. Volume analysis
+3. Supertrend indicator
+
+The strategy enters a position when:
 1. RSI is in the oversold zone (below the configured threshold)
-2. Volume is above its moving average by the specified multiplier
-3. Price is above the SuperTrend indicator (indicating bullish trend)
+2. Volume is above its moving average
+3. Supertrend indicator shows a bullish signal
 
 Parameters:
     rsi_period (int): Period for RSI calculation (default: 14)
     rsi_oversold (float): RSI threshold for oversold condition (default: 30)
-    vol_ma_period (int): Period for Volume Moving Average (default: 20)
-    st_period (int): Period for SuperTrend calculation (default: 10)
-    st_multiplier (float): Multiplier for SuperTrend ATR calculation (default: 3.0)
-    min_volume_multiplier (float): Minimum volume multiplier compared to MA (default: 1.0)
+    atr_period (int): Period for ATR calculation (default: 10)
+    atr_multiplier (float): Multiplier for ATR in Supertrend (default: 3.0)
+    volume_ma_period (int): Period for volume moving average (default: 20)
+    min_volume_ratio (float): Minimum volume ratio compared to MA (default: 1.5)
 
-This strategy combines mean reversion (RSI), volume confirmation, and trend following (SuperTrend)
-to identify potential entry points. It's particularly effective in trending markets where you want
-to enter on pullbacks with strong volume confirmation.
+This strategy combines mean reversion (RSI), volume confirmation, and trend following (Supertrend)
+to identify potential reversal points with strong momentum.
 """
 
 from typing import Any, Dict
 
 import backtrader as bt
+import numpy as np
 from src.entry.entry_mixin import BaseEntryMixin
 
 
-class RSIVolumeSuperTrendEntryMixin(BaseEntryMixin):
-    """Entry mixin based on RSI, Volume and SuperTrend"""
+class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
+    """Entry mixin based on RSI, Volume, and Supertrend"""
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -38,87 +42,144 @@ class RSIVolumeSuperTrendEntryMixin(BaseEntryMixin):
         return {
             "rsi_period": 14,
             "rsi_oversold": 30,
-            "vol_ma_period": 20,
-            "st_period": 10,
-            "st_multiplier": 3.0,
-            "min_volume_multiplier": 1.0,  # Minimum volume multiplier compared to MA
+            "atr_period": 10,
+            "atr_multiplier": 3.0,
+            "volume_ma_period": 20,
+            "min_volume_ratio": 1.5,
         }
 
     def _init_indicators(self):
-        """Initialization of RSI, Volume and SuperTrend indicators"""
+        """Initialize RSI, Volume, and Supertrend indicators"""
         if self.strategy is None:
             raise ValueError("Strategy must be set before initializing indicators")
 
-        # Create RSI indicator
+        data = self.strategy.data
+
+        # Initialize RSI
         if self.strategy.p.use_talib:
-            import talib
-            self.indicators["rsi"] = bt.indicators.TALibIndicator(
-                self.strategy.data.close,
-                talib.RSI,
-                timeperiod=self.get_param("rsi_period")
-            )
+            try:
+                import talib
+                # Convert data to numpy arrays
+                close_data = np.array(data.close.get(size=len(data)))
+                high_data = np.array(data.high.get(size=len(data)))
+                low_data = np.array(data.low.get(size=len(data)))
+                volume_data = np.array(data.volume.get(size=len(data)))
+                
+                # Create RSI using TA-Lib
+                rsi_values = talib.RSI(
+                    close_data,
+                    timeperiod=self.get_param("rsi_period")
+                )
+                self.indicators["rsi"] = bt.indicators.RSI(
+                    data.close,
+                    period=self.get_param("rsi_period"),
+                    plot=False
+                )
+                self.indicators["rsi"].lines[0].array = rsi_values
 
-            # Create ATR indicator using TA-Lib
-            self.indicators["atr"] = bt.indicators.TALibIndicator(
-                self.strategy.data,
-                talib.ATR,
-                timeperiod=self.get_param("st_period")
-            )
+                # Create ATR using TA-Lib
+                atr_values = talib.ATR(
+                    high_data,
+                    low_data,
+                    close_data,
+                    timeperiod=self.get_param("atr_period")
+                )
+                self.indicators["atr"] = bt.indicators.ATR(
+                    data,
+                    period=self.get_param("atr_period"),
+                    plot=False
+                )
+                self.indicators["atr"].lines[0].array = atr_values
 
-            # Create volume MA indicator using TA-Lib
-            self.indicators["vol_ma"] = bt.indicators.TALibIndicator(
-                self.strategy.data.volume,
-                talib.SMA,
-                timeperiod=self.get_param("vol_ma_period")
-            )
+                # Create Volume MA using TA-Lib
+                vol_ma_values = talib.SMA(
+                    volume_data,
+                    timeperiod=self.get_param("volume_ma_period")
+                )
+                self.indicators["vol_ma"] = bt.indicators.SMA(
+                    data.volume,
+                    period=self.get_param("volume_ma_period"),
+                    plot=False
+                )
+                self.indicators["vol_ma"].lines[0].array = vol_ma_values
+
+            except ImportError:
+                self.log("TA-Lib not available, falling back to Backtrader indicators")
+                self._init_backtrader_indicators()
         else:
-            # Create RSI indicator using Backtrader
-            self.indicators["rsi"] = bt.indicators.RSI(
-                self.strategy.data.close, 
-                period=self.get_param("rsi_period")
-            )
+            self._init_backtrader_indicators()
 
-            # Create ATR indicator using Backtrader
-            self.indicators["atr"] = bt.indicators.ATR(
-                self.strategy.data, 
-                period=self.get_param("st_period")
-            )
+        # Calculate Supertrend
+        atr = self.indicators["atr"]
+        multiplier = self.get_param("atr_multiplier")
 
-            # Create volume MA indicator using Backtrader
-            self.indicators["vol_ma"] = bt.indicators.SMA(
-                self.strategy.data.volume, 
-                period=self.get_param("vol_ma_period")
-            )
+        # Calculate basic upper and lower bands
+        hl2 = (data.high + data.low) / 2
+        basic_upper = hl2 + (multiplier * atr)
+        basic_lower = hl2 - (multiplier * atr)
 
-        # Create SuperTrend (same for both TA-Lib and Backtrader)
-        self.indicators["supertrend"] = bt.indicators.SuperTrend(
-            self.strategy.data,
-            period=self.get_param("st_period"),
-            multiplier=self.get_param("st_multiplier"),
-            atr=self.indicators["atr"],
+        # Initialize Supertrend arrays
+        supertrend = bt.indicators.SMA(data.close, period=1, plot=False)
+        direction = bt.indicators.SMA(data.close, period=1, plot=False)
+
+        # Calculate Supertrend values
+        for i in range(1, len(data)):
+            if data.close[i] > basic_upper[i - 1]:
+                direction[i] = 1
+            elif data.close[i] < basic_lower[i - 1]:
+                direction[i] = -1
+            else:
+                direction[i] = direction[i - 1]
+
+            if direction[i] == 1:
+                supertrend[i] = basic_lower[i]
+            else:
+                supertrend[i] = basic_upper[i]
+
+        self.indicators["supertrend"] = supertrend
+        self.indicators["direction"] = direction
+
+    def _init_backtrader_indicators(self):
+        """Initialize indicators using Backtrader's built-in implementations"""
+        data = self.strategy.data
+
+        # Create RSI indicator
+        self.indicators["rsi"] = bt.indicators.RSI(
+            data.close,
+            period=self.get_param("rsi_period")
+        )
+
+        # Create ATR indicator
+        self.indicators["atr"] = bt.indicators.ATR(
+            data,
+            period=self.get_param("atr_period")
+        )
+
+        # Create Volume MA indicator
+        self.indicators["vol_ma"] = bt.indicators.SMA(
+            data.volume,
+            period=self.get_param("volume_ma_period")
         )
 
     def should_enter(self) -> bool:
         """
-        Entry logic: RSI in oversold zone, volume above MA,
-        and price above SuperTrend
+        Entry logic: RSI oversold, volume above MA, and Supertrend bullish
         """
         if not self.indicators:
             return False
 
         rsi = self.indicators["rsi"][0]
-        current_price = self.strategy.data.close[0]
-        current_volume = self.strategy.data.volume[0]
+        volume = self.strategy.data.volume[0]
         vol_ma = self.indicators["vol_ma"][0]
-        supertrend = self.indicators["supertrend"][0]
+        direction = self.indicators["direction"][0]
 
         # Check RSI
         rsi_oversold = rsi < self.get_param("rsi_oversold")
 
         # Check volume
-        volume_ok = current_volume >= vol_ma * self.get_param("min_volume_multiplier")
+        volume_ok = volume >= vol_ma * self.get_param("min_volume_ratio")
 
-        # Check SuperTrend
-        supertrend_condition = supertrend < current_price
+        # Check Supertrend
+        supertrend_bullish = direction > 0
 
-        return rsi_oversold and volume_ok and supertrend_condition
+        return rsi_oversold and volume_ok and supertrend_bullish

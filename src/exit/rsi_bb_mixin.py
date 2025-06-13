@@ -22,6 +22,7 @@ This strategy is particularly effective for:
 from typing import Any, Dict
 
 import backtrader as bt
+import numpy as np
 from src.exit.exit_mixin import BaseExitMixin
 
 
@@ -49,40 +50,68 @@ class RSIBBExitMixin(BaseExitMixin):
 
         # Create RSI indicator
         if self.strategy.p.use_talib:
-            import talib
-            self.indicators["rsi"] = bt.indicators.TALibIndicator(
-                self.strategy.data.close,
-                talib.RSI,
-                timeperiod=self.get_param("rsi_period")
-            )
+            try:
+                import talib
+                # Create RSI using TA-Lib
+                rsi_values = talib.RSI(
+                    self.strategy.data.close.get(size=len(self.strategy.data)),
+                    timeperiod=self.get_param("rsi_period")
+                )
+                self.indicators["rsi"] = bt.indicators.RSI(
+                    self.strategy.data.close,
+                    period=self.get_param("rsi_period"),
+                    plot=False
+                )
+                self.indicators["rsi"].lines[0].array = rsi_values
 
-            # Create Bollinger Bands indicators using TA-Lib
-            bb_upper, bb_middle, bb_lower = talib.BBANDS(
-                self.strategy.data.close,
-                timeperiod=self.get_param("bb_period"),
-                nbdevup=self.get_param("bb_stddev"),
-                nbdevdn=self.get_param("bb_stddev"),
-                matype=0
-            )
-            self.indicators["bb_upper"] = bt.indicators.TALibIndicator(self.strategy.data.close, lambda x: bb_upper)
-            self.indicators["bb_middle"] = bt.indicators.TALibIndicator(self.strategy.data.close, lambda x: bb_middle)
-            self.indicators["bb_lower"] = bt.indicators.TALibIndicator(self.strategy.data.close, lambda x: bb_lower)
+                # Create Bollinger Bands using TA-Lib
+                bb_upper, bb_middle, bb_lower = talib.BBANDS(
+                    self.strategy.data.close.get(size=len(self.strategy.data)),
+                    timeperiod=self.get_param("bb_period"),
+                    nbdevup=self.get_param("bb_stddev"),
+                    nbdevdn=self.get_param("bb_stddev"),
+                    matype=0
+                )
+                
+                # Create Backtrader indicators and update their values
+                bb = bt.indicators.BollingerBands(
+                    self.strategy.data.close,
+                    period=self.get_param("bb_period"),
+                    devfactor=self.get_param("bb_stddev"),
+                    plot=False
+                )
+                self.indicators["bb_upper"] = bb.lines.top
+                self.indicators["bb_middle"] = bb.lines.mid
+                self.indicators["bb_lower"] = bb.lines.bot
+                
+                # Update the arrays with TA-Lib values
+                self.indicators["bb_upper"].array = bb_upper
+                self.indicators["bb_middle"].array = bb_middle
+                self.indicators["bb_lower"].array = bb_lower
+                
+            except ImportError:
+                self.log("TA-Lib not available, falling back to Backtrader indicators")
+                self._init_backtrader_indicators()
         else:
-            # Create RSI indicator using Backtrader
-            self.indicators["rsi"] = bt.indicators.RSI(
-                self.strategy.data.close, 
-                period=self.get_param("rsi_period")
-            )
+            self._init_backtrader_indicators()
 
-            # Create Bollinger Bands indicators using Backtrader
-            bb = bt.indicators.BollingerBands(
-                self.strategy.data.close, 
-                period=self.get_param("bb_period"),
-                devfactor=self.get_param("bb_stddev")
-            )
-            self.indicators["bb_upper"] = bb.lines.top
-            self.indicators["bb_middle"] = bb.lines.mid
-            self.indicators["bb_lower"] = bb.lines.bot
+    def _init_backtrader_indicators(self):
+        """Initialize indicators using Backtrader's built-in implementations"""
+        # Create RSI indicator using Backtrader
+        self.indicators["rsi"] = bt.indicators.RSI(
+            self.strategy.data.close, 
+            period=self.get_param("rsi_period")
+        )
+
+        # Create Bollinger Bands indicators using Backtrader
+        bb = bt.indicators.BollingerBands(
+            self.strategy.data.close, 
+            period=self.get_param("bb_period"),
+            devfactor=self.get_param("bb_stddev")
+        )
+        self.indicators["bb_upper"] = bb.lines.top
+        self.indicators["bb_middle"] = bb.lines.mid
+        self.indicators["bb_lower"] = bb.lines.bot
 
     def should_exit(self) -> bool:
         """

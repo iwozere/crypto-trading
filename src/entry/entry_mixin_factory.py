@@ -2,11 +2,11 @@
 
 from typing import Any, Dict, Optional
 
-from src.entry.bb_volume_supertrend_mixin import BBVolumeSuperTrendEntryMixin
+from src.entry.bb_volume_supertrend_mixin import BBVolumeSupertrendEntryMixin
 from src.entry.rsi_bb_mixin import RSIBBEntryMixin
 from src.entry.rsi_bb_volume_mixin import RSIBBVolumeEntryMixin
 from src.entry.rsi_ichimoku_mixin import RSIIchimokuEntryMixin
-from src.entry.rsi_volume_supertrend_mixin import RSIVolumeSuperTrendEntryMixin
+from src.entry.rsi_volume_supertrend_mixin import RSIVolumeSupertrendEntryMixin
 
 # Import other mixins...
 
@@ -15,8 +15,8 @@ ENTRY_MIXIN_REGISTRY = {
     "RSIBBEntryMixin": RSIBBEntryMixin,
     "RSIIchimokuEntryMixin": RSIIchimokuEntryMixin,
     "RSIBBVolumeEntryMixin": RSIBBVolumeEntryMixin,
-    "RSIVolumeSuperTrendEntryMixin": RSIVolumeSuperTrendEntryMixin,
-    "BBVolumeSuperTrendEntryMixin": BBVolumeSuperTrendEntryMixin,
+    "RSIVolumeSupertrendEntryMixin": RSIVolumeSupertrendEntryMixin,
+    "BBVolumeSuperTrendEntryMixin": BBVolumeSupertrendEntryMixin,
     # Add other mixins...
 }
 

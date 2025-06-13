@@ -30,10 +30,6 @@
             "low": 1.0,
             "high": 5.0,
             "default": 3.0
-        },
-        "use_talib": {
-            "type": "bool",
-            "default": true
         }
     }
 } 

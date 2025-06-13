@@ -36,13 +36,6 @@ from src.analyzer.bt_analyzers import (CAGR, CalmarRatio,
                                        SortinoRatio, WinRate)
 from src.notification.logger import _logger
 from src.strategy.custom_strategy import CustomStrategy
-from src.util.date_time_encoder import DateTimeEncoder
-from src.plotter.indicators.rsi_plotter import RSIPlotter
-from src.plotter.indicators.ichimoku_plotter import IchimokuPlotter
-from src.plotter.indicators.bollinger_bands_plotter import BollingerBandsPlotter
-from src.plotter.indicators.volume_plotter import VolumePlotter
-from src.plotter.indicators.supertrend_plotter import SuperTrendPlotter
-from src.plotter.base_plotter import BasePlotter
 
 
 class CustomOptimizer:
@@ -203,50 +196,3 @@ class CustomOptimizer:
         # Convert to JSON and back to handle datetime serialization
         return strategy, output
 
-    def _create_plotter(self, strategy):
-        """Create appropriate plotter based on strategy configuration"""
-        entry_name = self.entry_logic["name"]
-        exit_name = self.exit_logic["name"]
-        
-        # Create base plotter
-        plotter = BasePlotter(
-            self.data,
-            strategy.trades,
-            strategy,
-            self.visualization_settings
-        )
-        
-        # Add indicator plotters based on entry/exit mixins
-        if entry_name == "RSIIchimokuEntryMixin":
-            plotter.indicator_plotters.append(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.indicator_plotters.append(IchimokuPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-        
-        elif entry_name == "RSIBBEntryMixin":
-            plotter.indicator_plotters.append(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.indicator_plotters.append(BollingerBandsPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-        
-        elif entry_name == "RSIBBVolumeEntryMixin":
-            plotter.indicator_plotters.append(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.indicator_plotters.append(BollingerBandsPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.indicator_plotters.append(VolumePlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-        
-        elif entry_name == "RSIVolumeSuperTrendEntryMixin":
-            plotter.indicator_plotters.append(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.indicator_plotters.append(VolumePlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.indicator_plotters.append(SuperTrendPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-        
-        elif entry_name == "BBVolumeSuperTrendEntryMixin":
-            plotter.indicator_plotters.append(BollingerBandsPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.indicator_plotters.append(VolumePlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.indicator_plotters.append(SuperTrendPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-        
-        # Add exit strategy indicators if needed
-        if exit_name == "ATRExitMixin":
-            # ATR is already plotted with SuperTrend if present
-            pass
-        
-        elif exit_name == "MACrossoverExitMixin":
-            # Moving averages are typically part of the entry strategy
-            pass
-        
-        return plotter

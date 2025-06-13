@@ -21,105 +21,96 @@ import numpy as np
 
 # Custom SuperTrend Indicator
 class SuperTrend(bt.Indicator):
-    lines = (
-        "supertrend",
-        "direction",
-    )  # supertrend line and direction (-1 for short, 1 for long)
+    """SuperTrend indicator implementation"""
 
-    def __init__(self, params=None):
-        params = params or {}
-        self.period = params.get("period", 10)
-        self.multiplier = params.get("multiplier", 3.0)
-        self.use_talib = params.get("use_talib", False)
-        self.addminperiod(self.period + 1)
+    lines = ('super_trend', 'direction', 'upper_band', 'lower_band')
+    params = (
+        ('period', 10),
+        ('multiplier', 3.0),
+        ('use_talib', False),
+    )
 
-        # Initialize ATR based on use_talib flag
-        if self.use_talib:
+    def __init__(self):
+        """Initialize the SuperTrend indicator"""
+        super(SuperTrend, self).__init__()
+        
+        # Initialize ATR indicator
+        if self.p.use_talib:
             try:
                 import talib
-
-                # Use TA-Lib ATR for calculation
-                self.atr = bt.talib.ATR(
-                    self.datas[0].high,
-                    self.datas[0].low,
-                    self.datas[0].close,
-                    timeperiod=self.period,
+                # Convert data to numpy arrays
+                high_data = np.array(self.data.high.get(size=len(self.data)))
+                low_data = np.array(self.data.low.get(size=len(self.data)))
+                close_data = np.array(self.data.close.get(size=len(self.data)))
+                
+                # Calculate ATR using TA-Lib
+                atr_values = talib.ATR(
+                    high_data,
+                    low_data,
+                    close_data,
+                    timeperiod=self.p.period
                 )
+                
+                # Create ATR indicator
+                self.atr = bt.indicators.ATR(
+                    self.data,
+                    period=self.p.period,
+                    plot=False
+                )
+                
+                # Update ATR values one by one
+                for i, value in enumerate(atr_values):
+                    if i < len(self.atr.lines[0]):
+                        self.atr.lines[0][i] = value
             except ImportError:
                 self.log("TA-Lib not available, falling back to Backtrader ATR")
-                self.atr = bt.indicators.ATR(self.datas[0], period=self.period)
+                self.atr = bt.indicators.ATR(
+                    self.data,
+                    period=self.p.period
+                )
         else:
-            # Use Backtrader's built-in ATR
-            self.atr = bt.indicators.ATR(self.datas[0], period=self.period)
-
-        self.final_ub_list = []
-        self.final_lb_list = []
+            self.atr = bt.indicators.ATR(
+                self.data,
+                period=self.p.period
+            )
 
     def next(self):
-        hl2 = (self.datas[0].high[0] + self.datas[0].low[0]) / 2
-        atr = self.atr[0]
-        basic_ub = hl2 + self.multiplier * atr
-        basic_lb = hl2 - self.multiplier * atr
+        """Calculate next value of SuperTrend"""
+        if len(self) == 1:
+            # First bar - initialize values
+            self.lines.upper_band[0] = (self.data.high[0] + self.data.low[0]) / 2 + self.p.multiplier * self.atr[0]
+            self.lines.lower_band[0] = (self.data.high[0] + self.data.low[0]) / 2 - self.p.multiplier * self.atr[0]
+            self.lines.super_trend[0] = self.lines.upper_band[0]
+            self.lines.direction[0] = 1
+            return
 
-        # Calculate final upper/lower bands
-        if len(self.final_ub_list) == 0:
-            prev_final_ub = basic_ub
+        # Calculate basic upper and lower bands
+        basic_ub = (self.data.high[0] + self.data.low[0]) / 2 + self.p.multiplier * self.atr[0]
+        basic_lb = (self.data.high[0] + self.data.low[0]) / 2 - self.p.multiplier * self.atr[0]
+
+        # Calculate final upper and lower bands
+        if basic_ub < self.lines.upper_band[-1] or self.data.close[-1] > self.lines.upper_band[-1]:
+            self.lines.upper_band[0] = basic_ub
         else:
-            prev_final_ub = self.final_ub_list[-1]
-        if len(self.final_lb_list) == 0:
-            prev_final_lb = basic_lb
+            self.lines.upper_band[0] = self.lines.upper_band[-1]
+
+        if basic_lb > self.lines.lower_band[-1] or self.data.close[-1] < self.lines.lower_band[-1]:
+            self.lines.lower_band[0] = basic_lb
         else:
-            prev_final_lb = self.final_lb_list[-1]
-        prev_close = (
-            self.datas[0].close[-1] if len(self) > 1 else self.datas[0].close[0]
-        )
-        final_ub = (
-            basic_ub
-            if (basic_ub < prev_final_ub or prev_close > prev_final_ub)
-            else prev_final_ub
-        )
-        final_lb = (
-            basic_lb
-            if (basic_lb > prev_final_lb or prev_close < prev_final_lb)
-            else prev_final_lb
-        )
+            self.lines.lower_band[0] = self.lines.lower_band[-1]
 
-        self.final_ub_list.append(final_ub)
-        self.final_lb_list.append(final_lb)
-
-        # Set initial direction if it's undefined (first proper calculation)
-        if (
-            len(self) == 1
-            or math.isnan(self.lines.direction[-1])
-            or self.lines.direction[-1] == 0
-        ):
-            if self.datas[0].close[0] > final_ub:
+        # Calculate SuperTrend and direction
+        if self.lines.super_trend[-1] == self.lines.upper_band[-1]:
+            if self.data.close[0] > self.lines.upper_band[0]:
+                self.lines.super_trend[0] = self.lines.upper_band[0]
                 self.lines.direction[0] = 1
-            elif self.datas[0].close[0] < final_lb:
+            else:
+                self.lines.super_trend[0] = self.lines.lower_band[0]
+                self.lines.direction[0] = -1
+        else:
+            if self.data.close[0] < self.lines.lower_band[0]:
+                self.lines.super_trend[0] = self.lines.lower_band[0]
                 self.lines.direction[0] = -1
             else:
-                self.lines.direction[0] = 0  # Still undefined
-                self.lines.supertrend[0] = np.nan
-                return
-        else:
-            # Determine current direction
-            if self.lines.direction[-1] == 1:  # Previous trend was up
-                if self.datas[0].close[0] < final_lb:
-                    self.lines.direction[0] = -1
-                else:
-                    self.lines.direction[0] = 1
-            elif self.lines.direction[-1] == -1:  # Previous trend was down
-                if self.datas[0].close[0] > final_ub:
-                    self.lines.direction[0] = 1
-                else:
-                    self.lines.direction[0] = -1
-            else:
-                self.lines.direction[0] = 0
-
-        # Set SuperTrend line value
-        if self.lines.direction[0] == 1:
-            self.lines.supertrend[0] = final_lb
-        elif self.lines.direction[0] == -1:
-            self.lines.supertrend[0] = final_ub
-        else:
-            self.lines.supertrend[0] = np.nan
+                self.lines.super_trend[0] = self.lines.upper_band[0]
+                self.lines.direction[0] = 1

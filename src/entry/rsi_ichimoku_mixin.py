@@ -1,24 +1,31 @@
 """
-RSI and Ichimoku Cloud Entry Mixin
+RSI + Ichimoku Entry Mixin
+-------------------------
 
-This module implements an entry strategy based on the combination of Relative Strength Index (RSI)
-and Ichimoku Cloud indicators. The strategy enters a position when:
-1. RSI is in the oversold zone (below the configured threshold)
-2. Price is below the Ichimoku Cloud (bearish cloud)
-3. Price crosses above the Tenkan-sen (Conversion Line)
+This module implements an entry strategy based on RSI and Ichimoku Cloud.
+The strategy enters a position when:
+1. RSI is in the oversold zone (below rsi_oversold)
+2. Price is above the Ichimoku Cloud (if require_above_cloud is True)
+3. Tenkan-sen crosses above Kijun-sen (if require_crossover is True)
 
 Parameters:
-    rsi_period (int): Period for RSI calculation (default: 14)
-    rsi_oversold (float): RSI threshold for oversold condition (default: 30)
-    tenkan_period (int): Period for Tenkan-sen calculation (default: 9)
-    kijun_period (int): Period for Kijun-sen calculation (default: 26)
-    senkou_span_b_period (int): Period for Senkou Span B calculation (default: 52)
-    displacement (int): Displacement for Ichimoku Cloud (default: 26)
-    use_talib (bool): Whether to use TA-Lib for calculations (default: False)
-
-This strategy combines mean reversion (RSI) with trend following (Ichimoku) to identify potential
-reversal points in the market. It's particularly effective in trending markets where you want to
-catch the beginning of a new trend after a pullback.
+-----------
+rsi_period : int
+    Period for RSI calculation (default: 14)
+rsi_oversold : float
+    RSI level considered oversold (default: 30)
+tenkan_period : int
+    Period for Tenkan-sen calculation (default: 9)
+kijun_period : int
+    Period for Kijun-sen calculation (default: 26)
+senkou_span_b_period : int
+    Period for Senkou Span B calculation (default: 52)
+displacement : int
+    Displacement for Ichimoku Cloud (default: 26)
+require_above_cloud : bool
+    Whether to require price above cloud (default: True)
+require_crossover : bool
+    Whether to require Tenkan-sen/Kijun-sen crossover (default: True)
 """
 
 from typing import Any, Dict
@@ -29,24 +36,36 @@ from src.entry.entry_mixin import BaseEntryMixin
 
 
 class RSIIchimokuEntryMixin(BaseEntryMixin):
-    """Entry mixin based on RSI and Ichimoku cloud"""
-    
+    """Entry mixin combining RSI and Ichimoku Cloud indicators"""
+
+    params = {
+        "rsi_period": 14,
+        "rsi_oversold": 30,
+        "tenkan_period": 9,
+        "kijun_period": 26,
+        "senkou_span_b_period": 52,
+        "displacement": 26,
+        "require_above_cloud": True,
+        "require_crossover": True,
+    }
+
     def get_required_params(self) -> list:
-        # We can make some parameters required
-        return ["tenkan_period", "kijun_period"]
-    
-    def get_default_params(self) -> Dict[str, Any]:
+        """There are no required parameters - all have default values"""
+        return []
+
+    def get_default_params(self) -> dict:
+        """Default parameters"""
         return {
             "rsi_period": 14,
             "rsi_oversold": 30,
-            "tenkan_period": 9,  # Will be required
-            "kijun_period": 26,  # Will be required
+            "tenkan_period": 9,
+            "kijun_period": 26,
             "senkou_span_b_period": 52,
             "displacement": 26,
             "require_above_cloud": True,
-            "use_talib": False,
+            "require_crossover": True,
         }
-    
+
     def _init_indicators(self):
         """Initialize RSI and Ichimoku Cloud indicators"""
         if self.strategy is None:
@@ -56,13 +75,23 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         if self.get_param("use_talib"):
             try:
                 import talib
-                # This creates an indicator that will be automatically updated
-                # when new data arrives in the strategy's next() method
-                self.indicators["rsi"] = bt.indicators.TALibIndicator(
-                    self.strategy.data.close,  # Uses strategy's data as input
-                    talib.RSI,
+                # Convert data to numpy arrays
+                close_data = np.array(self.strategy.data.close.get(size=len(self.strategy.data)))
+                
+                # Create RSI using TA-Lib
+                rsi_values = talib.RSI(
+                    close_data,
                     timeperiod=self.get_param("rsi_period")
                 )
+                self.indicators["rsi"] = bt.indicators.RSI(
+                    self.strategy.data.close,
+                    period=self.get_param("rsi_period"),
+                    plot=False
+                )
+                # Update RSI values one by one
+                for i, value in enumerate(rsi_values):
+                    if i < len(self.indicators["rsi"].lines[0]):
+                        self.indicators["rsi"].lines[0][i] = value
             except ImportError:
                 self.log("TA-Lib not available, falling back to Backtrader RSI")
                 self.indicators["rsi"] = bt.indicators.RSI(
@@ -75,74 +104,41 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
                 period=self.get_param("rsi_period")
             )
 
-        # Create Ichimoku Cloud components
-        data = self.strategy.data  # Reference to strategy's data
-        
-        # All these indicators will be automatically updated
-        # when new data arrives in the strategy's next() method
-        # Calculate Tenkan-sen (Conversion Line)
-        tenkan_period = self.get_param("tenkan_period")
-        tenkan_high = bt.indicators.Highest(data.high, period=tenkan_period)
-        tenkan_low = bt.indicators.Lowest(data.low, period=tenkan_period)
-        self.indicators["tenkan"] = (tenkan_high + tenkan_low) / 2
-
-        # Calculate Kijun-sen (Base Line)
-        kijun_period = self.get_param("kijun_period")
-        kijun_high = bt.indicators.Highest(data.high, period=kijun_period)
-        kijun_low = bt.indicators.Lowest(data.low, period=kijun_period)
-        self.indicators["kijun"] = (kijun_high + kijun_low) / 2
-
-        # Calculate Senkou Span A (Leading Span A)
-        self.indicators["senkou_span_a"] = bt.indicators.MovingAverageSimple(
-            (self.indicators["tenkan"] + self.indicators["kijun"]) / 2,
-            period=1,
-            subplot=False
+        # Initialize Ichimoku Cloud indicators
+        self.indicators["ichimoku"] = bt.indicators.Ichimoku(
+            self.strategy.data,
+            tenkan_period=self.get_param("tenkan_period"),
+            kijun_period=self.get_param("kijun_period"),
+            senkou_span_b_period=self.get_param("senkou_span_b_period"),
+            displacement=self.get_param("displacement")
         )
-        self.indicators["senkou_span_a"].plotinfo.plotdelay = self.get_param("displacement")
 
-        # Calculate Senkou Span B (Leading Span B)
-        senkou_span_b_period = self.get_param("senkou_span_b_period")
-        senkou_span_b_high = bt.indicators.Highest(data.high, period=senkou_span_b_period)
-        senkou_span_b_low = bt.indicators.Lowest(data.low, period=senkou_span_b_period)
-        self.indicators["senkou_span_b"] = bt.indicators.MovingAverageSimple(
-            (senkou_span_b_high + senkou_span_b_low) / 2,
-            period=1,
-            subplot=False
-        )
-        self.indicators["senkou_span_b"].plotinfo.plotdelay = self.get_param("displacement")
-
-        # Calculate Chikou Span (Lagging Span)
-        self.indicators["chikou_span"] = bt.indicators.MovingAverageSimple(
-            data.close,
-            period=1,
-            subplot=False
-        )
-        self.indicators["chikou_span"].plotinfo.plotdelay = -self.get_param("displacement")  # Negative displacement for lagging
-
-    def should_enter(self) -> bool:
-        """Entry logic: RSI oversold and Ichimoku Cloud conditions"""
+    def should_enter(self):
+        """Check if we should enter a position"""
         if not self.indicators:
             return False
+
+        # Check RSI condition
+        rsi_oversold = self.indicators["rsi"][0] < self.get_param("rsi_oversold")
         
-        rsi = self.indicators["rsi"][0]
+        # Check Ichimoku conditions
+        ichimoku = self.indicators["ichimoku"]
         current_price = self.strategy.data.close[0]
         
-        # RSI condition
-        rsi_ok = rsi < self.get_param("rsi_oversold")
-        
-        # Ichimoku conditions
-        tenkan = self.indicators["tenkan"][0]
-        kijun = self.indicators["kijun"][0]
-        senkou_span_a = self.indicators["senkou_span_a"][0]
-        senkou_span_b = self.indicators["senkou_span_b"][0]
-
-        # Bullish signal: Tenkan-sen crosses above Kijun-sen
-        tenkan_kijun_cross = tenkan > kijun
-        
-        # Additional condition - price above the cloud (if required)
+        # Check if price is above cloud
         above_cloud = True
         if self.get_param("require_above_cloud"):
-            cloud_top = max(senkou_span_a, senkou_span_b)
-            above_cloud = current_price > cloud_top
+            above_cloud = (
+                current_price > ichimoku.lines.senkou_span_a[0] and
+                current_price > ichimoku.lines.senkou_span_b[0]
+            )
         
-        return rsi_ok and tenkan_kijun_cross and above_cloud
+        # Check for Tenkan-sen/Kijun-sen crossover
+        crossover = True
+        if self.get_param("require_crossover"):
+            crossover = (
+                ichimoku.lines.tenkan_sen[-1] < ichimoku.lines.kijun_sen[-1] and
+                ichimoku.lines.tenkan_sen[0] > ichimoku.lines.kijun_sen[0]
+            )
+        
+        return rsi_oversold and above_cloud and crossover

@@ -11,10 +11,6 @@
             "type": "categorical",
             "choices": ["SMA", "EMA"],
             "default": "SMA"
-        },
-        "use_talib": {
-            "type": "bool",
-            "default": true
         }
     }
 } 
