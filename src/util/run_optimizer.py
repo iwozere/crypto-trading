@@ -9,12 +9,11 @@ from datetime import datetime as dt
 import backtrader as bt
 import optuna
 import pandas as pd
-from src.entry.entry_mixin_factory import (ENTRY_MIXIN_REGISTRY,
-                                           get_entry_mixin_from_config)
-from src.exit.exit_mixin_factory import (EXIT_MIXIN_REGISTRY,
-                                         get_exit_mixin_from_config)
+from src.entry.entry_mixin_factory import (ENTRY_MIXIN_REGISTRY)
+from src.exit.exit_mixin_factory import (EXIT_MIXIN_REGISTRY)
 from src.notification.logger import _logger
 from src.optimizer.custom_optimizer import CustomOptimizer
+from src.util.date_time_encoder import DateTimeEncoder
 
 
 def prepare_data(data_file):
@@ -70,6 +69,38 @@ def get_result_filename(data_file, entry_logic_name, exit_logic_name, suffix="")
     return f"{symbol}_{interval}_{start_date}_{end_date}_{entry_logic_name}_{exit_logic_name}_{timestamp}{suffix}"
 
 
+def save_results(results, data_file, entry_logic_name, exit_logic_name, strategy):
+    """Save results to file"""
+    output_file_name = get_result_filename(
+        data_file,
+        entry_logic_name=entry_logic_name,
+        exit_logic_name=exit_logic_name,
+        suffix="",
+    )
+    output_file = os.path.join("results", f"{output_file_name}.json")
+    os.makedirs("results", exist_ok=True)
+    with open(output_file, "w") as f:
+        json.dump(results, f, indent=4, cls=DateTimeEncoder)
+    print(f"Results saved to {output_file}")
+
+
+def save_plot(plotter, data_file, entry_logic_name, exit_logic_name):
+    # Create plot with custom name
+    plot_name = get_result_filename(
+        data_file,
+        entry_logic_name=entry_logic_name,
+        exit_logic_name=exit_logic_name,
+        suffix="_plot",
+    )
+    plot_path = os.path.join("results", f"{plot_name}.png")
+    
+    # Get the plotter from the optimizer and plot
+    if plotter:
+        plotter.plot(plot_path)
+        print(f"Plot saved to: {plot_path}")
+
+
+
 if __name__ == "__main__":
     """Run all optimizers with their respective configurations."""
     start_time = dt.now()
@@ -118,59 +149,33 @@ if __name__ == "__main__":
 
                 # Define objective function
                 def objective(trial):
-                    result = optimizer.run_optimization(trial)
+                    _, result = optimizer.run_optimization(trial)
                     return result["total_profit_with_commission"]
 
                 # Run optimization
-                study.optimize(objective, n_trials=100, n_jobs=-1, show_progress_bar=False)
+                study.optimize(objective, n_trials=100, n_jobs=1, show_progress_bar=False)
 
                 # Get best trial and run it again to get detailed results
                 if study.best_trial is not None:
-                    best_result = optimizer.run_optimization(study.best_trial)
+                    strategy, best_result = optimizer.run_optimization(study.best_trial)
                     print("\nBest trial results:")
                     print(f"Parameters: {best_result['best_params']}")
                     print(f"Total Profit: {best_result['total_profit']:.2f}")
                     print(f"Total Profit (with commission): {best_result['total_profit_with_commission']:.2f}")
 
-                    # Create plot with custom name
-                    plot_name = get_result_filename(
-                        data_file,
-                        entry_logic_name=entry_logic_name,
-                        exit_logic_name=exit_logic_name,
-                        suffix="_plot",
-                    )
-                    plot_path = os.path.join("results", f"{plot_name}.png")
+
+                    #results = {
+                    #    "study_name": study.study_name,
+                    #    "best_params": study.best_params,
+                    #    "best_value": study.best_value,
+                    #    "analyzers": best_result["analyzers"],
+                    #    "trades": best_result["trades"],
+                    #}
+
+                    save_results(best_result, data_file, entry_logic_name, exit_logic_name, strategy)
                     
-                    # Get the plotter from the optimizer and plot
-                    plotter = optimizer._create_plotter(best_result['strategy'])
-                    if plotter:
-                        plotter.plot(plot_path)
-                        print(f"Plot saved to: {plot_path}")
+                    save_plot(optimizer._create_plotter(strategy), data_file, entry_logic_name, exit_logic_name)
+
                 else:
                     print("No trials were completed successfully.")
 
-                # Save results
-                results = {
-                    "study_name": study.study_name,
-                    "best_params": study.best_params,
-                    "best_value": study.best_value,
-                    "analyzers": best_result["analyzers"],
-                    "trades": best_result["trades"],
-                }
-
-                # Save to file
-                output_file_name = get_result_filename(
-                    data_file,
-                    entry_logic_name=entry_logic_name,
-                    exit_logic_name=exit_logic_name,
-                    suffix="",
-                )
-                output_file = os.path.join("results", f"{output_file_name}.json")
-                os.makedirs("results", exist_ok=True)
-
-                with open(output_file, "w") as f:
-                    json.dump(results, f, indent=4)
-
-                print(f"Best parameters: {study.best_params}")
-                print(f"Best Sharpe ratio: {study.best_value}")
-                print(f"Results saved to {output_file}")

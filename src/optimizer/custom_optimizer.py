@@ -201,7 +201,7 @@ class CustomOptimizer:
         }
 
         # Convert to JSON and back to handle datetime serialization
-        return json.loads(json.dumps(output, cls=DateTimeEncoder))
+        return strategy, output
 
     def _create_plotter(self, strategy):
         """Create appropriate plotter based on strategy configuration"""
