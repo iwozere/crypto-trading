@@ -69,12 +69,12 @@ def get_result_filename(data_file, entry_logic_name, exit_logic_name, suffix="")
     return f"{symbol}_{interval}_{start_date}_{end_date}_{entry_logic_name}_{exit_logic_name}_{timestamp}{suffix}"
 
 
-def save_results(results, data_file, entry_logic_name, exit_logic_name, strategy):
+def save_results(results, data_file):
     """Save results to file"""
     output_file_name = get_result_filename(
         data_file,
-        entry_logic_name=entry_logic_name,
-        exit_logic_name=exit_logic_name,
+        entry_logic_name=results["best_params"]["entry_logic"]["name"],
+        exit_logic_name=results["best_params"]["exit_logic"]["name"],
         suffix="",
     )
     output_file = os.path.join("results", f"{output_file_name}.json")
@@ -84,12 +84,12 @@ def save_results(results, data_file, entry_logic_name, exit_logic_name, strategy
     print(f"Results saved to {output_file}")
 
 
-def save_plot(plotter, data_file, entry_logic_name, exit_logic_name):
+def save_plot(plotter, data_file):
     # Create plot with custom name
     plot_name = get_result_filename(
         data_file,
-        entry_logic_name=entry_logic_name,
-        exit_logic_name=exit_logic_name,
+        entry_logic_name=plotter.strategy.entry_logic["name"],
+        exit_logic_name=plotter.strategy.exit_logic["name"],
         suffix="_plot",
     )
     plot_path = os.path.join("results", f"{plot_name}.png")
@@ -172,9 +172,9 @@ if __name__ == "__main__":
                     #    "trades": best_result["trades"],
                     #}
 
-                    save_results(best_result, data_file, entry_logic_name, exit_logic_name, strategy)
+                    save_results(best_result, data_file)
                     
-                    save_plot(optimizer._create_plotter(strategy), data_file, entry_logic_name, exit_logic_name)
+                    save_plot(optimizer._create_plotter(strategy), data_file)
 
                 else:
                     print("No trials were completed successfully.")

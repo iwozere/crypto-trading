@@ -45,6 +45,7 @@ db/
 data/
 !src/data/
 results/
+temp/
 
 #logs
 *.zip
