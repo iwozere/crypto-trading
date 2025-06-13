@@ -47,8 +47,12 @@ class TimeBasedExitMixin(BaseExitMixin):
         }
 
     def _init_indicators(self):
-        """No indicators needed for time-based exit"""
-        self.entry_bar = 0
+        """Initialize time-based exit indicators"""
+        if self.strategy is None:
+            raise ValueError("Strategy must be set before initializing indicators")
+
+        # No indicators needed for time-based exit
+        pass
 
     def should_exit(self) -> bool:
         """

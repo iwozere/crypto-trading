@@ -49,9 +49,42 @@ class RSIBBEntryMixin(BaseEntryMixin):
         if self.strategy is None:
             raise ValueError("Strategy must be set before initializing indicators")
 
-        # Use common indicators from strategy
-        self.indicators["rsi"] = self.strategy.rsi
-        self.indicators["bb"] = self.strategy.bb
+        # Create RSI indicator
+        if self.strategy.p.use_talib:
+            import talib
+            self.indicators["rsi"] = bt.indicators.TALibIndicator(
+                self.strategy.data.close,
+                talib.RSI,
+                timeperiod=self.get_param("rsi_period")
+            )
+
+            # Create Bollinger Bands indicators using TA-Lib
+            bb_upper, bb_middle, bb_lower = talib.BBANDS(
+                self.strategy.data.close,
+                timeperiod=self.get_param("bb_period"),
+                nbdevup=self.get_param("bb_stddev"),
+                nbdevdn=self.get_param("bb_stddev"),
+                matype=0
+            )
+            self.indicators["bb_upper"] = bt.indicators.TALibIndicator(self.strategy.data.close, lambda x: bb_upper)
+            self.indicators["bb_middle"] = bt.indicators.TALibIndicator(self.strategy.data.close, lambda x: bb_middle)
+            self.indicators["bb_lower"] = bt.indicators.TALibIndicator(self.strategy.data.close, lambda x: bb_lower)
+        else:
+            # Create RSI indicator using Backtrader
+            self.indicators["rsi"] = bt.indicators.RSI(
+                self.strategy.data.close, 
+                period=self.get_param("rsi_period")
+            )
+
+            # Create Bollinger Bands indicators using Backtrader
+            bb = bt.indicators.BollingerBands(
+                self.strategy.data.close, 
+                period=self.get_param("bb_period"),
+                devfactor=self.get_param("bb_stddev")
+            )
+            self.indicators["bb_upper"] = bb.lines.top
+            self.indicators["bb_middle"] = bb.lines.mid
+            self.indicators["bb_lower"] = bb.lines.bot
 
     def should_enter(self) -> bool:
         """
@@ -73,7 +106,7 @@ class RSIBBEntryMixin(BaseEntryMixin):
         # Check touching the Bollinger Bands (if enabled)
         bb_condition = True
         if self.get_param("use_bb_touch"):
-            bb_lower = self.indicators["bb"].lines.bot[0]
+            bb_lower = self.indicators["bb_lower"][0]
             bb_condition = (
                 current_price <= bb_lower * 1.01
             )  # Small tolerance for floating point comparison

@@ -65,17 +65,22 @@ class ATRExitMixin(BaseExitMixin):
         }
 
     def _init_indicators(self):
-        """Initialize indicators"""
-        if self.use_talib:
-            import talib
+        """Initialize ATR indicator"""
+        if self.strategy is None:
+            raise ValueError("Strategy must be set before initializing indicators")
 
-            # Create ATR indicator using TA-Lib
-            self.atr = bt.indicators.TALibIndicator(
-                self.strategy.data, talib.ATR, period=self.atr_period
+        if self.strategy.p.use_talib:
+            import talib
+            self.indicators["atr"] = bt.indicators.TALibIndicator(
+                self.strategy.data,
+                talib.ATR,
+                timeperiod=self.get_param("atr_period")
             )
         else:
-            # Create ATR indicator using Backtrader
-            self.atr = bt.indicators.ATR(self.strategy.data, period=self.atr_period)
+            self.indicators["atr"] = bt.indicators.ATR(
+                self.strategy.data,
+                period=self.get_param("atr_period")
+            )
 
     def should_exit(self) -> bool:
         """
@@ -87,7 +92,7 @@ class ATRExitMixin(BaseExitMixin):
             True if we should exit, False otherwise
         """
         # Calculate stop loss level
-        stop_loss = self.strategy.data.close[0] - (self.atr[0] * self.atr_multiplier)
+        stop_loss = self.strategy.data.close[0] - (self.indicators["atr"][0] * self.atr_multiplier)
 
         # Exit if price falls below stop loss
         return self.strategy.data.close[0] < stop_loss

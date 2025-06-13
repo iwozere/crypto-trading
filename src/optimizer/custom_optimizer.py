@@ -218,27 +218,27 @@ class CustomOptimizer:
         
         # Add indicator plotters based on entry/exit mixins
         if entry_name == "RSIIchimokuEntryMixin":
-            plotter.add_indicator_plotter(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.add_indicator_plotter(IchimokuPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(IchimokuPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
         
         elif entry_name == "RSIBBEntryMixin":
-            plotter.add_indicator_plotter(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.add_indicator_plotter(BollingerBandsPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(BollingerBandsPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
         
         elif entry_name == "RSIBBVolumeEntryMixin":
-            plotter.add_indicator_plotter(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.add_indicator_plotter(BollingerBandsPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.add_indicator_plotter(VolumePlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(BollingerBandsPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(VolumePlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
         
         elif entry_name == "RSIVolumeSuperTrendEntryMixin":
-            plotter.add_indicator_plotter(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.add_indicator_plotter(VolumePlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.add_indicator_plotter(SuperTrendPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(RSIPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(VolumePlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(SuperTrendPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
         
         elif entry_name == "BBVolumeSuperTrendEntryMixin":
-            plotter.add_indicator_plotter(BollingerBandsPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.add_indicator_plotter(VolumePlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
-            plotter.add_indicator_plotter(SuperTrendPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(BollingerBandsPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(VolumePlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
+            plotter.indicator_plotters.append(SuperTrendPlotter(self.data, strategy.entry_mixin.indicators, self.visualization_settings))
         
         # Add exit strategy indicators if needed
         if exit_name == "ATRExitMixin":

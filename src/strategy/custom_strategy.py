@@ -4,9 +4,11 @@ from typing import Any, Dict
 
 import backtrader as bt
 from src.entry.entry_mixin_factory import (get_entry_mixin,
-                                           get_entry_mixin_from_config)
+                                           get_entry_mixin_from_config,
+                                           ENTRY_MIXIN_REGISTRY)
 from src.exit.exit_mixin_factory import (get_exit_mixin,
-                                         get_exit_mixin_from_config)
+                                         get_exit_mixin_from_config,
+                                         EXIT_MIXIN_REGISTRY)
 
 
 class CustomStrategy(bt.Strategy):
@@ -25,186 +27,61 @@ class CustomStrategy(bt.Strategy):
 
     params = (
         ("strategy_config", None),  # Strategy configuration
-        ("position_size", 0.1),     # Default position size
-        ("use_talib", False),       # Whether to use TA-Lib
+        ("position_size", 1.0),     # Default position size
+        ("use_talib", True),        # Whether to use TA-Lib
     )
 
     def __init__(self):
         """Initialize strategy with configuration"""
-        super().__init__()
         self.strategy_config = self.p.strategy_config
-        self.trades = []  # List to store trade information
-        self.current_trade = None  # Track current trade
-        self.position_open = False  # Flag to track if we have an open position
-
         self.entry_logic = self.strategy_config["entry_logic"]
         self.exit_logic = self.strategy_config["exit_logic"]
+        
+        # Initialize entry and exit mixins
+        self.entry_mixin = self._create_entry_mixin()
+        self.exit_mixin = self._create_exit_mixin()
+        
+        # Initialize trade tracking
+        self.trades = []
+        self.has_position = False
 
-        # Update params from config if provided
-        if "position_size" in self.strategy_config:
-            self.p.position_size = self.strategy_config["position_size"]
-        if "use_talib" in self.strategy_config:
-            self.p.use_talib = self.strategy_config["use_talib"]
+    def _create_entry_mixin(self):
+        """Create entry mixin based on configuration"""
+        entry_mixin_class = ENTRY_MIXIN_REGISTRY[self.entry_logic["name"]]
+        entry_mixin = entry_mixin_class()
+        entry_mixin.strategy = self
+        entry_mixin._init_indicators()
+        return entry_mixin
 
-        # Validate required parameters
-        if not self.strategy_config:
-            raise ValueError("strategy_config parameter is required")
-
-        # Initialize common indicators
-        self._init_common_indicators()
-
-        # Initialize mixins
-        self._init_entry_mixin()
-        self._init_exit_mixin()
-
-    def _init_common_indicators(self):
-        """Initialize common indicators used by multiple mixins"""
-        if self.p.use_talib:
-            import talib
-
-            # Create RSI indicator using TA-Lib
-            self.rsi = bt.indicators.TALibIndicator(
-                self.data.close,
-                talib.RSI,
-                period=self.entry_logic["params"].get("rsi_period", 14),
-            )
-
-            # Create Bollinger Bands indicator using TA-Lib
-            self.bb = bt.indicators.TALibIndicator(
-                self.data.close,
-                talib.BBANDS,
-                period=self.entry_logic["params"].get("bb_period", 20),
-            )
-
-            # Create ATR indicator using TA-Lib
-            self.atr = bt.indicators.TALibIndicator(
-                self.data,
-                talib.ATR,
-                period=self.exit_logic["params"].get("atr_period", 14),
-            )
-        else:
-            # Create RSI indicator using Backtrader
-            self.rsi = bt.indicators.RSI(
-                self.data.close, period=self.entry_logic["params"].get("rsi_period", 14)
-            )
-
-            # Create Bollinger Bands indicator using Backtrader
-            self.bb = bt.indicators.BollingerBands(
-                self.data.close, period=self.entry_logic["params"].get("bb_period", 20)
-            )
-
-            # Create ATR indicator using Backtrader
-            self.atr = bt.indicators.ATR(
-                self.data, period=self.exit_logic["params"].get("atr_period", 14)
-            )
-
-    def _init_entry_mixin(self):
-        """Initialize entry mixin with configuration"""
-
-        # Variant 1: Configuration contains name and parameters separately
-        if isinstance(self.entry_logic, dict) and "name" in self.entry_logic:
-            entry_name = self.entry_logic["name"]
-            entry_params = self.entry_logic.get("params", {})
-            entry_params["use_talib"] = self.p.use_talib
-            self.entry_mixin = get_entry_mixin(entry_name, entry_params)
-
-        # Variant 2: Full configuration (preferred)
-        elif isinstance(self.entry_logic, dict):
-            self.entry_logic["params"]["use_talib"] = self.p.use_talib
-            self.entry_mixin = get_entry_mixin_from_config(self.entry_logic)
-
-        else:
-            raise ValueError(f"Invalid entry_logic format: {self.entry_logic}")
-
-        # Initialize the mixin with the strategy
-        self.entry_mixin.init_entry(strategy=self)
-
-    def _init_exit_mixin(self):
-        """Initialize exit mixin with configuration"""
-
-        if isinstance(self.exit_logic, dict) and "name" in self.exit_logic:
-            exit_name = self.exit_logic["name"]
-            exit_params = self.exit_logic.get("params", {})
-            exit_params["use_talib"] = self.p.use_talib
-            self.exit_mixin = get_exit_mixin(exit_name, exit_params)
-
-        elif isinstance(self.exit_logic, dict):
-            self.exit_logic["params"]["use_talib"] = self.p.use_talib
-            self.exit_mixin = get_exit_mixin_from_config(self.exit_logic)
-
-        else:
-            raise ValueError(f"Invalid exit_logic format: {self.exit_logic}")
-
-        self.exit_mixin.init_exit(strategy=self)
-
-    def notify_trade(self, trade):
-        """Called when a trade is closed"""
-        if trade.isclosed:
-            # Find the corresponding open trade
-            for t in self.trades:
-                if t["entry_date"] == trade.dtopen.strftime('%Y-%m-%d %H:%M:%S'):
-                    # Update the existing trade with exit information
-                    t["exit_date"] = trade.dtclose.strftime('%Y-%m-%d %H:%M:%S')
-                    t["exit_price"] = trade.price  # Actual exit price
-                    t["pnl"] = trade.pnl
-                    t["pnlcomm"] = trade.pnlcomm
-                    t["size"] = 0  # Position is closed
-                    t["status"] = "closed"
-                    t["exit_reason"] = self._get_exit_reason(trade)
-                    break
-            self.position_open = False
-            self.current_trade = None
-
-    def _get_exit_reason(self, trade):
-        """Determine the reason for trade exit"""
-        if hasattr(trade, 'stop_loss') and trade.stop_loss:
-            return "stop_loss"
-        elif hasattr(trade, 'take_profit') and trade.take_profit:
-            return "take_profit"
-        elif hasattr(trade, 'trailing_stop') and trade.trailing_stop:
-            return "trailing_stop"
-        else:
-            return "signal"  # Default exit reason
+    def _create_exit_mixin(self):
+        """Create exit mixin based on configuration"""
+        exit_mixin_class = EXIT_MIXIN_REGISTRY[self.exit_logic["name"]]
+        exit_mixin = exit_mixin_class()
+        exit_mixin.strategy = self
+        exit_mixin._init_indicators()
+        return exit_mixin
 
     def next(self):
         """Main strategy logic"""
-        if len(self.data) < 100:  # Arbitrary minimum length, adjust as needed
-            return
+        if not self.has_position and self.entry_mixin.should_enter():
+            self.buy(size=self.p.position_size)
+            self.has_position = True
+        elif self.has_position and self.exit_mixin.should_exit():
+            self.sell(size=self.p.position_size)
+            self.has_position = False
 
-        # Check for entry signals
-        if not self.position_open and self.entry_mixin.should_enter():
-            size = self.calculate_position_size()
-            if size > 0:  # Only enter if we can buy at least 1 unit
-                self.buy(size=size)
-                self.position_open = True
-                # Create new trade entry
-                self.current_trade = {
-                    "entry_date": self.data.datetime.datetime(0).strftime('%Y-%m-%d %H:%M:%S'),
-                    "entry_price": self.data.close[0],
-                    "size": size,
-                    "status": "open"
-                }
-                self.trades.append(self.current_trade)
-
-        # Check for exit signals
-        elif self.position_open and self.exit_mixin.should_exit():
-            self.close()
-            self.position_open = False
-            self.current_trade = None
-
-    def calculate_position_size(self) -> float:
-        """
-        Calculate position size based on available capital and position_size parameter
-
-        Returns:
-        --------
-        float
-            Number of shares to buy
-        """
-        available_cash = self.broker.get_cash()
-        price = self.data.close[0]
-        max_shares = (available_cash * self.p.position_size) / price
-        return max_shares
+    def notify_trade(self, trade):
+        """Record trade information"""
+        if trade.isclosed:
+            self.trades.append({
+                'entry_time': trade.dtopen,
+                'entry_price': trade.price,
+                'exit_time': trade.dtclose,
+                'exit_price': trade.pnl,
+                'pnl': trade.pnl,
+                'size': trade.size
+            })
+            self.has_position = False
 
 
 # Example of creating a strategy with a new approach

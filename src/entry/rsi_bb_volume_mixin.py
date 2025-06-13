@@ -19,14 +19,14 @@ Parameters:
 This strategy adds volume confirmation to the RSI and Bollinger Bands strategy, making it more
 robust by ensuring there is sufficient market participation for the potential reversal.
 """
-
+import backtrader as bt
 from typing import Any, Dict
 
 from src.entry.entry_mixin import BaseEntryMixin
 
 
 class RSIBBVolumeEntryMixin(BaseEntryMixin):
-    """Entry mixin на основе RSI, Bollinger Bands и Volume"""
+    """Entry mixin based on RSI, Bollinger Bands and Volume"""
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -37,6 +37,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         return {
             "rsi_period": 14,
             "rsi_oversold": 30,
+            "rsi_overbought": 70,
             "bb_period": 20,
             "bb_stddev": 2.0,
             "vol_ma_period": 20,
@@ -49,16 +50,25 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         if self.strategy is None:
             raise ValueError("Strategy must be set before initializing indicators")
 
-        # Create indicators with parameters from configuration
-        self.indicators["rsi"] = self.strategy.data.rsi(
-            period=self.get_param("rsi_period")
-        )
-        self.indicators["bb"] = self.strategy.data.bollinger_bands(
-            period=self.get_param("bb_period"), stddev=self.get_param("bb_stddev")
-        )
-        self.indicators["vol_ma"] = self.strategy.data.sma(
-            self.strategy.data.volume, period=self.get_param("vol_ma_period")
-        )
+        # Use common indicators from strategy
+        self.indicators["rsi"] = self.strategy.rsi
+        self.indicators["bb_upper"] = self.strategy.bb_upper
+        self.indicators["bb_middle"] = self.strategy.bb_middle
+        self.indicators["bb_lower"] = self.strategy.bb_lower
+
+        # Create volume MA indicator
+        if self.strategy.p.use_talib:
+            import talib
+            self.indicators["vol_ma"] = bt.indicators.TALibIndicator(
+                self.strategy.data.volume,
+                talib.SMA,
+                timeperiod=self.get_param("vol_ma_period")
+            )
+        else:
+            self.indicators["vol_ma"] = bt.indicators.SMA(
+                self.strategy.data.volume, 
+                period=self.get_param("vol_ma_period")
+            )
 
     def should_enter(self) -> bool:
         """
@@ -82,7 +92,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         # Check touching the Bollinger Bands (if enabled)
         bb_condition = True
         if self.get_param("use_bb_touch"):
-            bb_lower = self.indicators["bb"].lines.bot[0]
+            bb_lower = self.indicators["bb_lower"][0]
             bb_condition = current_price <= bb_lower * 1.01  # Small tolerance
 
         return rsi_oversold and volume_ok and bb_condition

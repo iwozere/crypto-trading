@@ -54,46 +54,31 @@ class MACrossoverExitMixin(BaseExitMixin):
         }
 
     def _init_indicators(self):
-        """Initialization of Moving Average indicator"""
+        """Initialize MA indicators for crossover exit"""
         if self.strategy is None:
             raise ValueError("Strategy must be set before initializing indicators")
 
-        # Create MA indicator with parameters from configuration
-        ma_type = self.ma_type.lower()
-        
-        if self.use_talib:
-            try:
-                import talib
-                
-                if ma_type == "sma":
-                    self.indicators["ma"] = bt.indicators.TALibIndicator(
-                        self.strategy.data.close,
-                        talib.SMA,
-                        timeperiod=self.ma_period
-                    )
-                elif ma_type == "ema":
-                    self.indicators["ma"] = bt.indicators.TALibIndicator(
-                        self.strategy.data.close,
-                        talib.EMA,
-                        timeperiod=self.ma_period
-                    )
-                else:
-                    raise ValueError(f"Unsupported MA type: {ma_type}")
-            except ImportError:
-                self.log("TA-Lib not available, falling back to Backtrader indicators")
-                self.use_talib = False
-        
-        if not self.use_talib:
-            if ma_type == "sma":
-                self.indicators["ma"] = bt.indicators.SMA(
-                    self.strategy.data.close, period=self.ma_period
-                )
-            elif ma_type == "ema":
-                self.indicators["ma"] = bt.indicators.EMA(
-                    self.strategy.data.close, period=self.ma_period
-                )
-            else:
-                raise ValueError(f"Unsupported MA type: {ma_type}")
+        if self.strategy.p.use_talib:
+            import talib
+            self.indicators["fast_ma"] = bt.indicators.TALibIndicator(
+                self.strategy.data.close,
+                talib.SMA,
+                timeperiod=self.get_param("fast_period")
+            )
+            self.indicators["slow_ma"] = bt.indicators.TALibIndicator(
+                self.strategy.data.close,
+                talib.SMA,
+                timeperiod=self.get_param("slow_period")
+            )
+        else:
+            self.indicators["fast_ma"] = bt.indicators.SMA(
+                self.strategy.data.close,
+                period=self.get_param("fast_period")
+            )
+            self.indicators["slow_ma"] = bt.indicators.SMA(
+                self.strategy.data.close,
+                period=self.get_param("slow_period")
+            )
 
     def should_exit(self) -> bool:
         """

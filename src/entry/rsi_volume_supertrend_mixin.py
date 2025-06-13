@@ -49,15 +49,48 @@ class RSIVolumeSuperTrendEntryMixin(BaseEntryMixin):
         if self.strategy is None:
             raise ValueError("Strategy must be set before initializing indicators")
 
-        # Use common indicators from strategy
-        self.indicators["rsi"] = self.strategy.rsi
-        self.indicators["atr"] = self.strategy.atr
+        # Create RSI indicator
+        if self.strategy.p.use_talib:
+            import talib
+            self.indicators["rsi"] = bt.indicators.TALibIndicator(
+                self.strategy.data.close,
+                talib.RSI,
+                timeperiod=self.get_param("rsi_period")
+            )
 
-        self.indicators["vol_ma"] = bt.indicators.SMA(
-            self.strategy.data.volume, period=self.get_param("vol_ma_period")
-        )
+            # Create ATR indicator using TA-Lib
+            self.indicators["atr"] = bt.indicators.TALibIndicator(
+                self.strategy.data,
+                talib.ATR,
+                timeperiod=self.get_param("st_period")
+            )
 
-        # Create SuperTrend
+            # Create volume MA indicator using TA-Lib
+            self.indicators["vol_ma"] = bt.indicators.TALibIndicator(
+                self.strategy.data.volume,
+                talib.SMA,
+                timeperiod=self.get_param("vol_ma_period")
+            )
+        else:
+            # Create RSI indicator using Backtrader
+            self.indicators["rsi"] = bt.indicators.RSI(
+                self.strategy.data.close, 
+                period=self.get_param("rsi_period")
+            )
+
+            # Create ATR indicator using Backtrader
+            self.indicators["atr"] = bt.indicators.ATR(
+                self.strategy.data, 
+                period=self.get_param("st_period")
+            )
+
+            # Create volume MA indicator using Backtrader
+            self.indicators["vol_ma"] = bt.indicators.SMA(
+                self.strategy.data.volume, 
+                period=self.get_param("vol_ma_period")
+            )
+
+        # Create SuperTrend (same for both TA-Lib and Backtrader)
         self.indicators["supertrend"] = bt.indicators.SuperTrend(
             self.strategy.data,
             period=self.get_param("st_period"),
