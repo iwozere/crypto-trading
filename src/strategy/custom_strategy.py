@@ -60,11 +60,20 @@ class CustomStrategy(bt.Strategy):
 
     def _create_entry_mixin(self):
         """Create entry mixin based on configuration"""
+        if not self.entry_logic:
+            return None
+            
         entry_mixin_class = ENTRY_MIXIN_REGISTRY[self.entry_logic["name"]]
-        entry_mixin = entry_mixin_class()
-        entry_mixin.strategy = self
-        entry_mixin._init_indicators()
-        return entry_mixin
+        if entry_mixin_class:
+            # Get default parameters for the entry mixin
+            default_params = entry_mixin_class.get_default_params()
+            
+            # Create entry mixin with parameters
+            entry_mixin = entry_mixin_class(params=default_params)
+            entry_mixin.strategy = self
+            entry_mixin._init_indicators()
+            return entry_mixin
+        return None
 
     def _create_exit_mixin(self):
         """Create exit mixin based on configuration"""
@@ -79,6 +88,7 @@ class CustomStrategy(bt.Strategy):
             # Create exit mixin with parameters
             exit_mixin = exit_mixin_class(params=default_params)
             exit_mixin.strategy = self
+            exit_mixin._init_indicators()
             return exit_mixin
         return None
 

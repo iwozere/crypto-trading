@@ -36,7 +36,10 @@ class BaseEntryMixin(ABC):
                 "This method should return a dictionary of default parameters."
             )
         
-        if not inspect.ismethod(default_params_method) or not isinstance(default_params_method, classmethod):
+        # Check if method can be called on the class
+        try:
+            self.__class__.get_default_params()
+        except TypeError:
             raise TypeError(
                 f"{self.__class__.__name__}.get_default_params must be a class method. "
                 "Use @classmethod decorator and 'cls' parameter."
@@ -50,7 +53,9 @@ class BaseEntryMixin(ABC):
                 "This method should return a list of required parameter names."
             )
         
-        if not inspect.ismethod(required_params_method):
+        # Check method signature
+        sig = inspect.signature(required_params_method)
+        if 'self' not in sig.parameters:
             raise TypeError(
                 f"{self.__class__.__name__}.get_required_params must be an instance method. "
                 "Use 'self' parameter."
@@ -64,7 +69,9 @@ class BaseEntryMixin(ABC):
                 "This method should initialize all required technical indicators."
             )
         
-        if not inspect.ismethod(init_indicators_method):
+        # Check method signature
+        sig = inspect.signature(init_indicators_method)
+        if 'self' not in sig.parameters:
             raise TypeError(
                 f"{self.__class__.__name__}._init_indicators must be an instance method. "
                 "Use 'self' parameter."
@@ -78,7 +85,9 @@ class BaseEntryMixin(ABC):
                 "This method should return a boolean indicating whether to enter a position."
             )
         
-        if not inspect.ismethod(should_enter_method):
+        # Check method signature
+        sig = inspect.signature(should_enter_method)
+        if 'self' not in sig.parameters:
             raise TypeError(
                 f"{self.__class__.__name__}.should_enter must be an instance method. "
                 "Use 'self' parameter."
@@ -90,11 +99,10 @@ class BaseEntryMixin(ABC):
     def _validate_method_signatures(self):
         """Validate the signatures and return types of implemented methods"""
         # Validate get_default_params
-        default_params_sig = inspect.signature(self.__class__.get_default_params)
-        if 'cls' not in default_params_sig.parameters:
+        if not inspect.ismethod(self.__class__.get_default_params):
             raise TypeError(
-                f"{self.__class__.__name__}.get_default_params must have 'cls' parameter. "
-                "Example: @classmethod def get_default_params(cls) -> Dict[str, Any]:"
+                f"{self.__class__.__name__}.get_default_params must be a class method. "
+                "Use @classmethod decorator and 'cls' parameter."
             )
         
         # Validate return type of get_default_params
