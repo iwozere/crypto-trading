@@ -1,3 +1,15 @@
+"""
+Base Plotter Module
+
+This module provides the base plotting functionality for strategy backtest results.
+It handles:
+1. Creating and managing plots
+2. Plotting price data
+3. Plotting indicators
+4. Plotting trades
+5. Plotting equity curve
+"""
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import backtrader as bt
@@ -7,6 +19,7 @@ from src.plotter.indicators.rsi_plotter import RSIPlotter
 from src.plotter.indicators.bollinger_bands_plotter import BollingerBandsPlotter
 from src.plotter.indicators.volume_plotter import VolumePlotter
 from src.plotter.indicators.supertrend_plotter import SuperTrendPlotter
+
 
 class BasePlotter:
     def __init__(self, data, trades, strategy, vis_settings):
@@ -102,7 +115,19 @@ class BasePlotter:
     def _plot_price(self):
         """Plot price data"""
         ax = self.axes[0]
-        ax.plot(self.data.datetime.array, self.data.close.array, label='Price', color='black', alpha=0.7)
+        
+        # Get datetime and price data from Backtrader data feed
+        dates = []
+        prices = []
+        for i in range(len(self.data)):
+            dates.append(self.data.datetime.datetime(i))
+            prices.append(self.data.close[i])
+        
+        # Convert to pandas datetime
+        dates = pd.to_datetime(dates)
+        
+        # Plot price data
+        ax.plot(dates, prices, label='Price', color='black', alpha=0.7)
         ax.set_ylabel('Price')
         
         # Configure grid
@@ -148,8 +173,18 @@ class BasePlotter:
         """Plot equity curve"""
         if len(self.axes) > 1:  # Only plot if we have a second subplot
             ax = self.axes[-1]  # Always last subplot
-            equity = self.strategy.broker.getvalue()
-            ax.plot(self.data.datetime.array, equity, label='Equity', color='blue')
+            
+            # Get equity data from strategy
+            dates = pd.to_datetime(self.strategy.equity_dates)
+            equity = self.strategy.equity_curve
+            
+            # Ensure data is properly aligned
+            if len(dates) != len(equity):
+                min_len = min(len(dates), len(equity))
+                dates = dates[:min_len]
+                equity = equity[:min_len]
+            
+            ax.plot(dates, equity, label='Equity', color='blue')
             ax.set_ylabel('Equity')
             
             # Configure grid

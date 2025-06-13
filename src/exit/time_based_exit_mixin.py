@@ -20,7 +20,7 @@ calendar day calculations based on the data feed's timeframe.
 
 from typing import Any, Dict
 
-from src.exit.exit_mixin import BaseExitMixin
+from src.exit.base_exit_mixin import BaseExitMixin
 
 
 class TimeBasedExitMixin(BaseExitMixin):

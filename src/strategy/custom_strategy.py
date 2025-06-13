@@ -1,4 +1,13 @@
-# custom_strategy.py - Improved version with a new approach
+"""
+Custom Strategy Module
+
+This module implements a custom trading strategy with support for modular entry/exit mixins.
+It provides:
+1. Flexible entry and exit logic through mixins
+2. Position and trade tracking
+3. Equity curve tracking
+4. Performance metrics collection
+"""
 
 from typing import Any, Dict
 
@@ -44,6 +53,10 @@ class CustomStrategy(bt.Strategy):
         # Initialize trade tracking
         self.trades = []
         self.has_position = False
+        
+        # Initialize equity curve tracking
+        self.equity_curve = []
+        self.equity_dates = []
 
     def _create_entry_mixin(self):
         """Create entry mixin based on configuration"""
@@ -55,14 +68,26 @@ class CustomStrategy(bt.Strategy):
 
     def _create_exit_mixin(self):
         """Create exit mixin based on configuration"""
+        if not self.exit_logic:
+            return None
+            
         exit_mixin_class = EXIT_MIXIN_REGISTRY[self.exit_logic["name"]]
-        exit_mixin = exit_mixin_class()
-        exit_mixin.strategy = self
-        exit_mixin._init_indicators()
-        return exit_mixin
+        if exit_mixin_class:
+            # Get default parameters for the exit mixin
+            default_params = exit_mixin_class.get_default_params()
+            
+            # Create exit mixin with parameters
+            exit_mixin = exit_mixin_class(params=default_params)
+            exit_mixin.strategy = self
+            return exit_mixin
+        return None
 
     def next(self):
         """Main strategy logic"""
+        # Track equity curve
+        self.equity_curve.append(self.broker.getvalue())
+        self.equity_dates.append(self.data.datetime.datetime())
+        
         if not self.has_position and self.entry_mixin.should_enter():
             self.buy(size=self.p.position_size)
             self.has_position = True

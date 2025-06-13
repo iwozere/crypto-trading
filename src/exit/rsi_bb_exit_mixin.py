@@ -23,7 +23,7 @@ from typing import Any, Dict
 
 import backtrader as bt
 import numpy as np
-from src.exit.exit_mixin import BaseExitMixin
+from src.exit.base_exit_mixin import BaseExitMixin
 
 
 class RSIBBExitMixin(BaseExitMixin):

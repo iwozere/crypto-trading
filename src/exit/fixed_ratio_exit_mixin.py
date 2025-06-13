@@ -22,11 +22,18 @@ from typing import Any, Dict
 
 import backtrader as bt
 import numpy as np
-from src.exit.exit_mixin import BaseExitMixin
+from src.exit.base_exit_mixin import BaseExitMixin
 
 
 class FixedRatioExitMixin(BaseExitMixin):
     """Exit mixin based on fixed profit and loss ratios"""
+
+    def __init__(self, params=None):
+        """Initialize the mixin with parameters"""
+        super().__init__()
+        self.params = params or self.get_default_params()
+        self.highest_price = 0
+        self.lowest_price = float('inf')
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -43,12 +50,8 @@ class FixedRatioExitMixin(BaseExitMixin):
 
     def _init_indicators(self):
         """Initialize any required indicators"""
-        if self.strategy is None:
-            raise ValueError("Strategy must be set before initializing indicators")
-
-        # Initialize trailing stop variables
-        self.highest_price = 0
-        self.lowest_price = float('inf')
+        if not hasattr(self, 'strategy'):
+            return
 
     def should_exit(self) -> bool:
         """
@@ -66,15 +69,15 @@ class FixedRatioExitMixin(BaseExitMixin):
             self.highest_price = max(self.highest_price, current_price)
 
             # Check take profit
-            take_profit = entry_price * (1 + self.get_param("profit_ratio"))
+            take_profit = entry_price * (1 + self.params["profit_ratio"])
             if current_price >= take_profit:
                 return True
 
             # Check stop loss
-            if self.get_param("use_trailing_stop"):
-                stop_price = self.highest_price * (1 - self.get_param("trail_percent") / 100)
+            if self.params["use_trailing_stop"]:
+                stop_price = self.highest_price * (1 - self.params["trail_percent"] / 100)
             else:
-                stop_price = entry_price * (1 - self.get_param("stop_loss_ratio"))
+                stop_price = entry_price * (1 - self.params["stop_loss_ratio"])
             return current_price <= stop_price
 
         else:  # Short position
@@ -82,13 +85,13 @@ class FixedRatioExitMixin(BaseExitMixin):
             self.lowest_price = min(self.lowest_price, current_price)
 
             # Check take profit
-            take_profit = entry_price * (1 - self.get_param("profit_ratio"))
+            take_profit = entry_price * (1 - self.params["profit_ratio"])
             if current_price <= take_profit:
                 return True
 
             # Check stop loss
-            if self.get_param("use_trailing_stop"):
-                stop_price = self.lowest_price * (1 + self.get_param("trail_percent") / 100)
+            if self.params["use_trailing_stop"]:
+                stop_price = self.lowest_price * (1 + self.params["trail_percent"] / 100)
             else:
-                stop_price = entry_price * (1 + self.get_param("stop_loss_ratio"))
+                stop_price = entry_price * (1 + self.params["stop_loss_ratio"])
             return current_price >= stop_price 

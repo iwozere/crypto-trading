@@ -28,7 +28,7 @@ from typing import Any, Dict
 
 import backtrader as bt
 import numpy as np
-from src.entry.entry_mixin import BaseEntryMixin
+from src.entry.base_entry_mixin import BaseEntryMixin
 
 
 class BBVolumeSupertrendEntryMixin(BaseEntryMixin):

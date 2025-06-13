@@ -1,3 +1,14 @@
+"""
+Run Optimizer Module
+
+This module provides functionality to run optimizations for trading strategies.
+It handles:
+1. Loading and preparing data
+2. Running optimizations for different entry/exit strategy combinations
+3. Saving results and plots
+4. Managing visualization settings
+"""
+
 import os
 import sys
 
@@ -23,6 +34,7 @@ from src.plotter.base_plotter import BasePlotter
 
 
 def prepare_data(data_file):
+    """Load and prepare data from CSV file"""
     # Load and prepare data
     df = pd.read_csv(os.path.join("data", data_file))
     print("Available columns:", df.columns.tolist())
@@ -54,9 +66,7 @@ def prepare_data(data_file):
 
 
 def get_result_filename(data_file, entry_logic_name, exit_logic_name, suffix=""):
-    """
-    Generate a standardized filename for results and plots based on data_file and current_data.
-    """
+    """Generate a standardized filename for results and plots"""
     # Extract symbol, interval, and dates from data_file
     symbol = "SYMBOL"
     interval = "INTERVAL"
@@ -76,7 +86,7 @@ def get_result_filename(data_file, entry_logic_name, exit_logic_name, suffix="")
 
 
 def save_results(results, data_file):
-    """Save results to file"""
+    """Save optimization results to JSON file"""
     output_file_name = get_result_filename(
         data_file,
         entry_logic_name=results["best_params"]["entry_logic"]["name"],
@@ -90,20 +100,23 @@ def save_results(results, data_file):
     print(f"Results saved to {output_file}")
 
 
-def save_plot(plotter, data_file):
+def save_plot(strategy, data_file, optimizer_config):
+    """Save plot to file"""
     # Create plot with custom name
     plot_name = get_result_filename(
         data_file,
-        entry_logic_name=plotter.strategy.entry_logic["name"],
-        exit_logic_name=plotter.strategy.exit_logic["name"],
+        entry_logic_name=strategy.entry_logic["name"],
+        exit_logic_name=strategy.exit_logic["name"],
         suffix="_plot",
     )
     plot_path = os.path.join("results", f"{plot_name}.png")
     
     # Get the plotter from the optimizer and plot
+    plotter = create_plotter(strategy, optimizer_config.get("visualization_settings", {}))
     if plotter:
         plotter.plot(plot_path)
         print(f"Plot saved to: {plot_path}")
+
 
 def create_plotter(strategy, visualization_settings):
     """Create appropriate plotter based on strategy configuration"""
@@ -154,9 +167,12 @@ def create_plotter(strategy, visualization_settings):
     return plotter
 
 
-
 if __name__ == "__main__":
     """Run all optimizers with their respective configurations."""
+    
+    with open(os.path.join("config", "optimizer", "optimizer.json"), "r", ) as f:
+        optimizer_config = json.load(f)
+
     start_time = dt.now()
     _logger.info(f"Starting optimization at {start_time}")
 
@@ -180,56 +196,40 @@ if __name__ == "__main__":
                 print(f"Running optimization for {entry_logic_name} and {exit_logic_name}")
 
                 # Create optimizer configuration
-                optimizer_config = {
+                _optimizer_config = {
                     "data": data,
                     "entry_logic": entry_logic_config,
                     "exit_logic": exit_logic_config,
-                    "optimizer_settings": {
-                        "initial_capital": 1000.0,
-                        "commission": 0.001,
-                        "risk_free_rate": 0.01,
-                        "use_talib": True,
-                    },
+                    "optimizer_settings": optimizer_config.get("optimizer_settings", {}),
+                    "visualization_settings": optimizer_config.get("visualization_settings", {})
                 }
 
                 # Create optimizer instance
-                optimizer = CustomOptimizer(optimizer_config)
+                optimizer = CustomOptimizer(_optimizer_config)
 
-                # Create Optuna study
-                study = optuna.create_study(
-                    direction="maximize",
-                    study_name=f"{data_file}_{entry_logic_name}_{exit_logic_name}",
-                )
-
-                # Define objective function
                 def objective(trial):
+                    """Objective function for optimization"""
                     _, result = optimizer.run_optimization(trial)
                     return result["total_profit_with_commission"]
 
+                # Create study
+                study = optuna.create_study(direction="maximize")
+
                 # Run optimization
-                study.optimize(objective, n_trials=100, n_jobs=1, show_progress_bar=False)
+                study.optimize(
+                    objective,
+                    n_trials=optimizer_config.get("optimizer_settings", {}).get("n_trials", 100),
+                    n_jobs=optimizer_config.get("optimizer_settings", {}).get("n_jobs", 1),
+                )
 
-                # Get best trial and run it again to get detailed results
-                if study.best_trial is not None:
-                    strategy, best_result = optimizer.run_optimization(study.best_trial)
-                    print("\nBest trial results:")
-                    print(f"Parameters: {best_result['best_params']}")
-                    print(f"Total Profit: {best_result['total_profit']:.2f}")
-                    print(f"Total Profit (with commission): {best_result['total_profit_with_commission']:.2f}")
+                # Get best result
+                best_trial = study.best_trial
+                strategy, best_result = optimizer.run_optimization(best_trial)
 
+                # Save results
+                save_results(best_result, data_file)
 
-                    #results = {
-                    #    "study_name": study.study_name,
-                    #    "best_params": study.best_params,
-                    #    "best_value": study.best_value,
-                    #    "analyzers": best_result["analyzers"],
-                    #    "trades": best_result["trades"],
-                    #}
-
-                    save_results(best_result, data_file)
-                    
-                    save_plot(create_plotter(strategy, optimizer_config.get("visualization_settings", {})), data_file)
-
-                else:
-                    print("No trials were completed successfully.")
+                # Create and save plot
+                if optimizer_config.get("optimizer_settings", {}).get("plot", True):
+                    save_plot(strategy, data_file, optimizer_config)
 
