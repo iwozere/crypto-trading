@@ -3,26 +3,26 @@
     "params": {
         "rsi_period": {
             "type": "int",
-            "min": 5,
-            "max": 30,
+            "low": 5,
+            "high": 30,
             "default": 14
         },
         "rsi_overbought": {
             "type": "float",
-            "min": 60,
-            "max": 90,
+            "low": 60,
+            "high": 90,
             "default": 70
         },
         "bb_period": {
             "type": "int",
-            "min": 10,
-            "max": 50,
+            "low": 10,
+            "high": 50,
             "default": 20
         },
         "bb_stddev": {
             "type": "float",
-            "min": 1.0,
-            "max": 3.0,
+            "low": 1.0,
+            "high": 3.0,
             "default": 2.0
         },
         "use_bb_touch": {

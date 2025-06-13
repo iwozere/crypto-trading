@@ -9,9 +9,27 @@
         },
         "vol_ma_period": {
             "type": "int",
-            "low": 0.005,
-            "high": 0.05,
-            "default": 0.02
+            "low": 5,
+            "high": 50,
+            "default": 20
+        },
+        "st_period": {
+            "type": "int",
+            "low": 5,
+            "high": 30,
+            "default": 10
+        },
+        "st_multiplier": {
+            "type": "float",
+            "low": 1.0,
+            "high": 5.0,
+            "default": 3.0
+        },
+        "rsi_oversold": {
+            "type": "int",
+            "low": 20,
+            "high": 40,
+            "default": 30
         }
     }
 } 
