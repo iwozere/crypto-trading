@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, get_type_hints, get_origin, get_args
+import inspect
 
 
 class BaseEntryMixin(ABC):
@@ -16,11 +17,141 @@ class BaseEntryMixin(ABC):
         self.params = params or {}
         self.indicators = {}
 
+        # Validate class method implementation
+        self._validate_class_methods()
+
         # Validation of parameters when creating
         self._validate_params()
 
         # Setting default values
         self._set_defaults()
+
+    def _validate_class_methods(self):
+        """Validate that required methods are implemented correctly"""
+        # Check get_default_params
+        default_params_method = getattr(self.__class__, 'get_default_params', None)
+        if default_params_method is None:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} must implement get_default_params method. "
+                "This method should return a dictionary of default parameters."
+            )
+        
+        if not inspect.ismethod(default_params_method) or not isinstance(default_params_method, classmethod):
+            raise TypeError(
+                f"{self.__class__.__name__}.get_default_params must be a class method. "
+                "Use @classmethod decorator and 'cls' parameter."
+            )
+
+        # Check get_required_params
+        required_params_method = getattr(self.__class__, 'get_required_params', None)
+        if required_params_method is None:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} must implement get_required_params method. "
+                "This method should return a list of required parameter names."
+            )
+        
+        if not inspect.ismethod(required_params_method):
+            raise TypeError(
+                f"{self.__class__.__name__}.get_required_params must be an instance method. "
+                "Use 'self' parameter."
+            )
+
+        # Check _init_indicators
+        init_indicators_method = getattr(self.__class__, '_init_indicators', None)
+        if init_indicators_method is None:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} must implement _init_indicators method. "
+                "This method should initialize all required technical indicators."
+            )
+        
+        if not inspect.ismethod(init_indicators_method):
+            raise TypeError(
+                f"{self.__class__.__name__}._init_indicators must be an instance method. "
+                "Use 'self' parameter."
+            )
+
+        # Check should_enter
+        should_enter_method = getattr(self.__class__, 'should_enter', None)
+        if should_enter_method is None:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} must implement should_enter method. "
+                "This method should return a boolean indicating whether to enter a position."
+            )
+        
+        if not inspect.ismethod(should_enter_method):
+            raise TypeError(
+                f"{self.__class__.__name__}.should_enter must be an instance method. "
+                "Use 'self' parameter."
+            )
+
+        # Validate method signatures and return types
+        self._validate_method_signatures()
+
+    def _validate_method_signatures(self):
+        """Validate the signatures and return types of implemented methods"""
+        # Validate get_default_params
+        default_params_sig = inspect.signature(self.__class__.get_default_params)
+        if 'cls' not in default_params_sig.parameters:
+            raise TypeError(
+                f"{self.__class__.__name__}.get_default_params must have 'cls' parameter. "
+                "Example: @classmethod def get_default_params(cls) -> Dict[str, Any]:"
+            )
+        
+        # Validate return type of get_default_params
+        return_type = get_type_hints(self.__class__.get_default_params).get('return')
+        if return_type != Dict[str, Any]:
+            raise TypeError(
+                f"{self.__class__.__name__}.get_default_params must return Dict[str, Any]. "
+                f"Current return type: {return_type}"
+            )
+
+        # Validate get_required_params
+        required_params_sig = inspect.signature(self.__class__.get_required_params)
+        if 'self' not in required_params_sig.parameters:
+            raise TypeError(
+                f"{self.__class__.__name__}.get_required_params must have 'self' parameter. "
+                "Example: def get_required_params(self) -> list:"
+            )
+        
+        # Validate return type of get_required_params
+        return_type = get_type_hints(self.__class__.get_required_params).get('return')
+        if return_type != list:
+            raise TypeError(
+                f"{self.__class__.__name__}.get_required_params must return list. "
+                f"Current return type: {return_type}"
+            )
+
+        # Validate _init_indicators
+        init_indicators_sig = inspect.signature(self.__class__._init_indicators)
+        if 'self' not in init_indicators_sig.parameters:
+            raise TypeError(
+                f"{self.__class__.__name__}._init_indicators must have 'self' parameter. "
+                "Example: def _init_indicators(self):"
+            )
+        
+        # Validate return type of _init_indicators
+        return_type = get_type_hints(self.__class__._init_indicators).get('return')
+        if return_type is not None and return_type != type(None):
+            raise TypeError(
+                f"{self.__class__.__name__}._init_indicators should not return anything. "
+                f"Current return type: {return_type}"
+            )
+
+        # Validate should_enter
+        should_enter_sig = inspect.signature(self.__class__.should_enter)
+        if 'self' not in should_enter_sig.parameters:
+            raise TypeError(
+                f"{self.__class__.__name__}.should_enter must have 'self' parameter. "
+                "Example: def should_enter(self) -> bool:"
+            )
+        
+        # Validate return type of should_enter
+        return_type = get_type_hints(self.__class__.should_enter).get('return')
+        if return_type != bool:
+            raise TypeError(
+                f"{self.__class__.__name__}.should_enter must return bool. "
+                f"Current return type: {return_type}"
+            )
 
     def _validate_params(self):
         """Validation of mixin parameters"""
@@ -28,12 +159,13 @@ class BaseEntryMixin(ABC):
         for param in required_params:
             if param not in self.params:
                 raise ValueError(
-                    f"Required parameter '{param}' not provided for {self.__class__.__name__}"
+                    f"Required parameter '{param}' not provided for {self.__class__.__name__}. "
+                    f"Required parameters are: {required_params}"
                 )
 
     def _set_defaults(self):
         """Setting default values for parameters"""
-        defaults = self.get_default_params()
+        defaults = self.__class__.get_default_params()
         for key, value in defaults.items():
             if key not in self.params:
                 self.params[key] = value
@@ -43,8 +175,9 @@ class BaseEntryMixin(ABC):
         """Returns a list of required parameters"""
         return []
 
+    @classmethod
     @abstractmethod
-    def get_default_params(self) -> Dict[str, Any]:
+    def get_default_params(cls) -> Dict[str, Any]:
         """Returns a dictionary of default parameters"""
         return {}
 

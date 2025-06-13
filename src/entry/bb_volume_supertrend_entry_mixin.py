@@ -41,7 +41,8 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
         """There are no required parameters - all have default values"""
         return []
 
-    def get_default_params(self) -> Dict[str, Any]:
+    @classmethod
+    def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
             "bb_period": 20,

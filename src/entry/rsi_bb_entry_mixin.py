@@ -37,7 +37,8 @@ class RSIBBEntryMixin(BaseEntryMixin):
         """Returns a list of required parameters"""
         return []
 
-    def get_default_params(self) -> Dict[str, Any]:
+    @classmethod
+    def get_default_params(cls) -> Dict[str, Any]:
         """Returns a dictionary of default parameters"""
         return {
             "rsi_period": 14,
