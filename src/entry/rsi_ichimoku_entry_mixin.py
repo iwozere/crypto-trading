@@ -112,7 +112,7 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
 
         return_value = rsi_condition and below_cloud and tenkan_cross
         if return_value:
-            logger.info(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, "
+            logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, "
                        f"Tenkan: {ichimoku.tenkan_sen[0]}, Kijun: {ichimoku.kijun_sen[0]}, "
                        f"Senkou A: {ichimoku.senkou_span_a[0]}, Senkou B: {ichimoku.senkou_span_b[0]}")
         return return_value

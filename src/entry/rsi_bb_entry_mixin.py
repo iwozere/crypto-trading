@@ -123,7 +123,7 @@ class RSIBBEntryMixin(BaseEntryMixin):
 
             return_value = rsi_condition and bb_condition
             if return_value:
-                logger.info(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, BB Lower: {bb.bb_lower[0] if self.strategy.use_talib else bb.lines.bot[0]}")
+                logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, BB Lower: {bb.bb_lower[0] if self.strategy.use_talib else bb.lines.bot[0]}")
             return return_value
         except Exception as e:
             logger.error(f"Error in should_enter: {e}")

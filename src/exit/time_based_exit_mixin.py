@@ -68,11 +68,11 @@ class TimeBasedExitMixin(BaseExitMixin):
 
         if return_value:
             if self.get_param("use_time", False):
-                logger.info(f"EXIT: Price: {self.strategy.data.close[0]}, "
+                logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
                            f"Time held: {time_diff:.2f} minutes, "
                            f"Max time: {self.get_param('max_minutes')} minutes")
             else:
-                logger.info(f"EXIT: Price: {self.strategy.data.close[0]}, "
+                logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
                            f"Bars held: {bars_held}, "
                            f"Max bars: {self.get_param('max_bars')}")
         return return_value

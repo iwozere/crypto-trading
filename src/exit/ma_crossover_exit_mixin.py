@@ -110,7 +110,7 @@ class MACrossoverExitMixin(BaseExitMixin):
             return_value = fast_ma_prev < slow_ma_prev and fast_ma_current > slow_ma_current
 
         if return_value:
-            logger.info(f"EXIT: Price: {self.strategy.data.close[0]}, "
+            logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
                        f"Fast MA: {fast_ma_current}, Slow MA: {slow_ma_current}, "
                        f"Position: {'long' if self.strategy.position.size > 0 else 'short'}")
         return return_value

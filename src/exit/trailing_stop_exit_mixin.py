@@ -106,11 +106,11 @@ class TrailingStopExitMixin(BaseExitMixin):
         return_value = price < stop_level
         if return_value:
             if self.get_param("use_atr", False):
-                logger.info(f"EXIT: Price: {price}, Entry: {entry_price}, "
+                logger.debug(f"EXIT: Price: {price}, Entry: {entry_price}, "
                            f"Highest: {self.highest_price}, Stop: {stop_level}, "
                            f"ATR: {atr_val}, ATR Multiplier: {self.get_param('atr_multiplier')}")
             else:
-                logger.info(f"EXIT: Price: {price}, Entry: {entry_price}, "
+                logger.debug(f"EXIT: Price: {price}, Entry: {entry_price}, "
                            f"Highest: {self.highest_price}, Stop: {stop_level}, "
                            f"Trail %: {self.get_param('trail_pct')}")
         return return_value

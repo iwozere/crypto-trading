@@ -18,7 +18,9 @@ from src.entry.entry_mixin_factory import (get_entry_mixin,
 from src.exit.exit_mixin_factory import (get_exit_mixin,
                                          get_exit_mixin_from_config,
                                          EXIT_MIXIN_REGISTRY)
-from src.notification.logger import _logger, log_exception
+from src.notification.logger import setup_logger
+
+_logger = setup_logger(__name__)
 
 
 class CustomStrategy(bt.Strategy):
@@ -84,7 +86,7 @@ class CustomStrategy(bt.Strategy):
                     self.exit_mixin.strategy = self
                     self.exit_mixin._init_indicators()
         except Exception as e:
-            log_exception(_logger)
+            _logger.error(f"Error initializing strategy: {e}")
             raise
 
     @property
@@ -102,12 +104,14 @@ class CustomStrategy(bt.Strategy):
             if not self.has_position and self.entry_mixin and self.entry_mixin.should_enter():
                 self.buy(size=self.p.position_size)
                 self.has_position = True
+                _logger.info(f"ENTRY: Price: {self.data.close[0]}, Size: {self.p.position_size}")
             elif self.has_position and self.exit_mixin and self.exit_mixin.should_exit():
                 self.current_exit_reason = self.exit_mixin.get_exit_reason()  # Get reason before selling
                 self.sell(size=self.p.position_size)
                 self.has_position = False
+                _logger.info(f"EXIT: Price: {self.data.close[0]}, Size: {self.p.position_size}")
         except Exception as e:
-            log_exception(_logger)
+            _logger.error(f"Error in next: {e}")
             raise
 
     def notify_trade(self, trade):
@@ -117,6 +121,7 @@ class CustomStrategy(bt.Strategy):
                         f"Size: {trade.size}, PnL: {trade.pnl}, "
                         f"Open Price: {trade.priceopen}, Close Price: {trade.priceclose}")
             
+            # Update position state based on trade status
             if trade.isclosed:
                 self.trades.append({
                     'entry_time': trade.dtopen,
@@ -133,8 +138,11 @@ class CustomStrategy(bt.Strategy):
                 })
                 self.has_position = False
                 self.current_exit_reason = None  # Reset exit reason
+            else:
+                # Trade is opened
+                self.has_position = True
         except Exception as e:
-            log_exception(_logger)
+            _logger.error(f"Error in notify_trade: {e}")
             raise
 
 

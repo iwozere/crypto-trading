@@ -41,7 +41,7 @@ LOG_CONFIG = {
     "version": 1,
     "formatters": {
         "detailed": {
-            "format": "%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s\n%(exc_info)s"
+            "format": "%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s%(exc_info)s"
         },
         "standard": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
     },
@@ -106,41 +106,24 @@ def log_exception(logger, exc_info=None):
 #
 # Set up the logger for the application
 # Usage: setup_logger('live_trader')
-def setup_logger(name: str ):
+def setup_logger(name: str):
     """
-    Set up the logger with file and console handlers.
+    Set up the logger using the global configuration.
     
     Args:
-        name (str): Name of the logger. Defaults to "trading_bot".
+        name (str): Name of the logger.
         
     Returns:
         logging.Logger: Configured logger instance
     """
+    # Get logger with the specified name
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
-
-    # Create logs directory if it doesn't exist
-    os.makedirs("logs", exist_ok=True)
-
-    # Create file handler
-    current_time = dt.now()
-    log_file = os.path.join("logs", f"app_{current_time.strftime('%Y%m%d_%H%M%S')}.log")
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setLevel(logging.INFO)
-
-    # Create console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-
-    # Create formatter with stack trace support
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s\n%(exc_info)s"
-    )
-    file_handler.setFormatter(formatter)
-    console_handler.setFormatter(formatter)
-
-    # Add handlers to logger
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-
+    
+    # If the logger is not configured yet, use the default configuration
+    if not logger.handlers:
+        logger.setLevel(logging.INFO)
+        # Use the default handlers from LOG_CONFIG
+        for handler in logging.getLogger('default').handlers:
+            logger.addHandler(handler)
+    
     return logger

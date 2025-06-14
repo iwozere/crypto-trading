@@ -130,7 +130,7 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
 
             return_value = bb_condition and volume_condition and supertrend_condition
             if return_value:
-                logger.info(f"ENTRY: BB lower: {bb_lower}, Volume: {current_volume}, Volume MA: {volume_ma_value}, Supertrend: {supertrend_condition}")
+                logger.debug(f"ENTRY: BB lower: {bb_lower}, Volume: {current_volume}, Volume MA: {volume_ma_value}, Supertrend: {supertrend_condition}")
             return return_value
         except Exception as e:
             logger.error(f"Error in should_enter: {e}")

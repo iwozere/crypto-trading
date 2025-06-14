@@ -130,5 +130,5 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
 
         return_value = rsi_condition and volume_condition and supertrend_condition
         if return_value:
-            logger.info(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}, Supertrend: {supertrend.trend[0]}")
+            logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}, Supertrend: {supertrend.trend[0]}")
         return return_value

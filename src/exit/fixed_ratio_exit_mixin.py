@@ -68,7 +68,7 @@ class FixedRatioExitMixin(BaseExitMixin):
             return_value = True
 
         if return_value:
-            logger.info(f"EXIT: Price: {current_price}, Entry: {entry_price}, "
+            logger.debug(f"EXIT: Price: {current_price}, Entry: {entry_price}, "
                        f"Profit %: {profit_ratio*100:.2f}%, "
                        f"Take Profit: {self.get_param('profit_ratio')*100:.2f}%, "
                        f"Stop Loss: {self.get_param('loss_ratio')*100:.2f}%")

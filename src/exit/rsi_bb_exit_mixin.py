@@ -113,7 +113,7 @@ class RSIBBExitMixin(BaseExitMixin):
 
             return_value = rsi_condition and bb_condition
             if return_value:
-                logger.info(f"EXIT: Price: {current_price}, RSI: {rsi[0]}, "
+                logger.debug(f"EXIT: Price: {current_price}, RSI: {rsi[0]}, "
                            f"BB Upper: {bb.bb_upper[0]}, "
                            f"RSI Overbought: {self.get_param('rsi_overbought')}")
             return return_value

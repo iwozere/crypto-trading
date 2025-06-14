@@ -78,7 +78,7 @@ class ATRExitMixin(BaseExitMixin):
         
         return_value = current_price < stop_loss
         if return_value:
-            logger.info(f"EXIT: Price: {current_price}, Stop Loss: {stop_loss}, "
+            logger.debug(f"EXIT: Price: {current_price}, Stop Loss: {stop_loss}, "
                        f"ATR: {atr_val}, ATR Multiplier: {self.get_param('atr_multiplier')}")
         return return_value
 

@@ -22,15 +22,11 @@ import optuna
 import pandas as pd
 from src.entry.entry_mixin_factory import (ENTRY_MIXIN_REGISTRY)
 from src.exit.exit_mixin_factory import (EXIT_MIXIN_REGISTRY)
-from src.notification.logger import _logger
+from src.notification.logger import setup_logger
 from src.optimizer.custom_optimizer import CustomOptimizer
-from src.util.date_time_encoder import DateTimeEncoder
-from src.plotter.indicators.rsi_plotter import RSIPlotter
-from src.plotter.indicators.ichimoku_plotter import IchimokuPlotter
-from src.plotter.indicators.bollinger_bands_plotter import BollingerBandsPlotter
-from src.plotter.indicators.volume_plotter import VolumePlotter
-from src.plotter.indicators.supertrend_plotter import SuperTrendPlotter
 from src.plotter.base_plotter import BasePlotter
+
+_logger = setup_logger(__name__)
 
 
 def prepare_data(data_file):
