@@ -42,52 +42,77 @@ class CustomStrategy(bt.Strategy):
         ("position_size", 1.0),     # Default position size
     )
 
+    def __new__(cls, *args, **kwargs):
+        """Control instance creation to ensure proper initialization"""
+        if not hasattr(cls, '_instance'):
+            cls._instance = super(CustomStrategy, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
         """Initialize strategy with configuration"""
+        # Skip if already initialized
+        if hasattr(self, '_initialized'):
+            return
+            
+        super().__init__()  # Call parent's __init__ first
+        
+        # Initialize basic attributes
+        self._use_talib = False  # Default value
+        self.entry_logic = None
+        self.exit_logic = None
+        
+        # Initialize trade tracking
+        self.trades = []
+        self.current_exit_reason = None  # Track current exit reason
+        self.current_trade = None
+        
+        # Initialize equity curve tracking
+        self.equity_curve = []
+        self.equity_dates = []
+        
+        # Initialize entry and exit mixins
+        self.entry_mixin = None
+        self.exit_mixin = None
+        
+        # Mark as initialized
+        self._initialized = True
+
+    def start(self):
+        """Called once at the start of the strategy"""
         try:
-            super().__init__()  # Call parent's __init__ first
-            
-            # Initialize basic attributes
-            self._use_talib = False  # Default value
-            self.entry_logic = None
-            self.exit_logic = None
-            
-            # Initialize trade tracking
-            self.trades = []
-            self.has_position = False
-            self.current_exit_reason = None  # Track current exit reason
-            
-            # Initialize equity curve tracking
-            self.equity_curve = []
-            self.equity_dates = []
-            
-            # Initialize entry and exit mixins
-            self.entry_mixin = None
-            self.exit_mixin = None
-            
             # Set configuration from params
             if self.p.strategy_config:
                 self._use_talib = self.p.strategy_config.get("use_talib", False)
                 self.entry_logic = self.p.strategy_config.get("entry_logic")
                 self.exit_logic = self.p.strategy_config.get("exit_logic")
             
-            # Create mixins
+            # Create mixins but don't initialize indicators yet
             if self.entry_logic:
                 entry_mixin_class = ENTRY_MIXIN_REGISTRY[self.entry_logic["name"]]
                 if entry_mixin_class:
                     self.entry_mixin = entry_mixin_class(params=self.entry_logic["params"])
                     self.entry_mixin.strategy = self
-                    self.entry_mixin._init_indicators()
             
             if self.exit_logic:
                 exit_mixin_class = EXIT_MIXIN_REGISTRY[self.exit_logic["name"]]
                 if exit_mixin_class:
                     self.exit_mixin = exit_mixin_class(params=self.exit_logic["params"])
                     self.exit_mixin.strategy = self
-                    self.exit_mixin._init_indicators()
         except Exception as e:
-            _logger.error(f"Error initializing strategy: {e}")
+            _logger.error(f"Error in start: {e}")
             raise
+
+    def prenext(self):
+        """Called before next() when we don't have enough data"""
+        # Initialize indicators once we have enough data
+        if len(self.data) > max(
+            self.entry_logic["params"].get("rsi_period", 14) if self.entry_logic else 0,
+            self.exit_logic["params"].get("rsi_period", 14) if self.exit_logic else 0
+        ):
+            if self.entry_mixin and not hasattr(self, self.entry_mixin.rsi_name):
+                self.entry_mixin._init_indicators()
+            if self.exit_mixin and not hasattr(self, self.exit_mixin.rsi_name):
+                self.exit_mixin._init_indicators()
 
     @property
     def use_talib(self):
@@ -101,13 +126,13 @@ class CustomStrategy(bt.Strategy):
             self.equity_curve.append(self.broker.getvalue())
             self.equity_dates.append(self.data.datetime.datetime())
             
-            _logger.info(f"Current position state - has_position: {self.has_position}, position.size: {self.position.size}")
-            
-            if not self.has_position and self.entry_mixin and self.entry_mixin.should_enter():
+            if not self.current_trade and self.entry_mixin and self.entry_mixin.should_enter():
                 self.buy(size=self.p.position_size)
-            elif self.has_position and self.exit_mixin and self.exit_mixin.should_exit():
+                _logger.debug(f"ENTRY: Price: {self.data.close[0]}, Size: {self.p.position_size}")
+            elif self.current_trade and self.exit_mixin and self.exit_mixin.should_exit():
                 self.current_exit_reason = self.exit_mixin.get_exit_reason()  # Get reason before selling
                 self.sell(size=self.p.position_size)
+                _logger.debug(f"EXIT: Price: {self.data.close[0]}, Size: {self.p.position_size}")
         except Exception as e:
             _logger.error(f"Error in next: {e}")
             raise
@@ -117,31 +142,56 @@ class CustomStrategy(bt.Strategy):
         try:
             _logger.info(f"Trade notification received - Status: {'CLOSED' if trade.isclosed else 'OPEN'}, "
                         f"Size: {trade.size}, PnL: {trade.pnl}, "
-                        f"Open Price: {trade.price}, Close Price: {trade.priceclose if trade.isclosed else 'N/A'}, "
-                        f"Current has_position: {self.has_position}")
+                        f"Price: {trade.price}")
             
             # Update position state based on trade status
             if trade.isclosed:
-                self.trades.append({
-                    'entry_time': trade.dtopen,
-                    'entry_price': trade.price,
+                # Calculate trade duration
+                duration = trade.dtclose - self.current_trade['entry_time']
+                duration_minutes = duration.total_seconds() / 60
+                
+                # Calculate PnL
+                entry_value = self.current_trade['entry_price'] * self.current_trade['size']
+                exit_value = trade.price * self.current_trade['size']
+                gross_pnl = exit_value - entry_value
+                net_pnl = gross_pnl - (self.current_trade['commission'] + trade.commission)
+                
+                # Update trade record with exit information
+                self.current_trade.update({
                     'exit_time': trade.dtclose,
-                    'exit_price': trade.priceclose,
-                    'pnl': trade.pnl,
-                    'size': trade.size,
-                    'symbol': self.data._name,
-                    'direction': 'long' if trade.size > 0 else 'short',
-                    'commission': trade.commission,
-                    'pnl_comm': trade.pnlcomm,
-                    'exit_reason': self.current_exit_reason or 'unknown'  # Add exit reason
+                    'exit_price': trade.price,
+                    'exit_reason': self.current_exit_reason or 'unknown',
+                    'commission': self.current_trade['commission'] + trade.commission,
+                    'duration_minutes': duration_minutes,
+                    'gross_pnl': gross_pnl,
+                    'net_pnl': net_pnl,
+                    'pnl_percentage': (net_pnl / entry_value) * 100 if entry_value != 0 else 0,
+                    'trade_type': 'long' if self.current_trade['size'] > 0 else 'short',
+                    'status': 'closed'
                 })
-                self.has_position = False
+                
+                self.trades.append(self.current_trade)
+                _logger.info(f"Position closed - Entry: {self.current_trade['entry_price']}, "
+                           f"Exit: {trade.price}, PnL: {net_pnl:.2f} ({self.current_trade['pnl_percentage']:.2f}%), "
+                           f"Duration: {duration_minutes:.1f} minutes")
+                
+                self.current_trade = None
                 self.current_exit_reason = None  # Reset exit reason
-                _logger.info("Position closed, has_position set to False")
             else:
                 # Trade is opened
-                self.has_position = True
-                _logger.info("Position opened, has_position set to True")
+                self.current_trade = {
+                    'entry_time': trade.dtopen,
+                    'entry_price': trade.price,
+                    'size': trade.size,
+                    'symbol': self.data._name,
+                    'commission': trade.commission,
+                    'exit_time': None,
+                    'exit_price': None,
+                    'exit_reason': None,
+                    'status': 'open',
+                    'trade_type': 'long' if trade.size > 0 else 'short'
+                }
+                _logger.info(f"Position opened - Price: {trade.price}, Size: {trade.size}")
         except Exception as e:
             _logger.error(f"Error in notify_trade: {e}")
             raise

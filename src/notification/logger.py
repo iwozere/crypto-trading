@@ -124,6 +124,17 @@ def setup_logger(name: str):
         logger.setLevel(logging.INFO)
         # Use the default handlers from LOG_CONFIG
         for handler in logging.getLogger('default').handlers:
-            logger.addHandler(handler)
+            # Create a new handler instance to avoid sharing the same handler
+            if isinstance(handler, logging.StreamHandler):
+                new_handler = logging.StreamHandler(handler.stream)
+            elif isinstance(handler, logging.FileHandler):
+                new_handler = logging.FileHandler(handler.baseFilename, mode=handler.mode)
+            else:
+                new_handler = handler
+            
+            # Copy the formatter and level
+            new_handler.setFormatter(handler.formatter)
+            new_handler.setLevel(handler.level)
+            logger.addHandler(new_handler)
     
     return logger

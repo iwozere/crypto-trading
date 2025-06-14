@@ -311,13 +311,13 @@ if __name__ == "__main__":
                     "visualization_settings": optimizer_config.get("visualization_settings", {})
                 }
 
-                # Create optimizer instance
-                optimizer = CustomOptimizer(_optimizer_config)
-
                 def objective(trial):
                     """Objective function for optimization"""
+                    # Create optimizer instance
+                    optimizer = CustomOptimizer(_optimizer_config)
                     _, result = optimizer.run_optimization(trial)
                     return result["total_profit_with_commission"]
+                
 
                 # Create study
                 study = optuna.create_study(direction="maximize")
@@ -326,12 +326,13 @@ if __name__ == "__main__":
                 study.optimize(
                     objective,
                     n_trials=optimizer_config.get("optimizer_settings", {}).get("n_trials", 100),
-                    n_jobs=optimizer_config.get("optimizer_settings", {}).get("n_jobs", 1),
+                    n_jobs=optimizer_config.get("optimizer_settings", {}).get("n_jobs", -1),
                 )
 
                 # Get best result
                 best_trial = study.best_trial
-                strategy, best_result = optimizer.run_optimization(best_trial)
+                best_optimizer = CustomOptimizer(_optimizer_config)
+                strategy, best_result = best_optimizer.run_optimization(best_trial)
 
                 # Save results
                 save_results(best_result, data_file)

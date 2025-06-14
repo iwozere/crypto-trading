@@ -191,7 +191,7 @@ class BasePlotter:
                         continue
                         
                     dates.append(self.data.datetime.datetime(i))
-                    prices.append(self.data.close[i])  # Use direct indexing instead of array
+                    prices.append(self.data.close.array[i])  # Use array access for price data
                 except (IndexError, AttributeError) as e:
                     _logger.warning(f"Error accessing data at index {i}: {str(e)}", exc_info=False)
                     break
@@ -252,15 +252,15 @@ class BasePlotter:
         ax = self.axes[0]
         for trade in self.trades:
             # Plot entry
-            if 'entry_date' in trade:
-                entry_date = pd.to_datetime(trade['entry_date'])
+            if 'entry_time' in trade:
+                entry_date = pd.to_datetime(trade['entry_time'])
                 ax.scatter(entry_date, trade['entry_price'], 
                           marker='^', color='green', s=100, 
                           label='Buy' if trade == self.trades[0] else "")
             
             # Plot exit
-            if 'exit_date' in trade:
-                exit_date = pd.to_datetime(trade['exit_date'])
+            if 'exit_time' in trade:
+                exit_date = pd.to_datetime(trade['exit_time'])
                 ax.scatter(exit_date, trade['exit_price'], 
                           marker='v', color='red', s=100, 
                           label='Sell' if trade == self.trades[0] else "")
