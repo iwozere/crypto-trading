@@ -113,6 +113,10 @@ class CustomStrategy(bt.Strategy):
     def notify_trade(self, trade):
         """Record trade information"""
         try:
+            _logger.info(f"Trade notification received - Status: {'CLOSED' if trade.isclosed else 'OPEN'}, "
+                        f"Size: {trade.size}, PnL: {trade.pnl}, "
+                        f"Open Price: {trade.priceopen}, Close Price: {trade.priceclose}")
+            
             if trade.isclosed:
                 self.trades.append({
                     'entry_time': trade.dtopen,

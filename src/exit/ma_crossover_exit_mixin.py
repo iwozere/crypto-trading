@@ -28,7 +28,7 @@ from src.indicator.talib_sma import TALibSMA
 from src.indicator.talib_ema import TALibEMA
 from src.notification.logger import setup_logger
 
-logger = setup_logger()
+logger = setup_logger(__name__)
 
 class MACrossoverExitMixin(BaseExitMixin):
     """Exit mixin based on Moving Average crossovers"""
@@ -105,9 +105,15 @@ class MACrossoverExitMixin(BaseExitMixin):
 
         # Check for crossover based on position
         if self.strategy.position.size > 0:  # Long position
-            return fast_ma_prev > slow_ma_prev and fast_ma_current < slow_ma_current
+            return_value = fast_ma_prev > slow_ma_prev and fast_ma_current < slow_ma_current
         else:  # Short position
-            return fast_ma_prev < slow_ma_prev and fast_ma_current > slow_ma_current
+            return_value = fast_ma_prev < slow_ma_prev and fast_ma_current > slow_ma_current
+
+        if return_value:
+            logger.info(f"EXIT: Price: {self.strategy.data.close[0]}, "
+                       f"Fast MA: {fast_ma_current}, Slow MA: {slow_ma_current}, "
+                       f"Position: {'long' if self.strategy.position.size > 0 else 'short'}")
+        return return_value
 
     def get_exit_reason(self) -> str:
         """Get the reason for exiting the position"""

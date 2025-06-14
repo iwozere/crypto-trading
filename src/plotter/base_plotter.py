@@ -187,13 +187,17 @@ class BasePlotter:
             # Get data within valid range
             for i in range(data_len):
                 try:
+                    # Skip the first few bars as they might not have all indicators ready
+                    if i < self.data.buflen():
+                        continue
+                        
                     dates.append(self.data.datetime.datetime(i))
-                    prices.append(self.data.close[i])
-                except IndexError:
-                    self.logger.warning(f"Index {i} out of range, stopping data collection")
+                    prices.append(self.data.close[i])  # Use direct indexing instead of array
+                except (IndexError, AttributeError) as e:
+                    self.logger.warning(f"Error accessing data at index {i}: {str(e)}", exc_info=False)
                     break
         except Exception as e:
-            self.logger.error(f"Error accessing data: {str(e)}")
+            self.logger.error(f"Error accessing data: {str(e)}", exc_info=False)
             return
         
         # Ensure we have data to plot
@@ -222,6 +226,11 @@ class BasePlotter:
         # Format x-axis dates
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
+        
+        # Log data points for debugging
+        self.logger.debug(f"Plotted {len(dates)} data points")
+        self.logger.debug(f"Date range: {dates[0]} to {dates[-1]}")
+        self.logger.debug(f"Price range: {min(prices)} to {max(prices)}")
 
     def _plot_indicators(self):
         """Plot all indicators using their respective plotters"""

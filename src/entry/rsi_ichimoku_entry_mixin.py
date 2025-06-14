@@ -29,7 +29,7 @@ from src.indicator.talib_rsi import TALibRSI
 from src.indicator.ichimoku import Ichimoku
 from src.notification.logger import setup_logger
 
-logger = setup_logger()
+logger = setup_logger(__name__)
 
 class RSIIchimokuEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI and Ichimoku Cloud"""
@@ -110,4 +110,9 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         # Tenkan-sen crosses above Kijun-sen
         tenkan_cross = ichimoku.tenkan_sen[0] > ichimoku.kijun_sen[0] and ichimoku.tenkan_sen[-1] <= ichimoku.kijun_sen[-1]
 
-        return rsi_condition and below_cloud and tenkan_cross
+        return_value = rsi_condition and below_cloud and tenkan_cross
+        if return_value:
+            logger.info(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, "
+                       f"Tenkan: {ichimoku.tenkan_sen[0]}, Kijun: {ichimoku.kijun_sen[0]}, "
+                       f"Senkou A: {ichimoku.senkou_span_a[0]}, Senkou B: {ichimoku.senkou_span_b[0]}")
+        return return_value

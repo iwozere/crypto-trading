@@ -106,9 +106,17 @@ def log_exception(logger, exc_info=None):
 #
 # Set up the logger for the application
 # Usage: setup_logger('live_trader')
-def setup_logger():
-    """Set up the logger with file and console handlers."""
-    logger = logging.getLogger("trading_bot")
+def setup_logger(name: str ):
+    """
+    Set up the logger with file and console handlers.
+    
+    Args:
+        name (str): Name of the logger. Defaults to "trading_bot".
+        
+    Returns:
+        logging.Logger: Configured logger instance
+    """
+    logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
     # Create logs directory if it doesn't exist

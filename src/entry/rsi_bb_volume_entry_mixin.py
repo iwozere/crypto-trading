@@ -32,7 +32,7 @@ from src.indicator.talib_rsi import TALibRSI
 from src.indicator.talib_sma import TALibSMA
 from src.notification.logger import setup_logger
 
-logger = setup_logger()
+logger = setup_logger(__name__)
 
 class RSIBBVolumeEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI, Bollinger Bands, and Volume"""
@@ -134,4 +134,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         # Check volume
         volume_condition = current_volume > vol_ma[0]
 
-        return rsi_condition and bb_condition and volume_condition
+        return_value = rsi_condition and bb_condition and volume_condition
+        if return_value:
+            logger.info(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, BB Lower: {bb.bb_lower[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}")
+        return return_value

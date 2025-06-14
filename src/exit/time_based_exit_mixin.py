@@ -19,8 +19,11 @@ calendar day calculations based on the data feed's timeframe.
 """
 
 from typing import Any, Dict, Optional
+from src.notification.logger import setup_logger
 
 from src.exit.base_exit_mixin import BaseExitMixin
+
+logger = setup_logger(__name__)
 
 
 class TimeBasedExitMixin(BaseExitMixin):
@@ -58,10 +61,21 @@ class TimeBasedExitMixin(BaseExitMixin):
             current_time = self.strategy.data.datetime.datetime(0)
             entry_time = self.strategy.position.dtopen
             time_diff = (current_time - entry_time).total_seconds() / 60
-            return time_diff >= self.get_param("max_minutes")
+            return_value = time_diff >= self.get_param("max_minutes")
         else:
             bars_held = len(self.strategy.data) - self.strategy.position.dtopen
-            return bars_held >= self.get_param("max_bars")
+            return_value = bars_held >= self.get_param("max_bars")
+
+        if return_value:
+            if self.get_param("use_time", False):
+                logger.info(f"EXIT: Price: {self.strategy.data.close[0]}, "
+                           f"Time held: {time_diff:.2f} minutes, "
+                           f"Max time: {self.get_param('max_minutes')} minutes")
+            else:
+                logger.info(f"EXIT: Price: {self.strategy.data.close[0]}, "
+                           f"Bars held: {bars_held}, "
+                           f"Max bars: {self.get_param('max_bars')}")
+        return return_value
 
     def get_exit_reason(self) -> str:
         """Get the reason for exiting the position"""

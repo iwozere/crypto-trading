@@ -31,7 +31,7 @@ from src.indicator.talib_bb import TALibBB
 from src.indicator.super_trend import SuperTrend
 from src.notification.logger import setup_logger
 
-logger = setup_logger()
+logger = setup_logger(__name__)
 
 
 class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
@@ -113,18 +113,25 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
             supertrend = getattr(self.strategy, self.supertrend_name)
 
             # Check Bollinger Bands condition
+            current_price = self.strategy.data.close[0]
+            bb_lower = bb.bb_lower[0]
             if self.get_param("use_bb_touch"):
-                bb_condition = self.strategy.data.close[0] <= bb.bb_lower[0]
+                bb_condition = current_price <= bb_lower
             else:
-                bb_condition = self.strategy.data.close[0] < bb.bb_lower[0]
+                bb_condition = current_price < bb_lower
 
             # Check Volume condition
-            volume_condition = self.strategy.data.volume[0] > volume_ma[0]
+            current_volume = self.strategy.data.volume[0]
+            volume_ma_value = volume_ma[0]
+            volume_condition = current_volume > volume_ma_value
 
             # Check Supertrend condition (bullish trend)
             supertrend_condition = supertrend.trend[0] == 1
 
-            return bb_condition and volume_condition and supertrend_condition
+            return_value = bb_condition and volume_condition and supertrend_condition
+            if return_value:
+                logger.info(f"ENTRY: BB lower: {bb_lower}, Volume: {current_volume}, Volume MA: {volume_ma_value}, Supertrend: {supertrend_condition}")
+            return return_value
         except Exception as e:
             logger.error(f"Error in should_enter: {e}")
             return False

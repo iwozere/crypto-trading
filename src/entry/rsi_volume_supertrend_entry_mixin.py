@@ -31,7 +31,7 @@ from src.indicator.talib_rsi import TALibRSI
 from src.indicator.talib_sma import TALibSMA
 from src.notification.logger import setup_logger
 
-logger = setup_logger()
+logger = setup_logger(__name__)
 
 class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI, Volume, and Supertrend"""
@@ -128,4 +128,7 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
         # Check Supertrend
         supertrend_condition = supertrend.trend[0] == 1  # 1 indicates bullish trend
 
-        return rsi_condition and volume_condition and supertrend_condition
+        return_value = rsi_condition and volume_condition and supertrend_condition
+        if return_value:
+            logger.info(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}, Supertrend: {supertrend.trend[0]}")
+        return return_value

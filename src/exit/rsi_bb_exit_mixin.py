@@ -28,7 +28,7 @@ from src.indicator.talib_rsi import TALibRSI
 from src.indicator.talib_bb import TALibBB
 from src.notification.logger import setup_logger
 
-logger = setup_logger()
+logger = setup_logger(__name__)
 
 
 class RSIBBExitMixin(BaseExitMixin):
@@ -103,14 +103,20 @@ class RSIBBExitMixin(BaseExitMixin):
             # Get indicators
             rsi = getattr(self.strategy, self.rsi_name)
             bb = getattr(self.strategy, self.bb_name)
+            current_price = self.strategy.data.close[0]
 
             # Check RSI
             rsi_condition = rsi[0] >= self.get_param("rsi_overbought")
 
             # Check touching the Bollinger Bands (if enabled)
-            bb_condition = not self.get_param("use_bb_touch") or self.strategy.data.close[0] >= bb.bb_upper[0] * 0.99  # Small tolerance
+            bb_condition = not self.get_param("use_bb_touch") or current_price >= bb.bb_upper[0] * 0.99  # Small tolerance
 
-            return rsi_condition and bb_condition
+            return_value = rsi_condition and bb_condition
+            if return_value:
+                logger.info(f"EXIT: Price: {current_price}, RSI: {rsi[0]}, "
+                           f"BB Upper: {bb.bb_upper[0]}, "
+                           f"RSI Overbought: {self.get_param('rsi_overbought')}")
+            return return_value
         except Exception as e:
             logger.error(f"Error in should_exit: {e}")
             return False

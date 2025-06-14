@@ -22,7 +22,7 @@ from typing import Dict, Any, Optional
 from src.notification.logger import setup_logger
 from src.indicator.talib_atr import TALibATR
 
-logger = setup_logger()
+logger = setup_logger(__name__)
 
 class ATRExitMixin(BaseExitMixin):
     """Exit mixin based on ATR"""
@@ -73,8 +73,14 @@ class ATRExitMixin(BaseExitMixin):
             return False
         atr = getattr(self.strategy, self.atr_name)
         atr_val = atr[0] if hasattr(atr, '__getitem__') else atr.lines.atr[0]
-        stop_loss = self.strategy.data.close[0] - (atr_val * self.get_param("atr_multiplier"))
-        return self.strategy.data.close[0] < stop_loss
+        current_price = self.strategy.data.close[0]
+        stop_loss = current_price - (atr_val * self.get_param("atr_multiplier"))
+        
+        return_value = current_price < stop_loss
+        if return_value:
+            logger.info(f"EXIT: Price: {current_price}, Stop Loss: {stop_loss}, "
+                       f"ATR: {atr_val}, ATR Multiplier: {self.get_param('atr_multiplier')}")
+        return return_value
 
     def get_exit_reason(self) -> str:
         """Get the reason for exiting the position"""

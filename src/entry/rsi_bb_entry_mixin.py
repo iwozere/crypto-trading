@@ -27,7 +27,7 @@ from src.indicator.talib_rsi import TALibRSI
 from src.indicator.talib_bb import TALibBB
 from src.notification.logger import setup_logger
 
-logger = setup_logger()
+logger = setup_logger(__name__)
 
 
 class RSIBBEntryMixin(BaseEntryMixin):
@@ -121,7 +121,10 @@ class RSIBBEntryMixin(BaseEntryMixin):
                 else:
                     bb_condition = current_price < bb.lines.bot[0]
 
-            return rsi_condition and bb_condition
+            return_value = rsi_condition and bb_condition
+            if return_value:
+                logger.info(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, BB Lower: {bb.bb_lower[0] if self.strategy.use_talib else bb.lines.bot[0]}")
+            return return_value
         except Exception as e:
             logger.error(f"Error in should_enter: {e}")
             return False

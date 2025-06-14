@@ -169,7 +169,7 @@ class CustomOptimizer:
             "trades_summary": strategy.analyzers.trades.get_analysis(),
             "sqn": strategy.analyzers.sqn.get_analysis(),
             "time_drawdown": strategy.analyzers.time_drawdown.get_analysis(),
-            "time_return": strategy.analyzers.time_return.get_analysis(),
+            #"time_return": strategy.analyzers.time_return.get_analysis(), - too many empty values
             "vwr": strategy.analyzers.vwr.get_analysis(),
             "profit_factor": strategy.analyzers.profit_factor.get_analysis(),
             "calmar": strategy.analyzers.calmar.get_analysis(),

@@ -20,6 +20,9 @@ This strategy is particularly effective for:
 
 from typing import Any, Dict, Optional
 from src.exit.base_exit_mixin import BaseExitMixin
+from src.notification.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 class FixedRatioExitMixin(BaseExitMixin):
@@ -57,11 +60,19 @@ class FixedRatioExitMixin(BaseExitMixin):
         entry_price = self.strategy.position.price
         current_price = self.strategy.data.close[0]
         profit_ratio = (current_price - entry_price) / entry_price
+        
+        return_value = False
         if profit_ratio >= self.get_param("profit_ratio"):
-            return True
-        if profit_ratio <= -self.get_param("loss_ratio"):
-            return True
-        return False
+            return_value = True
+        elif profit_ratio <= -self.get_param("loss_ratio"):
+            return_value = True
+
+        if return_value:
+            logger.info(f"EXIT: Price: {current_price}, Entry: {entry_price}, "
+                       f"Profit %: {profit_ratio*100:.2f}%, "
+                       f"Take Profit: {self.get_param('profit_ratio')*100:.2f}%, "
+                       f"Stop Loss: {self.get_param('loss_ratio')*100:.2f}%")
+        return return_value
 
     def get_exit_reason(self) -> str:
         """Get the reason for exiting the position"""

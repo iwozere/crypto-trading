@@ -29,7 +29,7 @@ import numpy as np
 from src.notification.logger import setup_logger
 from src.indicator.talib_atr import TALibATR
 
-logger = setup_logger()
+logger = setup_logger(__name__)
 
 class TrailingStopExitMixin(BaseExitMixin):
     """Exit mixin based on trailing stop"""
@@ -103,7 +103,17 @@ class TrailingStopExitMixin(BaseExitMixin):
                 return False
 
         # Exit if price falls below trailing stop
-        return price < stop_level
+        return_value = price < stop_level
+        if return_value:
+            if self.get_param("use_atr", False):
+                logger.info(f"EXIT: Price: {price}, Entry: {entry_price}, "
+                           f"Highest: {self.highest_price}, Stop: {stop_level}, "
+                           f"ATR: {atr_val}, ATR Multiplier: {self.get_param('atr_multiplier')}")
+            else:
+                logger.info(f"EXIT: Price: {price}, Entry: {entry_price}, "
+                           f"Highest: {self.highest_price}, Stop: {stop_level}, "
+                           f"Trail %: {self.get_param('trail_pct')}")
+        return return_value
 
     def get_exit_reason(self) -> str:
         """Get the reason for exiting the position"""

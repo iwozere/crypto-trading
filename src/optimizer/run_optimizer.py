@@ -136,14 +136,11 @@ def save_results(result, data_file):
         analyzers = {}
         for name, analyzer in result.get("analyzers", {}).items():
             try:
-                # Get the analysis directly from the analyzer
-                analysis = analyzer.get_analysis()
-                
-                # Handle different types of analysis results
-                if isinstance(analysis, dict):
-                    # Convert dictionary values to serializable format
+                # Handle different analyzer types
+                if isinstance(analyzer, dict):
+                    # Already a dictionary, just convert values
                     processed_analysis = {}
-                    for k, v in analysis.items():
+                    for k, v in analyzer.items():
                         if isinstance(v, (int, float)):
                             processed_analysis[str(k)] = float(v)
                         elif isinstance(v, dt):
@@ -151,12 +148,32 @@ def save_results(result, data_file):
                         else:
                             processed_analysis[str(k)] = str(v)
                     analyzers[name] = processed_analysis
-                elif isinstance(analysis, (int, float)):
-                    analyzers[name] = float(analysis)
+                elif hasattr(analyzer, 'get_analysis'):
+                    # Get analysis using get_analysis method
+                    analysis = analyzer.get_analysis()
+                    if isinstance(analysis, dict):
+                        processed_analysis = {}
+                        for k, v in analysis.items():
+                            if isinstance(v, (int, float)):
+                                processed_analysis[str(k)] = float(v)
+                            elif isinstance(v, dt):
+                                processed_analysis[str(k)] = v.isoformat()
+                            else:
+                                processed_analysis[str(k)] = str(v)
+                        analyzers[name] = processed_analysis
+                    elif isinstance(analysis, (int, float)):
+                        analyzers[name] = float(analysis)
+                    else:
+                        analyzers[name] = str(analysis)
                 else:
-                    analyzers[name] = str(analysis)
+                    # Direct value or other type
+                    if isinstance(analyzer, (int, float)):
+                        analyzers[name] = float(analyzer)
+                    else:
+                        analyzers[name] = str(analyzer)
             except Exception as e:
                 _logger.warning(f"Could not process analyzer {name}: {str(e)}")
+                # Store the raw analyzer value if processing fails
                 analyzers[name] = str(analyzer)
         
         # Create the final result dictionary
@@ -171,10 +188,11 @@ def save_results(result, data_file):
         }
         
         # Save to JSON file
-        with open(filename, "w") as f:
+        json_file = os.path.join("results", f"{filename}.json")
+        with open(json_file, "w") as f:
             json.dump(result_dict, f, indent=4)
             
-        _logger.info(f"Results saved to {filename}")
+        _logger.info(f"Results saved to {json_file}")
         
     except Exception as e:
         _logger.error(f"Error saving results: {str(e)}")
@@ -216,74 +234,46 @@ def create_plotter(strategy, visualization_settings):
     indicators = {}
     
     # Add entry mixin indicators
-    if hasattr(strategy, 'entry_rsi'):
-        indicators['entry_rsi'] = strategy.entry_rsi
-    if hasattr(strategy, 'entry_bb'):
-        indicators['entry_bb'] = strategy.entry_bb
-    if hasattr(strategy, 'entry_volume_ma'):
-        indicators['entry_volume_ma'] = strategy.entry_volume_ma
-    if hasattr(strategy, 'entry_supertrend'):
-        indicators['entry_supertrend'] = strategy.entry_supertrend
-    if hasattr(strategy, 'entry_ichimoku'):
-        indicators['entry_ichimoku'] = strategy.entry_ichimoku
-        
+    if hasattr(strategy, 'entry_mixin'):
+        if hasattr(strategy.entry_mixin, 'indicators'):
+            indicators.update(strategy.entry_mixin.indicators)
+        else:
+            # Add individual indicators if not in indicators dict
+            if hasattr(strategy, 'entry_rsi'):
+                indicators['rsi'] = strategy.entry_rsi
+            if hasattr(strategy, 'entry_bb'):
+                indicators['bb'] = strategy.entry_bb
+            if hasattr(strategy, 'entry_volume_ma'):
+                indicators['volume'] = strategy.entry_volume_ma
+            if hasattr(strategy, 'entry_supertrend'):
+                indicators['supertrend'] = strategy.entry_supertrend
+            if hasattr(strategy, 'entry_ichimoku'):
+                indicators['ichimoku'] = strategy.entry_ichimoku
+    
     # Add exit mixin indicators
-    if hasattr(strategy, 'exit_rsi'):
-        indicators['exit_rsi'] = strategy.exit_rsi
-    if hasattr(strategy, 'exit_bb'):
-        indicators['exit_bb'] = strategy.exit_bb
+    if hasattr(strategy, 'exit_mixin'):
+        if hasattr(strategy.exit_mixin, 'indicators'):
+            indicators.update(strategy.exit_mixin.indicators)
+        else:
+            # Add individual indicators if not in indicators dict
+            if hasattr(strategy, 'exit_rsi'):
+                indicators['exit_rsi'] = strategy.exit_rsi
+            if hasattr(strategy, 'exit_bb'):
+                indicators['exit_bb'] = strategy.exit_bb
     
-    # Add indicator plotters based on entry/exit mixins
-    if entry_name == "RSIIchimokuEntryMixin":
-        if hasattr(strategy, 'entry_rsi'):
-            plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'entry_ichimoku'):
-            plotter.indicator_plotters.append(IchimokuPlotter(strategy.data, indicators, visualization_settings))
+    # Update strategy's indicators dictionary
+    if hasattr(strategy, 'entry_mixin'):
+        strategy.entry_mixin.indicators = indicators
     
-    elif entry_name == "RSIBBEntryMixin":
-        if hasattr(strategy, 'entry_rsi'):
-            plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'entry_bb'):
-            plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, indicators, visualization_settings))
-    
-    elif entry_name == "RSIBBVolumeEntryMixin":
-        if hasattr(strategy, 'entry_rsi'):
-            plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'entry_bb'):
-            plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'entry_volume_ma'):
-            plotter.indicator_plotters.append(VolumePlotter(strategy.data, indicators, visualization_settings))
-    
-    elif entry_name == "RSIVolumeSuperTrendEntryMixin":
-        if hasattr(strategy, 'entry_rsi'):
-            plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'entry_volume_ma'):
-            plotter.indicator_plotters.append(VolumePlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'entry_supertrend'):
-            plotter.indicator_plotters.append(SuperTrendPlotter(strategy.data, indicators, visualization_settings))
-    
-    elif entry_name == "BBVolumeSuperTrendEntryMixin":
-        if hasattr(strategy, 'entry_bb'):
-            plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'entry_volume_ma'):
-            plotter.indicator_plotters.append(VolumePlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'entry_supertrend'):
-            plotter.indicator_plotters.append(SuperTrendPlotter(strategy.data, indicators, visualization_settings))
-    
-    # Add exit strategy indicators if needed
-    if exit_name == "RSIBBExitMixin":
-        if hasattr(strategy, 'exit_rsi'):
-            plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'exit_bb'):
-            plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, indicators, visualization_settings))
-    
-    elif exit_name == "ATRExitMixin":
-        # ATR is already plotted with SuperTrend if present
-        pass
-    
-    elif exit_name == "MACrossoverExitMixin":
-        # Moving averages are typically part of the entry strategy
-        pass
+    # Log available indicators for debugging
+    _logger.info(f"Available indicators: {list(indicators.keys())}")
+    for name, indicator in indicators.items():
+        if hasattr(indicator, 'array'):
+            _logger.info(f"Indicator {name} has array of length {len(indicator.array)}")
+        elif hasattr(indicator, 'lines'):
+            _logger.info(f"Indicator {name} has {len(indicator.lines)} lines")
+        else:
+            _logger.warning(f"Indicator {name} has no array or lines attribute")
     
     return plotter
 
