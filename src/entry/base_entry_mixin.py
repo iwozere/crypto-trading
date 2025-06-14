@@ -1,9 +1,17 @@
+"""
+Base Entry Mixin Module
+
+This module provides the base class for all entry mixins.
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, get_type_hints, get_origin, get_args
 import inspect
 import logging
+from src.notification.logger import setup_logger
+from src.indicator.indicator_factory import IndicatorFactory
 
-_logger = logging.getLogger(__name__)
+_logger = setup_logger(__name__)
 
 
 class BaseEntryMixin(ABC):
@@ -19,6 +27,7 @@ class BaseEntryMixin(ABC):
         self.strategy = None
         self.params = params or {}
         self.indicators = {}
+        self.indicator_factory = None
 
         # Validate class method implementation
         self._validate_class_methods()
@@ -202,9 +211,15 @@ class BaseEntryMixin(ABC):
         """
         self.strategy = strategy
 
-        # Update parameters if additional parameters are provided
         if additional_params:
             self.params.update(additional_params)
+            self._validate_params()
+
+        # Create indicator factory
+        self.indicator_factory = IndicatorFactory(
+            data=self.strategy.data,
+            use_talib=self.strategy.use_talib
+        )
 
         # Initialize indicators
         self._init_indicators()
@@ -252,9 +267,8 @@ class BaseEntryMixin(ABC):
             name: Name of the indicator
             indicator: Indicator instance
         """
-        # Store in indicators dictionary
+        _logger.debug(f"Registering indicator: {name}")
         self.indicators[name] = indicator
-        _logger.debug(f"Registered indicator '{name}' in indicators dictionary")
         
         # Set as strategy attribute if strategy exists
         if self.strategy:
@@ -269,3 +283,26 @@ class BaseEntryMixin(ABC):
             _logger.debug(f"Added indicator '{name}' to strategy's indicators dictionary")
         else:
             _logger.warning(f"Strategy not set, indicator '{name}' only stored in indicators dictionary")
+
+    def next(self):
+        """Called for each new bar"""
+        # Check if we need to reinitialize indicators
+        if not self.indicators:
+            self._init_indicators()
+
+    def are_indicators_ready(self) -> bool:
+        """Check if indicators are ready to be used"""
+        if not self.indicators:
+            return False
+            
+        try:
+            # Try to access the first value of each indicator
+            for indicator in self.indicators.values():
+                if hasattr(indicator, '__getitem__'):
+                    _ = indicator[0]
+                elif hasattr(indicator, 'lines'):
+                    for line in indicator.lines:
+                        _ = line[0]
+            return True
+        except (IndexError, TypeError):
+            return False

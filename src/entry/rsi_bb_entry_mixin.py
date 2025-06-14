@@ -62,71 +62,40 @@ class RSIBBEntryMixin(BaseEntryMixin):
             return
 
         try:
-            data = self.strategy.data
-            use_talib = self.strategy.use_talib
-            logger.debug(f"Initializing indicators with use_talib={use_talib}")
-
             # Calculate required data length based on indicator periods
             required_length = max(
                 self.get_param("rsi_period"),
                 self.get_param("bb_period")
             )
-            logger.debug(f"Required data length: {required_length}, Current data length: {len(data)}")
+            logger.debug(f"Required data length: {required_length}, Current data length: {len(self.strategy.data)}")
 
             # Ensure we have enough data
-            if len(data) <= required_length:
-                logger.debug(f"Not enough data yet. Need {required_length} bars, have {len(data)}")
+            if len(self.strategy.data) <= required_length:
+                logger.debug(f"Not enough data yet. Need {required_length} bars, have {len(self.strategy.data)}")
                 return
 
-            if use_talib:
-                # Use TA-Lib for RSI
-                logger.debug("Creating TA-Lib RSI indicator")
-                rsi = TALibRSI(
-                    data,
-                    period=self.get_param("rsi_period")
-                )
-                logger.debug("Registering TA-Lib RSI indicator")
-                self.register_indicator(self.rsi_name, rsi)
-                logger.debug(f"RSI indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
+            # Create RSI indicator
+            rsi = self.indicator_factory.create_rsi(
+                name=self.rsi_name,
+                period=self.get_param("rsi_period")
+            )
+            self.register_indicator(self.rsi_name, rsi)
 
-                # Use TA-Lib for Bollinger Bands
-                logger.debug("Creating TA-Lib BB indicator")
-                bb = TALibBB(
-                    data,
-                    period=self.get_param("bb_period"),
-                    devfactor=self.get_param("bb_stddev")
-                )
-                logger.debug("Registering TA-Lib BB indicator")
-                self.register_indicator(self.bb_name, bb)
-                logger.debug(f"BB indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
-            else:
-                # Use Backtrader's native RSI
-                logger.debug("Creating Backtrader RSI indicator")
-                rsi = bt.indicators.RSI(
-                    data,
-                    period=self.get_param("rsi_period")
-                )
-                logger.debug("Registering Backtrader RSI indicator")
-                self.register_indicator(self.rsi_name, rsi)
-                logger.debug(f"RSI indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
+            # Create Bollinger Bands indicator
+            bb = self.indicator_factory.create_bollinger_bands(
+                name=self.bb_name,
+                period=self.get_param("bb_period"),
+                devfactor=self.get_param("bb_stddev")
+            )
+            self.register_indicator(self.bb_name, bb)
 
-                # Use Backtrader's native Bollinger Bands
-                logger.debug("Creating Backtrader BB indicator")
-                bb = bt.indicators.BollingerBands(
-                    data,
-                    period=self.get_param("bb_period"),
-                    devfactor=self.get_param("bb_stddev")
-                )
-                logger.debug("Registering Backtrader BB indicator")
-                self.register_indicator(self.bb_name, bb)
-                logger.debug(f"BB indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
         except Exception as e:
             logger.error(f"Error initializing indicators: {e}")
-            raise
+            return
 
     def should_enter(self) -> bool:
         """Check if we should enter a position"""
-        if self.rsi_name not in self.indicators or self.bb_name not in self.indicators:
+        if not self.are_indicators_ready():
             return False
 
         try:

@@ -325,7 +325,7 @@ if __name__ == "__main__":
                 study.optimize(
                     objective,
                     n_trials=optimizer_config.get("optimizer_settings", {}).get("n_trials", 100),
-                    n_jobs=optimizer_config.get("optimizer_settings", {}).get("n_jobs", -1),
+                    n_jobs=optimizer_config.get("optimizer_settings", {}).get("n_jobs", 1),
                 )
 
                 # Get best result

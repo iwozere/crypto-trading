@@ -91,7 +91,7 @@ class ATRExitMixin(BaseExitMixin):
 
     def should_exit(self) -> bool:
         """Check if we should exit a position"""
-        if self.atr_name not in self.indicators:
+        if not self.are_indicators_ready():
             return False
 
         try:

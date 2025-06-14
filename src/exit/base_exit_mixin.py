@@ -44,6 +44,7 @@ class BaseExitMixin(ABC):
             self.params.update(additional_params)
             self._validate_params()
 
+        # Initialize indicators
         self._init_indicators()
 
     @abstractmethod
@@ -80,3 +81,26 @@ class BaseExitMixin(ABC):
             _logger.debug(f"Indicator {name} set as strategy attribute")
         else:
             _logger.warning(f"Cannot set {name} as strategy attribute - strategy not available")
+
+    def next(self):
+        """Called for each new bar"""
+        # Check if we need to reinitialize indicators
+        if not self.indicators:
+            self._init_indicators()
+
+    def are_indicators_ready(self) -> bool:
+        """Check if indicators are ready to be used"""
+        if not self.indicators:
+            return False
+            
+        try:
+            # Try to access the first value of each indicator
+            for indicator in self.indicators.values():
+                if hasattr(indicator, '__getitem__'):
+                    _ = indicator[0]
+                elif hasattr(indicator, 'lines'):
+                    for line in indicator.lines:
+                        _ = line[0]
+            return True
+        except (IndexError, TypeError):
+            return False

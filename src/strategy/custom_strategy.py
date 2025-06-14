@@ -120,9 +120,19 @@ class CustomStrategy(bt.Strategy):
                 _logger.error(f"Error initializing indicators in next: {e}")
                 raise
 
-        # Rest of next() logic...
+        # Call mixins' next method to check for indicator reinitialization
+        if self.entry_mixin:
+            self.entry_mixin.next()
+        if self.exit_mixin:
+            self.exit_mixin.next()
+
+        # Check for entry signals
         if self.entry_mixin and self.entry_mixin.should_enter():
             self.buy()
+
+        # Check for exit signals
+        if self.exit_mixin and self.exit_mixin.should_exit():
+            self.sell()
 
     @property
     def use_talib(self):
