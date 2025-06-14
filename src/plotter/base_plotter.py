@@ -20,6 +20,7 @@ from src.plotter.indicators.bollinger_bands_plotter import BollingerBandsPlotter
 from src.plotter.indicators.volume_plotter import VolumePlotter
 from src.plotter.indicators.supertrend_plotter import SuperTrendPlotter
 from src.notification.logger import setup_logger
+import matplotlib.dates as mdates
 
 
 class BasePlotter:
@@ -175,21 +176,25 @@ class BasePlotter:
         # Get datetime and price data from Backtrader data feed
         dates = []
         prices = []
-        data_len = len(self.data)
         
         # Ensure we have data to plot
-        if data_len == 0:
-            self.logger.warning("No data available for plotting")
+        try:
+            data_len = len(self.data)
+            if data_len == 0:
+                self.logger.warning("No data available for plotting")
+                return
+                
+            # Get data within valid range
+            for i in range(data_len):
+                try:
+                    dates.append(self.data.datetime.datetime(i))
+                    prices.append(self.data.close[i])
+                except IndexError:
+                    self.logger.warning(f"Index {i} out of range, stopping data collection")
+                    break
+        except Exception as e:
+            self.logger.error(f"Error accessing data: {str(e)}")
             return
-            
-        # Get data within valid range
-        for i in range(data_len):
-            try:
-                dates.append(self.data.datetime.datetime(i))
-                prices.append(self.data.close[i])
-            except IndexError:
-                self.logger.warning(f"Index {i} out of range, stopping data collection")
-                break
         
         # Ensure we have data to plot
         if not dates or not prices:
@@ -213,6 +218,10 @@ class BasePlotter:
         # Set font size
         ax.tick_params(axis='both', which='major', 
                       labelsize=self.vis_settings.get("font_size", 10))
+        
+        # Format x-axis dates
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
 
     def _plot_indicators(self):
         """Plot all indicators using their respective plotters"""

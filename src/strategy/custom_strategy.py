@@ -109,10 +109,10 @@ class CustomStrategy(bt.Strategy):
         """Record trade information"""
         if trade.isclosed:
             self.trades.append({
-                'entry_time': trade.dtopen,
+                'entry_date': trade.dtopen,
                 'entry_price': trade.price,
-                'exit_time': trade.dtclose,
-                'exit_price': trade.pnl,
+                'exit_date': trade.dtclose,
+                'exit_price': trade.price,  # Use actual exit price, not PnL
                 'pnl': trade.pnl,
                 'size': trade.size
             })

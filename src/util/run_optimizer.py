@@ -52,9 +52,18 @@ def prepare_data(data_file):
         # If no datetime column found, create one from index
         df["datetime"] = pd.date_range(start="2020-01-01", periods=len(df), freq="1min")
 
+    # Ensure all required columns exist
+    required_columns = ["open", "high", "low", "close", "volume"]
+    for col in required_columns:
+        if col not in df.columns:
+            raise ValueError(f"Required column '{col}' not found in data file")
+
+    # Set datetime as index
+    df.set_index("datetime", inplace=True)
+    
+    # Create Backtrader data feed
     data = bt.feeds.PandasData(
         dataname=df,
-        datetime="datetime",
         open="open",
         high="high",
         low="low",
@@ -125,38 +134,78 @@ def create_plotter(strategy, visualization_settings):
     
     # Create base plotter
     plotter = BasePlotter(
-        strategy.data,
-        strategy.trades,
-        strategy,
-        visualization_settings
+        data=strategy.data,
+        trades=strategy.trades,
+        strategy=strategy,
+        vis_settings=visualization_settings
     )
+    
+    # Create indicators dictionary from strategy attributes
+    indicators = {}
+    
+    # Add entry mixin indicators
+    if hasattr(strategy, 'rsi'):
+        indicators['rsi'] = strategy.rsi
+    if hasattr(strategy, 'bb'):
+        indicators['bb'] = strategy.bb
+    if hasattr(strategy, 'volume'):
+        indicators['volume'] = strategy.volume
+    if hasattr(strategy, 'supertrend'):
+        indicators['supertrend'] = strategy.supertrend
+    if hasattr(strategy, 'ichimoku'):
+        indicators['ichimoku'] = strategy.ichimoku
+        
+    # Add exit mixin indicators
+    if hasattr(strategy, 'exit_rsi'):
+        indicators['exit_rsi'] = strategy.exit_rsi
+    if hasattr(strategy, 'exit_bb'):
+        indicators['exit_bb'] = strategy.exit_bb
     
     # Add indicator plotters based on entry/exit mixins
     if entry_name == "RSIIchimokuEntryMixin":
-        plotter.indicator_plotters.append(RSIPlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
-        plotter.indicator_plotters.append(IchimokuPlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
+        if hasattr(strategy, 'rsi'):
+            plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
+        if hasattr(strategy, 'ichimoku'):
+            plotter.indicator_plotters.append(IchimokuPlotter(strategy.data, indicators, visualization_settings))
     
     elif entry_name == "RSIBBEntryMixin":
-        plotter.indicator_plotters.append(RSIPlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
-        plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
+        if hasattr(strategy, 'rsi'):
+            plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
+        if hasattr(strategy, 'bb'):
+            plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, indicators, visualization_settings))
     
     elif entry_name == "RSIBBVolumeEntryMixin":
-        plotter.indicator_plotters.append(RSIPlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
-        plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
-        plotter.indicator_plotters.append(VolumePlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
+        if hasattr(strategy, 'rsi'):
+            plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
+        if hasattr(strategy, 'bb'):
+            plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, indicators, visualization_settings))
+        if hasattr(strategy, 'volume'):
+            plotter.indicator_plotters.append(VolumePlotter(strategy.data, indicators, visualization_settings))
     
     elif entry_name == "RSIVolumeSuperTrendEntryMixin":
-        plotter.indicator_plotters.append(RSIPlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
-        plotter.indicator_plotters.append(VolumePlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
-        plotter.indicator_plotters.append(SuperTrendPlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
+        if hasattr(strategy, 'rsi'):
+            plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
+        if hasattr(strategy, 'volume'):
+            plotter.indicator_plotters.append(VolumePlotter(strategy.data, indicators, visualization_settings))
+        if hasattr(strategy, 'supertrend'):
+            plotter.indicator_plotters.append(SuperTrendPlotter(strategy.data, indicators, visualization_settings))
     
     elif entry_name == "BBVolumeSuperTrendEntryMixin":
-        plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
-        plotter.indicator_plotters.append(VolumePlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
-        plotter.indicator_plotters.append(SuperTrendPlotter(strategy.data, strategy.entry_mixin.indicators, visualization_settings))
+        if hasattr(strategy, 'bb'):
+            plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, indicators, visualization_settings))
+        if hasattr(strategy, 'volume'):
+            plotter.indicator_plotters.append(VolumePlotter(strategy.data, indicators, visualization_settings))
+        if hasattr(strategy, 'supertrend'):
+            plotter.indicator_plotters.append(SuperTrendPlotter(strategy.data, indicators, visualization_settings))
     
     # Add exit strategy indicators if needed
-    if exit_name == "ATRExitMixin":
+    if exit_name == "RSIBBExitMixin":
+        if hasattr(strategy, 'exit_rsi'):
+            plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
+        if hasattr(strategy, 'exit_bb'):
+            plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, indicators, visualization_settings))
+    
+    elif exit_name == "ATRExitMixin":
         # ATR is already plotted with SuperTrend if present
         pass
     

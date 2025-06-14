@@ -2,19 +2,51 @@ from src.plotter.indicators.base_indicator_plotter import BaseIndicatorPlotter
 
 class BollingerBandsPlotter(BaseIndicatorPlotter):
     def plot(self, ax):
-        """Plot Bollinger Bands indicator"""
+        """Plot Bollinger Bands on the price axis"""
         try:
-            if 'bb' not in self.indicators:
-                self.logger.warning("Bollinger Bands indicator not found")
-                return
+            # Try to plot entry BB first
+            if 'bb' in self.indicators:
+                bb = self.indicators['bb']
+                if not hasattr(bb, 'lines'):
+                    self.logger.warning("Bollinger Bands indicator has invalid data structure")
+                    return
+                    
+                dates = [self.data.datetime.datetime(i) for i in range(len(self.data))]
                 
-            bb = self.indicators['bb']
-            dates = [self.data.datetime.datetime(i) for i in range(len(self.data))]
+                # Plot the bands
+                ax.plot(dates, bb.lines[0].array, label='BB Upper (Entry)', color='red', alpha=0.5)
+                ax.plot(dates, bb.lines[1].array, label='BB Middle (Entry)', color='blue', alpha=0.5)
+                ax.plot(dates, bb.lines[2].array, label='BB Lower (Entry)', color='green', alpha=0.5)
+                
+                # Fill between bands
+                ax.fill_between(
+                    dates,
+                    bb.lines[0].array,
+                    bb.lines[2].array,
+                    color='gray', alpha=0.1, label='BB Range (Entry)'
+                )
             
-            # Plot the bands
-            ax.plot(dates, bb.lines[0], label='Upper Band', color='red', alpha=0.5)
-            ax.plot(dates, bb.lines[1], label='Middle Band', color='blue', alpha=0.5)
-            ax.plot(dates, bb.lines[2], label='Lower Band', color='green', alpha=0.5)
+            # Then try to plot exit BB if it exists
+            if 'exit_bb' in self.indicators:
+                bb = self.indicators['exit_bb']
+                if not hasattr(bb, 'lines'):
+                    self.logger.warning("Exit Bollinger Bands indicator has invalid data structure")
+                    return
+                    
+                dates = [self.data.datetime.datetime(i) for i in range(len(self.data))]
+                
+                # Plot the bands
+                ax.plot(dates, bb.lines[0].array, label='BB Upper (Exit)', color='red', alpha=0.5, linestyle='--')
+                ax.plot(dates, bb.lines[1].array, label='BB Middle (Exit)', color='blue', alpha=0.5, linestyle='--')
+                ax.plot(dates, bb.lines[2].array, label='BB Lower (Exit)', color='green', alpha=0.5, linestyle='--')
+                
+                # Fill between bands
+                ax.fill_between(
+                    dates,
+                    bb.lines[0].array,
+                    bb.lines[2].array,
+                    color='gray', alpha=0.05, label='BB Range (Exit)'
+                )
             
             self._apply_style(ax)
         except Exception as e:
@@ -22,24 +54,4 @@ class BollingerBandsPlotter(BaseIndicatorPlotter):
 
     @property
     def subplot_type(self):
-        return 'price'
-
-    def plot(self, ax):
-        """Plot Bollinger Bands on the price axis"""
-        # Plot bands
-        ax.plot(self.data.datetime.array, self.indicators["bb_upper"].array, 
-                label='BB Upper', color='red', alpha=0.7, linestyle='--')
-        ax.plot(self.data.datetime.array, self.indicators["bb_middle"].array, 
-                label='BB Middle', color='blue', alpha=0.7)
-        ax.plot(self.data.datetime.array, self.indicators["bb_lower"].array, 
-                label='BB Lower', color='red', alpha=0.7, linestyle='--')
-        
-        # Fill between bands
-        ax.fill_between(
-            self.data.datetime.array,
-            self.indicators["bb_upper"].array,
-            self.indicators["bb_lower"].array,
-            color='gray', alpha=0.1, label='BB Range'
-        )
-        
-        self._apply_style(ax) 
+        return 'price' 
