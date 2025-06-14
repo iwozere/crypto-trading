@@ -136,29 +136,31 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             raise
 
     def should_enter(self) -> bool:
-        """
-        Entry logic: RSI oversold, volume above MA, and Supertrend bullish
-        """
-        if not all(hasattr(self.strategy, name) for name in [self.rsi_name, self.vol_ma_name, self.supertrend_name]):
+        """Check if we should enter a position"""
+        if self.rsi_name not in self.indicators or self.vol_ma_name not in self.indicators or self.supertrend_name not in self.indicators:
             return False
 
-        current_price = self.strategy.data.close[0]
-        current_volume = self.strategy.data.volume[0]
-        
-        rsi = getattr(self.strategy, self.rsi_name)
-        vol_ma = getattr(self.strategy, self.vol_ma_name)
-        supertrend = getattr(self.strategy, self.supertrend_name)
+        try:
+            # Get indicators from mixin's indicators dictionary
+            rsi = self.indicators[self.rsi_name]
+            vol_ma = self.indicators[self.vol_ma_name]
+            supertrend = self.indicators[self.supertrend_name]
+            current_price = self.strategy.data.close[0]
+            current_volume = self.strategy.data.volume[0]
 
-        # Check RSI
-        rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
+            # Check RSI
+            rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
 
-        # Check volume
-        volume_condition = current_volume > vol_ma[0]
+            # Check Volume
+            volume_condition = current_volume > vol_ma[0] * self.get_param("min_volume_ratio")
 
-        # Check Supertrend
-        supertrend_condition = supertrend.trend[0] == 1  # 1 indicates bullish trend
+            # Check Supertrend
+            supertrend_condition = supertrend[0] == 1  # 1 means uptrend
 
-        return_value = rsi_condition and volume_condition and supertrend_condition
-        if return_value:
-            logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}, Supertrend: {supertrend.trend[0]}")
-        return return_value
+            return_value = rsi_condition and volume_condition and supertrend_condition
+            if return_value:
+                logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}, Supertrend: {supertrend[0]}")
+            return return_value
+        except Exception as e:
+            logger.error(f"Error in should_enter: {e}")
+            return False

@@ -127,29 +127,34 @@ class MACrossoverExitMixin(BaseExitMixin):
         if not self.strategy.position:
             return False
 
-        if not all(hasattr(self.strategy, name) for name in [self.fast_ma_name, self.slow_ma_name]):
+        if self.fast_ma_name not in self.indicators or self.slow_ma_name not in self.indicators:
             return False
 
-        fast_ma = getattr(self.strategy, self.fast_ma_name)
-        slow_ma = getattr(self.strategy, self.slow_ma_name)
+        try:
+            # Get indicators from mixin's indicators dictionary
+            fast_ma = self.indicators[self.fast_ma_name]
+            slow_ma = self.indicators[self.slow_ma_name]
 
-        # Get current and previous values
-        fast_ma_current = fast_ma[0]
-        slow_ma_current = slow_ma[0]
-        fast_ma_prev = fast_ma[-1]
-        slow_ma_prev = slow_ma[-1]
+            # Get current and previous values
+            fast_ma_current = fast_ma[0]
+            slow_ma_current = slow_ma[0]
+            fast_ma_prev = fast_ma[-1]
+            slow_ma_prev = slow_ma[-1]
 
-        # Check for crossover based on position
-        if self.strategy.position.size > 0:  # Long position
-            return_value = fast_ma_prev > slow_ma_prev and fast_ma_current < slow_ma_current
-        else:  # Short position
-            return_value = fast_ma_prev < slow_ma_prev and fast_ma_current > slow_ma_current
+            # Check for crossover based on position
+            if self.strategy.position.size > 0:  # Long position
+                return_value = fast_ma_prev > slow_ma_prev and fast_ma_current < slow_ma_current
+            else:  # Short position
+                return_value = fast_ma_prev < slow_ma_prev and fast_ma_current > slow_ma_current
 
-        if return_value:
-            logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
-                       f"Fast MA: {fast_ma_current}, Slow MA: {slow_ma_current}, "
-                       f"Position: {'long' if self.strategy.position.size > 0 else 'short'}")
-        return return_value
+            if return_value:
+                logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
+                           f"Fast MA: {fast_ma_current}, Slow MA: {slow_ma_current}, "
+                           f"Position: {'long' if self.strategy.position.size > 0 else 'short'}")
+            return return_value
+        except Exception as e:
+            logger.error(f"Error in should_exit: {e}")
+            return False
 
     def get_exit_reason(self) -> str:
         """Get the reason for exiting the position"""

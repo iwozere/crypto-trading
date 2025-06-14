@@ -130,23 +130,27 @@ class RSIBBExitMixin(BaseExitMixin):
         if not self.strategy.position:
             return False
 
+        if self.rsi_name not in self.indicators or self.bb_name not in self.indicators:
+            return False
+
         try:
-            # Get indicators
-            rsi = getattr(self.strategy, self.rsi_name)
-            bb = getattr(self.strategy, self.bb_name)
+            # Get indicators from mixin's indicators dictionary
+            rsi = self.indicators[self.rsi_name]
+            bb = self.indicators[self.bb_name]
             current_price = self.strategy.data.close[0]
 
-            # Check RSI
+            # Check RSI condition
             rsi_condition = rsi[0] >= self.get_param("rsi_overbought")
 
-            # Check touching the Bollinger Bands (if enabled)
-            bb_condition = not self.get_param("use_bb_touch") or current_price >= bb.bb_upper[0] * 0.99  # Small tolerance
+            # Check Bollinger Bands condition if enabled
+            bb_condition = False
+            if self.get_param("use_bb_touch"):
+                bb_condition = current_price >= bb.bb_upper[0] * 0.99
 
-            return_value = rsi_condition and bb_condition
+            return_value = rsi_condition or bb_condition
             if return_value:
                 logger.debug(f"EXIT: Price: {current_price}, RSI: {rsi[0]}, "
-                           f"BB Upper: {bb.bb_upper[0]}, "
-                           f"RSI Overbought: {self.get_param('rsi_overbought')}")
+                           f"BB Upper: {bb.bb_upper[0]}, RSI Overbought: {self.get_param('rsi_overbought')}")
             return return_value
         except Exception as e:
             logger.error(f"Error in should_exit: {e}")
@@ -158,9 +162,9 @@ class RSIBBExitMixin(BaseExitMixin):
             return "unknown"
             
         try:
-            # Get indicators
-            rsi = getattr(self.strategy, self.rsi_name)
-            bb = getattr(self.strategy, self.bb_name)
+            # Get indicators from mixin's indicators dictionary
+            rsi = self.indicators[self.rsi_name]
+            bb = self.indicators[self.bb_name]
             
             # Check which condition triggered the exit
             if rsi[0] >= self.get_param("rsi_overbought"):

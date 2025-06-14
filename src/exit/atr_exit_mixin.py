@@ -91,18 +91,24 @@ class ATRExitMixin(BaseExitMixin):
 
     def should_exit(self) -> bool:
         """Check if we should exit a position"""
-        if not hasattr(self.strategy, self.atr_name):
+        if self.atr_name not in self.indicators:
             return False
-        atr = getattr(self.strategy, self.atr_name)
-        atr_val = atr[0] if hasattr(atr, '__getitem__') else atr.lines.atr[0]
-        current_price = self.strategy.data.close[0]
-        stop_loss = current_price - (atr_val * self.get_param("atr_multiplier"))
-        
-        return_value = current_price < stop_loss
-        if return_value:
-            logger.debug(f"EXIT: Price: {current_price}, Stop Loss: {stop_loss}, "
-                       f"ATR: {atr_val}, ATR Multiplier: {self.get_param('atr_multiplier')}")
-        return return_value
+
+        try:
+            # Get indicator from mixin's indicators dictionary
+            atr = self.indicators[self.atr_name]
+            atr_val = atr[0] if hasattr(atr, '__getitem__') else atr.lines.atr[0]
+            current_price = self.strategy.data.close[0]
+            stop_loss = current_price - (atr_val * self.get_param("atr_multiplier"))
+            
+            return_value = current_price < stop_loss
+            if return_value:
+                logger.debug(f"EXIT: Price: {current_price}, Stop Loss: {stop_loss}, "
+                           f"ATR: {atr_val}, ATR Multiplier: {self.get_param('atr_multiplier')}")
+            return return_value
+        except Exception as e:
+            logger.error(f"Error in should_exit: {e}")
+            return False
 
     def get_exit_reason(self) -> str:
         """Get the reason for exiting the position"""

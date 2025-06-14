@@ -106,41 +106,45 @@ class TrailingStopExitMixin(BaseExitMixin):
         if not self.strategy.position:
             return False
 
-        price = self.strategy.data.close[0]
-        entry_price = self.strategy.position.price
+        try:
+            price = self.strategy.data.close[0]
+            entry_price = self.strategy.position.price
 
-        # Update highest price if current price is higher
-        if price > self.highest_price:
-            self.highest_price = price
+            # Update highest price if current price is higher
+            if price > self.highest_price:
+                self.highest_price = price
 
-        # Calculate trailing stop level
-        if self.get_param("use_atr", False):
-            if not hasattr(self.strategy, self.atr_name):
-                return False
-            atr = getattr(self.strategy, self.atr_name)
-            atr_val = atr[0] if hasattr(atr, '__getitem__') else atr.lines.atr[0]
-            stop_level = self.highest_price - (atr_val * self.get_param("atr_multiplier"))
-        else:
-            stop_level = self.highest_price * (1 - self.get_param("trail_pct"))
-
-        # Check if trailing stop should be activated
-        if self.get_param("activation_pct", 0.0) > 0:
-            profit_pct = (price - entry_price) / entry_price
-            if profit_pct < self.get_param("activation_pct"):
-                return False
-
-        # Exit if price falls below trailing stop
-        return_value = price < stop_level
-        if return_value:
+            # Calculate trailing stop level
             if self.get_param("use_atr", False):
-                logger.debug(f"EXIT: Price: {price}, Entry: {entry_price}, "
-                           f"Highest: {self.highest_price}, Stop: {stop_level}, "
-                           f"ATR: {atr_val}, ATR Multiplier: {self.get_param('atr_multiplier')}")
+                if self.atr_name not in self.indicators:
+                    return False
+                atr = self.indicators[self.atr_name]
+                atr_val = atr[0] if hasattr(atr, '__getitem__') else atr.lines.atr[0]
+                stop_level = self.highest_price - (atr_val * self.get_param("atr_multiplier"))
             else:
-                logger.debug(f"EXIT: Price: {price}, Entry: {entry_price}, "
-                           f"Highest: {self.highest_price}, Stop: {stop_level}, "
-                           f"Trail %: {self.get_param('trail_pct')}")
-        return return_value
+                stop_level = self.highest_price * (1 - self.get_param("trail_pct"))
+
+            # Check if trailing stop should be activated
+            if self.get_param("activation_pct", 0.0) > 0:
+                profit_pct = (price - entry_price) / entry_price
+                if profit_pct < self.get_param("activation_pct"):
+                    return False
+
+            # Exit if price falls below trailing stop
+            return_value = price < stop_level
+            if return_value:
+                if self.get_param("use_atr", False):
+                    logger.debug(f"EXIT: Price: {price}, Entry: {entry_price}, "
+                               f"Highest: {self.highest_price}, Stop: {stop_level}, "
+                               f"ATR: {atr_val}, ATR Multiplier: {self.get_param('atr_multiplier')}")
+                else:
+                    logger.debug(f"EXIT: Price: {price}, Entry: {entry_price}, "
+                               f"Highest: {self.highest_price}, Stop: {stop_level}, "
+                               f"Trail %: {self.get_param('trail_pct')}")
+            return return_value
+        except Exception as e:
+            logger.error(f"Error in should_exit: {e}")
+            return False
 
     def get_exit_reason(self) -> str:
         """Get the reason for exiting the position"""

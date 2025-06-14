@@ -26,8 +26,8 @@ import backtrader as bt
 import numpy as np
 from src.entry.base_entry_mixin import BaseEntryMixin
 from src.indicator.talib_rsi import TALibRSI
-from src.indicator.ichimoku import Ichimoku
 from src.notification.logger import setup_logger
+from src.indicator.ichimoku import Ichimoku
 
 logger = setup_logger(__name__)
 
@@ -92,7 +92,7 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
 
                 # Use TA-Lib for Ichimoku
                 logger.debug("Creating TA-Lib Ichimoku indicator")
-                ichimoku = TALibIchimoku(
+                ichimoku = Ichimoku(
                     data,
                     tenkan_period=self.get_param("tenkan_period"),
                     kijun_period=self.get_param("kijun_period"),
@@ -125,30 +125,26 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             raise
 
     def should_enter(self) -> bool:
-        """
-        Entry logic: RSI oversold and Ichimoku Cloud conditions
-        """
-        if not all(hasattr(self.strategy, name) for name in [self.rsi_name, self.ichimoku_name]):
+        """Check if we should enter a position"""
+        if self.rsi_name not in self.indicators or self.ichimoku_name not in self.indicators:
             return False
 
-        current_price = self.strategy.data.close[0]
-        
-        rsi = getattr(self.strategy, self.rsi_name)
-        ichimoku = getattr(self.strategy, self.ichimoku_name)
+        try:
+            # Get indicators from mixin's indicators dictionary
+            rsi = self.indicators[self.rsi_name]
+            ichimoku = self.indicators[self.ichimoku_name]
+            current_price = self.strategy.data.close[0]
 
-        # Check RSI
-        rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
+            # Check RSI
+            rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
 
-        # Check Ichimoku Cloud conditions
-        # Price below cloud
-        below_cloud = current_price < ichimoku.senkou_span_a[0] and current_price < ichimoku.senkou_span_b[0]
-        
-        # Tenkan-sen crosses above Kijun-sen
-        tenkan_cross = ichimoku.tenkan_sen[0] > ichimoku.kijun_sen[0] and ichimoku.tenkan_sen[-1] <= ichimoku.kijun_sen[-1]
+            # Check Ichimoku Cloud
+            ichimoku_condition = current_price > ichimoku.senkou_span_a[0] and current_price > ichimoku.senkou_span_b[0]
 
-        return_value = rsi_condition and below_cloud and tenkan_cross
-        if return_value:
-            logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, "
-                       f"Tenkan: {ichimoku.tenkan_sen[0]}, Kijun: {ichimoku.kijun_sen[0]}, "
-                       f"Senkou A: {ichimoku.senkou_span_a[0]}, Senkou B: {ichimoku.senkou_span_b[0]}")
-        return return_value
+            return_value = rsi_condition and ichimoku_condition
+            if return_value:
+                logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, Ichimoku Span A: {ichimoku.senkou_span_a[0]}, Ichimoku Span B: {ichimoku.senkou_span_b[0]}")
+            return return_value
+        except Exception as e:
+            logger.error(f"Error in should_enter: {e}")
+            return False

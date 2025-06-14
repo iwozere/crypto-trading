@@ -126,13 +126,13 @@ class RSIBBEntryMixin(BaseEntryMixin):
 
     def should_enter(self) -> bool:
         """Check if we should enter a position"""
-        if not hasattr(self.strategy, self.rsi_name) or not hasattr(self.strategy, self.bb_name):
+        if self.rsi_name not in self.indicators or self.bb_name not in self.indicators:
             return False
 
         try:
-            # Get indicators
-            rsi = getattr(self.strategy, self.rsi_name)
-            bb = getattr(self.strategy, self.bb_name)
+            # Get indicators from mixin's indicators dictionary
+            rsi = self.indicators[self.rsi_name]
+            bb = self.indicators[self.bb_name]
             current_price = self.strategy.data.close[0]
 
             # Check RSI

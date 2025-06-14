@@ -146,29 +146,42 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             raise
 
     def should_enter(self) -> bool:
-        """
-        Entry logic: RSI oversold, Bollinger Bands conditions, and Volume confirmation
-        """
-        if not all(hasattr(self.strategy, name) for name in [self.rsi_name, self.bb_name, self.vol_ma_name]):
+        """Check if we should enter a position"""
+        if self.rsi_name not in self.indicators or self.bb_name not in self.indicators or self.vol_ma_name not in self.indicators:
             return False
 
-        current_price = self.strategy.data.close[0]
-        current_volume = self.strategy.data.volume[0]
-        
-        rsi = getattr(self.strategy, self.rsi_name)
-        bb = getattr(self.strategy, self.bb_name)
-        vol_ma = getattr(self.strategy, self.vol_ma_name)
+        try:
+            # Get indicators from mixin's indicators dictionary
+            rsi = self.indicators[self.rsi_name]
+            bb = self.indicators[self.bb_name]
+            vol_ma = self.indicators[self.vol_ma_name]
+            current_price = self.strategy.data.close[0]
+            current_volume = self.strategy.data.volume[0]
 
-        # Check RSI
-        rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
+            # Check RSI
+            rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
 
-        # Check Bollinger Bands
-        bb_condition = not self.get_param("use_bb_touch") or current_price <= bb.bb_lower[0] * 1.01  # Small tolerance
+            # Check Bollinger Bands
+            if self.strategy.use_talib:
+                # For TA-Lib BB, use bb_lower
+                if self.get_param("use_bb_touch"):
+                    bb_condition = current_price <= bb.bb_lower[0]
+                else:
+                    bb_condition = current_price < bb.bb_lower[0]
+            else:
+                # For Backtrader's native BB, use lines.bot
+                if self.get_param("use_bb_touch"):
+                    bb_condition = current_price <= bb.lines.bot[0]
+                else:
+                    bb_condition = current_price < bb.lines.bot[0]
 
-        # Check volume
-        volume_condition = current_volume > vol_ma[0]
+            # Check Volume
+            volume_condition = current_volume > vol_ma[0] * self.get_param("min_volume_ratio")
 
-        return_value = rsi_condition and bb_condition and volume_condition
-        if return_value:
-            logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, BB Lower: {bb.bb_lower[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}")
-        return return_value
+            return_value = rsi_condition and bb_condition and volume_condition
+            if return_value:
+                logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, BB Lower: {bb.bb_lower[0] if self.strategy.use_talib else bb.lines.bot[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}")
+            return return_value
+        except Exception as e:
+            logger.error(f"Error in should_enter: {e}")
+            return False

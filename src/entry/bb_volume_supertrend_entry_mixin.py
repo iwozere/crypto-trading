@@ -28,6 +28,7 @@ from typing import Any, Dict, Optional
 import backtrader as bt
 from src.entry.base_entry_mixin import BaseEntryMixin
 from src.indicator.talib_bb import TALibBB
+from src.indicator.talib_sma import TALibSMA
 from src.indicator.super_trend import SuperTrend
 from src.notification.logger import setup_logger
 
@@ -139,36 +140,40 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
 
     def should_enter(self) -> bool:
         """Check if we should enter a position"""
-        if not hasattr(self.strategy, self.bb_name) or \
-           not hasattr(self.strategy, self.volume_ma_name) or \
-           not hasattr(self.strategy, self.supertrend_name):
+        if self.bb_name not in self.indicators or self.volume_ma_name not in self.indicators or self.supertrend_name not in self.indicators:
             return False
 
         try:
-            # Get indicators
-            bb = getattr(self.strategy, self.bb_name)
-            volume_ma = getattr(self.strategy, self.volume_ma_name)
-            supertrend = getattr(self.strategy, self.supertrend_name)
-
-            # Check Bollinger Bands condition
+            # Get indicators from mixin's indicators dictionary
+            bb = self.indicators[self.bb_name]
+            vol_ma = self.indicators[self.volume_ma_name]
+            supertrend = self.indicators[self.supertrend_name]
             current_price = self.strategy.data.close[0]
-            bb_lower = bb.bb_lower[0]
-            if self.get_param("use_bb_touch"):
-                bb_condition = current_price <= bb_lower
-            else:
-                bb_condition = current_price < bb_lower
-
-            # Check Volume condition
             current_volume = self.strategy.data.volume[0]
-            volume_ma_value = volume_ma[0]
-            volume_condition = current_volume > volume_ma_value
 
-            # Check Supertrend condition (bullish trend)
-            supertrend_condition = supertrend.trend[0] == 1
+            # Check Bollinger Bands
+            if self.strategy.use_talib:
+                # For TA-Lib BB, use bb_lower
+                if self.get_param("use_bb_touch"):
+                    bb_condition = current_price <= bb.bb_lower[0]
+                else:
+                    bb_condition = current_price < bb.bb_lower[0]
+            else:
+                # For Backtrader's native BB, use lines.bot
+                if self.get_param("use_bb_touch"):
+                    bb_condition = current_price <= bb.lines.bot[0]
+                else:
+                    bb_condition = current_price < bb.lines.bot[0]
+
+            # Check Volume
+            volume_condition = current_volume > vol_ma[0] * self.get_param("min_volume_ratio")
+
+            # Check Supertrend
+            supertrend_condition = supertrend[0] == 1  # 1 means uptrend
 
             return_value = bb_condition and volume_condition and supertrend_condition
             if return_value:
-                logger.debug(f"ENTRY: BB lower: {bb_lower}, Volume: {current_volume}, Volume MA: {volume_ma_value}, Supertrend: {supertrend_condition}")
+                logger.debug(f"ENTRY: Price: {current_price}, BB Lower: {bb.bb_lower[0] if self.strategy.use_talib else bb.lines.bot[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}, Supertrend: {supertrend[0]}")
             return return_value
         except Exception as e:
             logger.error(f"Error in should_enter: {e}")
