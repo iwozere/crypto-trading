@@ -54,15 +54,17 @@ class ATRExitMixin(BaseExitMixin):
             use_talib = self.strategy.use_talib
 
             if use_talib:
-                setattr(self.strategy, self.atr_name, TALibATR(
+                atr = TALibATR(
                     data,
                     period=self.get_param("atr_period")
-                ))
+                )
+                self.register_indicator(self.atr_name, atr)
             else:
-                setattr(self.strategy, self.atr_name, bt.indicators.ATR(
+                atr = bt.indicators.ATR(
                     data,
                     period=self.get_param("atr_period")
-                ))
+                )
+                self.register_indicator(self.atr_name, atr)
         except Exception as e:
             logger.error(f"Error initializing indicators: {e}")
             raise

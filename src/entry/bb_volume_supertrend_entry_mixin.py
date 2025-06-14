@@ -71,30 +71,34 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
 
             # Initialize Bollinger Bands
             if use_talib:
-                setattr(self.strategy, self.bb_name, TALibBB(
+                bb = TALibBB(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
-                ))
+                )
+                self.register_indicator(self.bb_name, bb)
             else:
-                setattr(self.strategy, self.bb_name, bt.indicators.BollingerBands(
+                bb = bt.indicators.BollingerBands(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
-                ))
+                )
+                self.register_indicator(self.bb_name, bb)
 
             # Initialize Volume MA
-            setattr(self.strategy, self.volume_ma_name, bt.indicators.SMA(
+            vol_ma = bt.indicators.SMA(
                 data.volume,
                 period=self.get_param("volume_ma_period")
-            ))
+            )
+            self.register_indicator(self.volume_ma_name, vol_ma)
 
             # Initialize Supertrend
-            setattr(self.strategy, self.supertrend_name, SuperTrend(
+            supertrend = SuperTrend(
                 data,
                 period=self.get_param("supertrend_period"),
                 multiplier=self.get_param("supertrend_multiplier")
-            ))
+            )
+            self.register_indicator(self.supertrend_name, supertrend)
         except Exception as e:
             logger.error(f"Error initializing indicators: {e}")
             raise

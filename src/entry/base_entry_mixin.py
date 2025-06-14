@@ -240,3 +240,14 @@ class BaseEntryMixin(ABC):
             RSIBBMixin: Instance of the class
         """
         return cls(params=config)
+
+    def register_indicator(self, name: str, indicator: Any):
+        """
+        Register an indicator in the indicators dictionary
+        
+        Args:
+            name: Name of the indicator
+            indicator: The indicator instance
+        """
+        self.indicators[name] = indicator
+        setattr(self.strategy, name, indicator)

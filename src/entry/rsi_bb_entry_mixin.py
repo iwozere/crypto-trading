@@ -65,30 +65,34 @@ class RSIBBEntryMixin(BaseEntryMixin):
 
             if use_talib:
                 # Use TA-Lib for RSI
-                setattr(self.strategy, self.rsi_name, TALibRSI(
+                rsi = TALibRSI(
                     data,
                     period=self.get_param("rsi_period")
-                ))
+                )
+                self.register_indicator(self.rsi_name, rsi)
 
                 # Use TA-Lib for Bollinger Bands
-                setattr(self.strategy, self.bb_name, TALibBB(
+                bb = TALibBB(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
-                ))
+                )
+                self.register_indicator(self.bb_name, bb)
             else:
                 # Use Backtrader's native RSI
-                setattr(self.strategy, self.rsi_name, bt.indicators.RSI(
+                rsi = bt.indicators.RSI(
                     data,
                     period=self.get_param("rsi_period")
-                ))
+                )
+                self.register_indicator(self.rsi_name, rsi)
 
                 # Use Backtrader's native Bollinger Bands
-                setattr(self.strategy, self.bb_name, bt.indicators.BollingerBands(
+                bb = bt.indicators.BollingerBands(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
-                ))
+                )
+                self.register_indicator(self.bb_name, bb)
         except Exception as e:
             logger.error(f"Error initializing indicators: {e}")
             raise

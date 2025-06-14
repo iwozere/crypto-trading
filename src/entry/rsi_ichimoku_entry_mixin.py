@@ -65,24 +65,27 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             
             if use_talib:
                 # Use TA-Lib for RSI
-                setattr(self.strategy, self.rsi_name, TALibRSI(
+                rsi = TALibRSI(
                     data,
                     period=self.get_param("rsi_period")
-                ))
+                )
+                self.register_indicator(self.rsi_name, rsi)
             else:
                 # Use Backtrader's native RSI
-                setattr(self.strategy, self.rsi_name, bt.indicators.RSI(
+                rsi = bt.indicators.RSI(
                     data,
                     period=self.get_param("rsi_period")
-                ))
+                )
+                self.register_indicator(self.rsi_name, rsi)
             
             # Use our custom Ichimoku indicator
-            setattr(self.strategy, self.ichimoku_name, Ichimoku(
+            ichimoku = Ichimoku(
                 data,
                 tenkan=self.get_param("tenkan_period"),
                 kijun=self.get_param("kijun_period"),
                 senkou_span_b=self.get_param("senkou_span_b_period")
-            ))
+            )
+            self.register_indicator(self.ichimoku_name, ichimoku)
                 
         except Exception as e:
             logger.error(f"Error initializing indicators: {str(e)}")

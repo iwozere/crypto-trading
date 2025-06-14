@@ -71,41 +71,47 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             
             if use_talib:
                 # Use TA-Lib for RSI
-                setattr(self.strategy, self.rsi_name, TALibRSI(
+                rsi = TALibRSI(
                     data,
                     period=self.get_param("rsi_period")
-                ))
+                )
+                self.register_indicator(self.rsi_name, rsi)
                 
                 # Use TA-Lib for Bollinger Bands
-                setattr(self.strategy, self.bb_name, TALibBB(
+                bb = TALibBB(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
-                ))
+                )
+                self.register_indicator(self.bb_name, bb)
                 
                 # Use TA-Lib for Volume MA
-                setattr(self.strategy, self.vol_ma_name, TALibSMA(
+                vol_ma = TALibSMA(
                     data.volume,
                     period=self.get_param("volume_ma_period")
-                ))
+                )
+                self.register_indicator(self.vol_ma_name, vol_ma)
                 
             else:
                 # Use Backtrader's native indicators
-                setattr(self.strategy, self.rsi_name, bt.indicators.RSI(
+                rsi = bt.indicators.RSI(
                     data,
                     period=self.get_param("rsi_period")
-                ))
+                )
+                self.register_indicator(self.rsi_name, rsi)
                 
-                setattr(self.strategy, self.bb_name, bt.indicators.BollingerBands(
+                bb = bt.indicators.BollingerBands(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
-                ))
+                )
+                self.register_indicator(self.bb_name, bb)
                 
-                setattr(self.strategy, self.vol_ma_name, bt.indicators.SMA(
+                vol_ma = bt.indicators.SMA(
                     data.volume,
                     period=self.get_param("volume_ma_period")
-                ))
+                )
+                self.register_indicator(self.vol_ma_name, vol_ma)
                 
         except Exception as e:
             logger.error(f"Error initializing indicators: {str(e)}")

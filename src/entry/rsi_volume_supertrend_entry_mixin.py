@@ -71,35 +71,40 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             
             if use_talib:
                 # Use TA-Lib for RSI
-                setattr(self.strategy, self.rsi_name, TALibRSI(
+                rsi = TALibRSI(
                     data,
                     period=self.get_param("rsi_period")
-                ))
+                )
+                self.register_indicator(self.rsi_name, rsi)
                 
                 # Use TA-Lib for Volume MA
-                setattr(self.strategy, self.vol_ma_name, TALibSMA(
+                vol_ma = TALibSMA(
                     data.volume,
                     period=self.get_param("volume_ma_period")
-                ))
+                )
+                self.register_indicator(self.vol_ma_name, vol_ma)
             else:
                 # Use Backtrader's native RSI
-                setattr(self.strategy, self.rsi_name, bt.indicators.RSI(
+                rsi = bt.indicators.RSI(
                     data,
                     period=self.get_param("rsi_period")
-                ))
+                )
+                self.register_indicator(self.rsi_name, rsi)
                 
                 # Use Backtrader's native SMA for volume
-                setattr(self.strategy, self.vol_ma_name, bt.indicators.SMA(
+                vol_ma = bt.indicators.SMA(
                     data.volume,
                     period=self.get_param("volume_ma_period")
-                ))
+                )
+                self.register_indicator(self.vol_ma_name, vol_ma)
             
             # Supertrend is always initialized using Backtrader's native indicator
-            setattr(self.strategy, self.supertrend_name, bt.indicators.Supertrend(
+            supertrend = bt.indicators.Supertrend(
                 data,
                 period=self.get_param("supertrend_period"),
                 multiplier=self.get_param("supertrend_multiplier")
-            ))
+            )
+            self.register_indicator(self.supertrend_name, supertrend)
                 
         except Exception as e:
             logger.error(f"Error initializing indicators: {str(e)}")

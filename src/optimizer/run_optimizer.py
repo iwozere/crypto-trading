@@ -215,8 +215,7 @@ def save_plot(strategy, data_file, optimizer_config):
 
 def create_plotter(strategy, visualization_settings):
     """Create appropriate plotter based on strategy configuration"""
-    entry_name = strategy.entry_logic["name"]
-    exit_name = strategy.exit_logic["name"]
+    _logger.info(f"Creating plotter for strategy: {strategy}")
     
     # Create base plotter
     plotter = BasePlotter(

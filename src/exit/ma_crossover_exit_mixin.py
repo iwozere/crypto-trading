@@ -65,20 +65,28 @@ class MACrossoverExitMixin(BaseExitMixin):
 
             if use_talib:
                 if self.get_param("ma_type", "sma").lower() == "sma":
-                    setattr(self.strategy, self.fast_ma_name, TALibSMA(data, period=self.get_param("fast_period")))
-                    setattr(self.strategy, self.slow_ma_name, TALibSMA(data, period=self.get_param("slow_period")))
+                    fast_ma = TALibSMA(data, period=self.get_param("fast_period"))
+                    slow_ma = TALibSMA(data, period=self.get_param("slow_period"))
+                    self.register_indicator(self.fast_ma_name, fast_ma)
+                    self.register_indicator(self.slow_ma_name, slow_ma)
                 elif self.get_param("ma_type", "sma").lower() == "ema":
-                    setattr(self.strategy, self.fast_ma_name, TALibEMA(data, period=self.get_param("fast_period")))
-                    setattr(self.strategy, self.slow_ma_name, TALibEMA(data, period=self.get_param("slow_period")))
+                    fast_ma = TALibEMA(data, period=self.get_param("fast_period"))
+                    slow_ma = TALibEMA(data, period=self.get_param("slow_period"))
+                    self.register_indicator(self.fast_ma_name, fast_ma)
+                    self.register_indicator(self.slow_ma_name, slow_ma)
                 else:
                     raise ValueError(f"Unsupported MA type: {self.get_param('ma_type')}")
             else:
                 if self.get_param("ma_type", "sma").lower() == "sma":
-                    setattr(self.strategy, self.fast_ma_name, bt.indicators.SMA(data, period=self.get_param("fast_period")))
-                    setattr(self.strategy, self.slow_ma_name, bt.indicators.SMA(data, period=self.get_param("slow_period")))
+                    fast_ma = bt.indicators.SMA(data, period=self.get_param("fast_period"))
+                    slow_ma = bt.indicators.SMA(data, period=self.get_param("slow_period"))
+                    self.register_indicator(self.fast_ma_name, fast_ma)
+                    self.register_indicator(self.slow_ma_name, slow_ma)
                 elif self.get_param("ma_type", "sma").lower() == "ema":
-                    setattr(self.strategy, self.fast_ma_name, bt.indicators.EMA(data, period=self.get_param("fast_period")))
-                    setattr(self.strategy, self.slow_ma_name, bt.indicators.EMA(data, period=self.get_param("slow_period")))
+                    fast_ma = bt.indicators.EMA(data, period=self.get_param("fast_period"))
+                    slow_ma = bt.indicators.EMA(data, period=self.get_param("slow_period"))
+                    self.register_indicator(self.fast_ma_name, fast_ma)
+                    self.register_indicator(self.slow_ma_name, slow_ma)
                 else:
                     raise ValueError(f"Unsupported MA type: {self.get_param('ma_type')}")
 

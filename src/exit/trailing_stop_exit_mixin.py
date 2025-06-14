@@ -64,12 +64,15 @@ class TrailingStopExitMixin(BaseExitMixin):
             use_talib = self.strategy.use_talib
             try:
                 if use_talib:
-                    setattr(self.strategy, self.atr_name, TALibATR(data, period=14))
+                    atr = TALibATR(data, period=14)
+                    self.register_indicator(self.atr_name, atr)
                 else:
-                    setattr(self.strategy, self.atr_name, bt.indicators.ATR(data, period=14, plot=False))
+                    atr = bt.indicators.ATR(data, period=14, plot=False)
+                    self.register_indicator(self.atr_name, atr)
             except ImportError:
                 logger.warning("TA-Lib not available, using Backtrader's ATR")
-                setattr(self.strategy, self.atr_name, bt.indicators.ATR(data, period=14, plot=False))
+                atr = bt.indicators.ATR(data, period=14, plot=False)
+                self.register_indicator(self.atr_name, atr)
             except Exception as e:
                 logger.error(f"Error initializing ATR indicator: {str(e)}")
                 raise
