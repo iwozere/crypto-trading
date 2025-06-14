@@ -8,7 +8,7 @@ This module implements an entry strategy based on the combination of:
 
 The strategy enters a position when:
 1. RSI is oversold
-2. Price touches or crosses below the lower Bollinger Band
+2. Price is below the lower Bollinger Band
 3. Volume is above its moving average
 
 Parameters:
@@ -17,19 +17,18 @@ Parameters:
     bb_period (int): Period for Bollinger Bands calculation (default: 20)
     bb_stddev (float): Standard deviation multiplier for Bollinger Bands (default: 2.0)
     volume_ma_period (int): Period for volume moving average (default: 20)
-    use_bb_touch (bool): Whether to require price touching the lower band (default: True)
-    use_talib (bool): Whether to use TA-Lib for calculations (default: True)
+    use_bb_touch (bool): Whether to use Bollinger Band touch for entry (default: True)
 
-This strategy combines mean reversion (RSI + BB) with volume confirmation to identify potential reversal points.
+This strategy combines mean reversion (RSI and BB) with volume confirmation
+to identify potential reversal points with strong momentum.
 """
 
 from typing import Any, Dict, Optional
 
 import backtrader as bt
-import numpy as np
 from src.entry.base_entry_mixin import BaseEntryMixin
-from src.indicator.talib_rsi import TALibRSI
 from src.indicator.talib_bb import TALibBB
+from src.indicator.talib_rsi import TALibRSI
 from src.indicator.talib_sma import TALibSMA
 from src.notification.logger import setup_logger
 
@@ -58,7 +57,6 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             "bb_stddev": 2.0,
             "volume_ma_period": 20,
             "use_bb_touch": True,
-            "use_talib": True,
         }
 
     def _init_indicators(self):
@@ -68,7 +66,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             
         try:
             data = self.strategy.data
-            use_talib = self.get_param("use_talib", True)
+            use_talib = self.strategy.use_talib
             
             if use_talib:
                 # Use TA-Lib for RSI
@@ -114,7 +112,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
 
     def should_enter(self) -> bool:
         """
-        Entry logic: RSI oversold, price touching lower BB, and volume above MA
+        Entry logic: RSI oversold, Bollinger Bands conditions, and Volume confirmation
         """
         if not all(hasattr(self.strategy, name) for name in [self.rsi_name, self.bb_name, self.vol_ma_name]):
             return False
@@ -129,7 +127,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         # Check RSI
         rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
 
-        # Check touching the Bollinger Bands (if enabled)
+        # Check Bollinger Bands
         bb_condition = not self.get_param("use_bb_touch") or current_price <= bb.bb_lower[0] * 1.01  # Small tolerance
 
         # Check volume

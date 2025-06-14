@@ -61,7 +61,7 @@ class CustomOptimizer:
         self.initial_capital = self.optimizer_settings.get("initial_capital", 1000.0)
         self.commission = self.optimizer_settings.get("commission", 0.001)
         self.risk_free_rate = self.optimizer_settings.get("risk_free_rate", 0.01)
-        self.use_talib = self.optimizer_settings.get("use_talib", True)
+        self.use_talib = self.optimizer_settings.get("use_talib", False)
         self.output_dir = self.optimizer_settings.get("output_dir", "output")
         os.makedirs(self.output_dir, exist_ok=True)
 
@@ -129,6 +129,7 @@ class CustomOptimizer:
                 "name": self.exit_logic["name"],
                 "params": exit_logic_params,
             },
+            "use_talib": self.use_talib,
         }
 
         # Add strategy with parameters
@@ -175,24 +176,43 @@ class CustomOptimizer:
             "portfoliovolatility": strategy.analyzers.portfoliovolatility.get_analysis(),
             "sqn": strategy.analyzers.sqn.get_analysis(),
             "time_drawdown": strategy.analyzers.time_drawdown.get_analysis(),
-            #"time_return": strategy.analyzers.time_return.get_analysis(), - removed due to datetime objects
+            "time_return": strategy.analyzers.time_return.get_analysis(),
             "vwr": strategy.analyzers.vwr.get_analysis(),
         }
 
-        # Collect metrics
-        trades_analysis = strategy.analyzers.trades.get_analysis()
+        # Get trade analysis
+        trades_analysis = analyzers.get('trades', {})
+        
+        # Calculate metrics
         total_profit = trades_analysis.get("pnl", {}).get("net", {}).get("total", 0.0)
         total_commission = trades_analysis.get("pnl", {}).get("comm", {}).get("total", 0.0)
         total_profit_with_comm = total_profit - total_commission
 
+        # Convert trades to serializable format
+        serializable_trades = []
+        for trade in strategy.trades:
+            serializable_trade = {
+                'timestamp': trade.get('timestamp', datetime.datetime.now()).isoformat(),
+                'symbol': trade.get('symbol', ''),
+                'signal': trade.get('signal', ''),
+                'price': float(trade.get('price', 0.0)),
+                'size': float(trade.get('size', 0.0)),
+                'commission': float(trade.get('commission', 0.0)),
+                'reason': trade.get('reason', ''),
+                'raw_pnl': float(trade.get('raw_pnl', 0.0)),
+                'commission_pct': float(trade.get('commission_pct', 0.0)),
+                'pnl': float(trade.get('pnl', 0.0)),
+                'portfolio_value': float(trade.get('portfolio_value', 0.0))
+            }
+            serializable_trades.append(serializable_trade)
+
         output = {
             "best_params": strategy_params,
-            "total_profit": total_profit,
-            "total_profit_with_commission": total_profit_with_comm,
+            "total_profit": float(total_profit),
+            "total_profit_with_commission": float(total_profit_with_comm),
             "analyzers": analyzers,
-            "trades": strategy.trades,  # what is collected in notify_trade or in next()
+            "trades": serializable_trades
         }
 
-        # Convert to JSON and back to handle datetime serialization
         return strategy, output
 

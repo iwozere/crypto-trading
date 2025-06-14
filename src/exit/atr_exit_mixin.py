@@ -20,6 +20,7 @@ import numpy as np
 from src.exit.base_exit_mixin import BaseExitMixin
 from typing import Dict, Any, Optional
 from src.notification.logger import setup_logger
+from src.indicator.talib_atr import TALibATR
 
 logger = setup_logger()
 
@@ -41,39 +42,29 @@ class ATRExitMixin(BaseExitMixin):
         return {
             "atr_period": 14,
             "atr_multiplier": 2.0,
-            "use_talib": True,
         }
 
     def _init_indicators(self):
         """Initialize ATR indicator"""
         if not hasattr(self, 'strategy'):
             return
-        data = self.strategy.data
-        use_talib = self.get_param('use_talib', True)
+
         try:
+            data = self.strategy.data
+            use_talib = self.strategy.use_talib
+
             if use_talib:
-                try:
-                    import talib
-                    high_prices = np.array([data.high[i] for i in range(len(data))])
-                    low_prices = np.array([data.low[i] for i in range(len(data))])
-                    close_prices = np.array([data.close[i] for i in range(len(data))])
-                    atr_values = talib.ATR(high_prices, low_prices, close_prices, timeperiod=self.get_param("atr_period"))
-                    class TALibATR(bt.Indicator):
-                        lines = ('atr',)
-                        def __init__(self):
-                            self.addminperiod(self.p.period)
-                        def next(self):
-                            idx = len(self.data) - 1
-                            if idx < len(atr_values):
-                                self.lines.atr[0] = atr_values[idx]
-                    setattr(self.strategy, self.atr_name, TALibATR(data, period=self.get_param("atr_period")))
-                except ImportError:
-                    logger.warning("TA-Lib not available, using Backtrader's ATR")
-                    setattr(self.strategy, self.atr_name, bt.indicators.ATR(data, period=self.get_param("atr_period")))
+                setattr(self.strategy, self.atr_name, TALibATR(
+                    data,
+                    period=self.get_param("atr_period")
+                ))
             else:
-                setattr(self.strategy, self.atr_name, bt.indicators.ATR(data, period=self.get_param("atr_period")))
+                setattr(self.strategy, self.atr_name, bt.indicators.ATR(
+                    data,
+                    period=self.get_param("atr_period")
+                ))
         except Exception as e:
-            logger.error(f"Error initializing ATR indicator: {str(e)}")
+            logger.error(f"Error initializing indicators: {e}")
             raise
 
     def should_exit(self) -> bool:

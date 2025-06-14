@@ -1,9 +1,11 @@
 """
-TA-Lib SMA (Simple Moving Average) Indicator Wrapper for Backtrader
+TA-Lib Exponential Moving Average (EMA) Indicator
 
-This module provides a wrapper for TA-Lib's SMA calculation that integrates
-seamlessly with Backtrader's indicator framework. It uses TA-Lib's optimized
-SMA calculation while maintaining compatibility with Backtrader's line interface.
+This module implements Exponential Moving Average using TA-Lib for optimized calculation.
+EMA gives more weight to recent prices, making it more responsive to price changes than SMA.
+
+Parameters:
+    period (int): Period for moving average calculation
 """
 
 import backtrader as bt
@@ -11,37 +13,31 @@ import numpy as np
 import talib
 
 class TALibEMA(bt.Indicator):
-    """
-    TA-Lib EMA (Exponential Moving Average) Indicator Wrapper
+    """Exponential Moving Average indicator using TA-Lib"""
     
-    This indicator calculates the Exponential Moving Average using TA-Lib's optimized
-    implementation while maintaining compatibility with Backtrader's line interface.
+    lines = ('ema',)
+    params = (
+        ('period', 20),
+    )
     
-    Parameters:
-        period (int): Period for EMA calculation (default: 20)
-        data (bt.Data): The data source to calculate EMA on (default: None)
-    """
-    
-    lines = ('ema',)  # Single line for SMA values
-    params = (('period', 20),)  # Default period is 20
-        
-    def __init__(self, data=None):
+    def __init__(self):
         super(TALibEMA, self).__init__()
         
+        # Initialize line with 0
+        self.lines.ema = bt.LineNum(0)
+        
         # Convert data to numpy array
-        data_array = np.array(self.data.get(size=len(self.data)))
+        data_array = np.array([self.data[i] for i in range(len(self.data))])
         
         # Calculate EMA using TA-Lib
-        ema_values = talib.EMA(
+        ema = talib.EMA(
             data_array,
             timeperiod=self.p.period
         )
         
-        # Update the indicator's line with calculated values
-        for i, value in enumerate(ema_values):
-            if i < len(self.lines[0]):
-                self.lines[0][i] = value
-    
+        # Assign values to line
+        self.lines.ema.array = ema
+
     def next(self):
         """
         This method is called for each new bar and is required by Backtrader.

@@ -61,27 +61,26 @@ class MACrossoverExitMixin(BaseExitMixin):
 
         try:
             data = self.strategy.data
-            ma_type = self.get_param("ma_type", "sma").lower()
-            use_talib = self.get_param("use_talib", True)
+            use_talib = self.strategy.use_talib
 
             if use_talib:
-                if ma_type == "sma":
+                if self.get_param("ma_type", "sma").lower() == "sma":
                     setattr(self.strategy, self.fast_ma_name, TALibSMA(data, period=self.get_param("fast_period")))
                     setattr(self.strategy, self.slow_ma_name, TALibSMA(data, period=self.get_param("slow_period")))
-                elif ma_type == "ema":
+                elif self.get_param("ma_type", "sma").lower() == "ema":
                     setattr(self.strategy, self.fast_ma_name, TALibEMA(data, period=self.get_param("fast_period")))
                     setattr(self.strategy, self.slow_ma_name, TALibEMA(data, period=self.get_param("slow_period")))
                 else:
-                    raise ValueError(f"Unsupported MA type: {ma_type}")
+                    raise ValueError(f"Unsupported MA type: {self.get_param('ma_type')}")
             else:
-                if ma_type == "sma":
+                if self.get_param("ma_type", "sma").lower() == "sma":
                     setattr(self.strategy, self.fast_ma_name, bt.indicators.SMA(data, period=self.get_param("fast_period")))
                     setattr(self.strategy, self.slow_ma_name, bt.indicators.SMA(data, period=self.get_param("slow_period")))
-                elif ma_type == "ema":
+                elif self.get_param("ma_type", "sma").lower() == "ema":
                     setattr(self.strategy, self.fast_ma_name, bt.indicators.EMA(data, period=self.get_param("fast_period")))
                     setattr(self.strategy, self.slow_ma_name, bt.indicators.EMA(data, period=self.get_param("slow_period")))
                 else:
-                    raise ValueError(f"Unsupported MA type: {ma_type}")
+                    raise ValueError(f"Unsupported MA type: {self.get_param('ma_type')}")
 
         except Exception as e:
             logger.error(f"Error initializing indicators: {str(e)}")

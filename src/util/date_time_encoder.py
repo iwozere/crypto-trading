@@ -1,14 +1,22 @@
-import json
-from datetime import datetime
-from typing import Any
+"""
+DateTime Encoder Module
 
+This module provides a custom JSON encoder for handling datetime objects and other special types
+that are not directly JSON serializable.
+"""
+
+import json
+import datetime
 import numpy as np
 import pandas as pd
 
 
 class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj: Any) -> Any:
-        if isinstance(obj, (pd.Timestamp, datetime.datetime)):
+    """Custom JSON encoder for handling datetime objects and other special types."""
+
+    def default(self, obj):
+        """Convert special types to JSON serializable format."""
+        if isinstance(obj, (datetime.datetime, pd.Timestamp)):
             return obj.isoformat()
         if isinstance(obj, np.integer):
             return int(obj)

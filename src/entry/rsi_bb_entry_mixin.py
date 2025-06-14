@@ -7,7 +7,7 @@ This module implements an entry strategy based on the combination of:
 
 The strategy enters a position when:
 1. RSI is oversold
-2. Price touches or crosses below the lower Bollinger Band
+2. Price is below the lower Bollinger Band
 
 Parameters:
     rsi_period (int): Period for RSI calculation (default: 14)
@@ -15,7 +15,6 @@ Parameters:
     bb_period (int): Period for Bollinger Bands calculation (default: 20)
     bb_stddev (float): Standard deviation multiplier for Bollinger Bands (default: 2.0)
     use_bb_touch (bool): Whether to require price touching the lower band (default: True)
-    use_talib (bool): Whether to use TA-Lib for calculations (default: True)
 
 This strategy combines mean reversion (RSI + BB) to identify potential reversal points.
 """
@@ -23,7 +22,6 @@ This strategy combines mean reversion (RSI + BB) to identify potential reversal 
 from typing import Any, Dict, Optional
 
 import backtrader as bt
-import numpy as np
 from src.entry.base_entry_mixin import BaseEntryMixin
 from src.indicator.talib_rsi import TALibRSI
 from src.indicator.talib_bb import TALibBB
@@ -31,8 +29,9 @@ from src.notification.logger import setup_logger
 
 logger = setup_logger()
 
+
 class RSIBBEntryMixin(BaseEntryMixin):
-    """Entry mixin based on RSI and Bollinger Bands"""
+    """Entry mixin that combines RSI and Bollinger Bands for entry signals."""
 
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
@@ -53,65 +52,76 @@ class RSIBBEntryMixin(BaseEntryMixin):
             "bb_period": 20,
             "bb_stddev": 2.0,
             "use_bb_touch": True,
-            "use_talib": True,
         }
 
     def _init_indicators(self):
-        """Initialize RSI and Bollinger Bands indicators"""
+        """Initialize indicators"""
         if not hasattr(self, 'strategy'):
             return
-            
+
         try:
             data = self.strategy.data
-            use_talib = self.get_param("use_talib", True)
-            
+            use_talib = self.strategy.use_talib
+
             if use_talib:
                 # Use TA-Lib for RSI
                 setattr(self.strategy, self.rsi_name, TALibRSI(
                     data,
                     period=self.get_param("rsi_period")
                 ))
-                
+
                 # Use TA-Lib for Bollinger Bands
                 setattr(self.strategy, self.bb_name, TALibBB(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
                 ))
-                
             else:
-                # Use Backtrader's native indicators
+                # Use Backtrader's native RSI
                 setattr(self.strategy, self.rsi_name, bt.indicators.RSI(
                     data,
                     period=self.get_param("rsi_period")
                 ))
-                
+
+                # Use Backtrader's native Bollinger Bands
                 setattr(self.strategy, self.bb_name, bt.indicators.BollingerBands(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
                 ))
-                
         except Exception as e:
-            logger.error(f"Error initializing indicators: {str(e)}")
+            logger.error(f"Error initializing indicators: {e}")
             raise
 
     def should_enter(self) -> bool:
-        """
-        Entry logic: RSI oversold and price touching lower BB
-        """
-        if not all(hasattr(self.strategy, name) for name in [self.rsi_name, self.bb_name]):
+        """Check if we should enter a position"""
+        if not hasattr(self.strategy, self.rsi_name) or not hasattr(self.strategy, self.bb_name):
             return False
 
-        current_price = self.strategy.data.close[0]
-        
-        rsi = getattr(self.strategy, self.rsi_name)
-        bb = getattr(self.strategy, self.bb_name)
+        try:
+            # Get indicators
+            rsi = getattr(self.strategy, self.rsi_name)
+            bb = getattr(self.strategy, self.bb_name)
+            current_price = self.strategy.data.close[0]
 
-        # Check RSI
-        rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
+            # Check RSI
+            rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
 
-        # Check touching the Bollinger Bands (if enabled)
-        bb_condition = not self.get_param("use_bb_touch") or current_price <= bb.bb_lower[0] * 1.01  # Small tolerance
+            # Check Bollinger Bands
+            if self.strategy.use_talib:
+                # For TA-Lib BB, use bb_lower
+                if self.get_param("use_bb_touch"):
+                    bb_condition = current_price <= bb.bb_lower[0]
+                else:
+                    bb_condition = current_price < bb.bb_lower[0]
+            else:
+                # For Backtrader's native BB, use lines.bot
+                if self.get_param("use_bb_touch"):
+                    bb_condition = current_price <= bb.lines.bot[0]
+                else:
+                    bb_condition = current_price < bb.lines.bot[0]
 
-        return rsi_condition and bb_condition
+            return rsi_condition and bb_condition
+        except Exception as e:
+            logger.error(f"Error in should_enter: {e}")
+            return False

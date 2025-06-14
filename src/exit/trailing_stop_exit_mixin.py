@@ -27,6 +27,7 @@ import backtrader as bt
 from src.exit.base_exit_mixin import BaseExitMixin
 import numpy as np
 from src.notification.logger import setup_logger
+from src.indicator.talib_atr import TALibATR
 
 logger = setup_logger()
 
@@ -60,22 +61,9 @@ class TrailingStopExitMixin(BaseExitMixin):
             return
         data = self.strategy.data
         if self.get_param("use_atr", False):
-            use_talib = self.get_param("use_talib", False)
+            use_talib = self.strategy.use_talib
             try:
                 if use_talib:
-                    import talib
-                    high_prices = np.array([data.high[i] for i in range(len(data))])
-                    low_prices = np.array([data.low[i] for i in range(len(data))])
-                    close_prices = np.array([data.close[i] for i in range(len(data))])
-                    atr_values = talib.ATR(high_prices, low_prices, close_prices, timeperiod=14)
-                    class TALibATR(bt.Indicator):
-                        lines = ('atr',)
-                        def __init__(self):
-                            self.addminperiod(self.p.period)
-                        def next(self):
-                            idx = len(self.data) - 1
-                            if idx < len(atr_values):
-                                self.lines.atr[0] = atr_values[idx]
                     setattr(self.strategy, self.atr_name, TALibATR(data, period=14))
                 else:
                     setattr(self.strategy, self.atr_name, bt.indicators.ATR(data, period=14, plot=False))

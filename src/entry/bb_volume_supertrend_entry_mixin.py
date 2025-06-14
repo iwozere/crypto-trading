@@ -7,7 +7,7 @@ This module implements an entry strategy based on the combination of:
 3. Supertrend indicator
 
 The strategy enters a position when:
-1. Price touches or crosses below the lower Bollinger Band
+1. Price is below the lower Bollinger Band
 2. Volume is above its moving average
 3. Supertrend indicates a bullish trend
 
@@ -20,28 +20,28 @@ Parameters:
     use_bb_touch (bool): Whether to require price touching the lower band (default: True)
     use_talib (bool): Whether to use TA-Lib for calculations (default: True)
 
-This strategy combines mean reversion (BB) with volume confirmation and trend following (Supertrend)
-to identify potential reversal points with strong momentum.
+This strategy combines mean reversion (BB), volume confirmation, and trend following (Supertrend).
 """
 
 from typing import Any, Dict, Optional
 
 import backtrader as bt
-import numpy as np
 from src.entry.base_entry_mixin import BaseEntryMixin
 from src.indicator.talib_bb import TALibBB
-from src.indicator.talib_sma import TALibSMA
+from src.indicator.super_trend import SuperTrend
 from src.notification.logger import setup_logger
 
 logger = setup_logger()
 
+
 class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
-    """Entry mixin based on Bollinger Bands, Volume, and Supertrend"""
+    """Entry mixin that combines Bollinger Bands, Volume, and Supertrend for entry signals."""
 
     def __init__(self, params: Optional[Dict[str, Any]] = None):
+        """Initialize the mixin with parameters"""
         super().__init__(params)
         self.bb_name = 'entry_bb'
-        self.vol_ma_name = 'entry_vol_ma'
+        self.volume_ma_name = 'entry_volume_ma'
         self.supertrend_name = 'entry_supertrend'
 
     def get_required_params(self) -> list:
@@ -58,77 +58,73 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
             "supertrend_period": 10,
             "supertrend_multiplier": 3.0,
             "use_bb_touch": True,
-            "use_talib": True,
         }
 
     def _init_indicators(self):
-        """Initialize Bollinger Bands, Volume, and Supertrend indicators"""
+        """Initialize indicators"""
         if not hasattr(self, 'strategy'):
             return
-            
+
         try:
             data = self.strategy.data
-            use_talib = self.get_param("use_talib", True)
-            
+            use_talib = self.strategy.use_talib
+
+            # Initialize Bollinger Bands
             if use_talib:
-                # Use TA-Lib for Bollinger Bands
                 setattr(self.strategy, self.bb_name, TALibBB(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
                 ))
-                
-                # Use TA-Lib for Volume MA
-                setattr(self.strategy, self.vol_ma_name, TALibSMA(
-                    data.volume,
-                    period=self.get_param("volume_ma_period")
-                ))
             else:
-                # Use Backtrader's native Bollinger Bands
                 setattr(self.strategy, self.bb_name, bt.indicators.BollingerBands(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
                 ))
-                
-                # Use Backtrader's native SMA for volume
-                setattr(self.strategy, self.vol_ma_name, bt.indicators.SMA(
-                    data.volume,
-                    period=self.get_param("volume_ma_period")
-                ))
-            
-            # Supertrend is always initialized using Backtrader's native indicator
-            setattr(self.strategy, self.supertrend_name, bt.indicators.Supertrend(
+
+            # Initialize Volume MA
+            setattr(self.strategy, self.volume_ma_name, bt.indicators.SMA(
+                data.volume,
+                period=self.get_param("volume_ma_period")
+            ))
+
+            # Initialize Supertrend
+            setattr(self.strategy, self.supertrend_name, SuperTrend(
                 data,
                 period=self.get_param("supertrend_period"),
                 multiplier=self.get_param("supertrend_multiplier")
             ))
-                
         except Exception as e:
-            logger.error(f"Error initializing indicators: {str(e)}")
+            logger.error(f"Error initializing indicators: {e}")
             raise
 
     def should_enter(self) -> bool:
-        """
-        Entry logic: Price touching lower BB, volume above MA, and Supertrend bullish
-        """
-        if not all(hasattr(self.strategy, name) for name in [self.bb_name, self.vol_ma_name, self.supertrend_name]):
+        """Check if we should enter a position"""
+        if not hasattr(self.strategy, self.bb_name) or \
+           not hasattr(self.strategy, self.volume_ma_name) or \
+           not hasattr(self.strategy, self.supertrend_name):
             return False
 
-        current_price = self.strategy.data.close[0]
-        current_volume = self.strategy.data.volume[0]
-        
-        bb = getattr(self.strategy, self.bb_name)
-        vol_ma = getattr(self.strategy, self.vol_ma_name)
-        supertrend = getattr(self.strategy, self.supertrend_name)
+        try:
+            # Get indicators
+            bb = getattr(self.strategy, self.bb_name)
+            volume_ma = getattr(self.strategy, self.volume_ma_name)
+            supertrend = getattr(self.strategy, self.supertrend_name)
 
-        # Check Bollinger Bands
-        bb_condition = not self.get_param("use_bb_touch") or current_price <= bb.bb_lower[0] * 1.01  # Small tolerance
+            # Check Bollinger Bands condition
+            if self.get_param("use_bb_touch"):
+                bb_condition = self.strategy.data.close[0] <= bb.bb_lower[0]
+            else:
+                bb_condition = self.strategy.data.close[0] < bb.bb_lower[0]
 
-        # Check volume
-        volume_condition = current_volume > vol_ma[0]
+            # Check Volume condition
+            volume_condition = self.strategy.data.volume[0] > volume_ma[0]
 
-        # Check Supertrend
-        supertrend_condition = supertrend.trend[0] == 1  # 1 indicates bullish trend
+            # Check Supertrend condition (bullish trend)
+            supertrend_condition = supertrend.trend[0] == 1
 
-        return bb_condition and volume_condition and supertrend_condition
+            return bb_condition and volume_condition and supertrend_condition
+        except Exception as e:
+            logger.error(f"Error in should_enter: {e}")
+            return False

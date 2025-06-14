@@ -17,7 +17,6 @@ Parameters:
     volume_ma_period (int): Period for volume moving average (default: 20)
     supertrend_period (int): Period for Supertrend calculation (default: 10)
     supertrend_multiplier (float): Multiplier for Supertrend ATR (default: 3.0)
-    use_talib (bool): Whether to use TA-Lib for calculations (default: True)
 
 This strategy combines mean reversion (RSI) with volume confirmation and trend following (Supertrend)
 to identify potential reversal points with strong momentum.
@@ -59,7 +58,6 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             "min_volume_ratio": 1.5,
             "supertrend_period": 10,
             "supertrend_multiplier": 3.0,
-            "use_talib": True,
         }
 
     def _init_indicators(self):
@@ -69,7 +67,7 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             
         try:
             data = self.strategy.data
-            use_talib = self.get_param("use_talib", True)
+            use_talib = self.strategy.use_talib
             
             if use_talib:
                 # Use TA-Lib for RSI

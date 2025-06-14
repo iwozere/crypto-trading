@@ -1,32 +1,25 @@
 """
-TA-Lib Bollinger Bands Indicator Wrapper
+TA-Lib Bollinger Bands Indicator
 
-This module provides a Backtrader-compatible wrapper for TA-Lib's Bollinger Bands indicator.
-It allows using TA-Lib's optimized BB calculation while maintaining Backtrader's
-indicator interface for compatibility with other components.
+This module implements Bollinger Bands using TA-Lib for optimized calculation.
+Bollinger Bands consist of:
+- Middle Band: N-period simple moving average (SMA)
+- Upper Band: Middle Band + (K * N-period standard deviation)
+- Lower Band: Middle Band - (K * N-period standard deviation)
+
+Parameters:
+    period (int): Period for moving average and standard deviation calculation
+    devfactor (float): Number of standard deviations for the bands
 """
 
 import backtrader as bt
 import numpy as np
 import talib
 
-
 class TALibBB(bt.Indicator):
-    """
-    TA-Lib Bollinger Bands indicator wrapper for Backtrader.
+    """Bollinger Bands indicator using TA-Lib"""
     
-    This indicator uses TA-Lib's BB calculation for better performance while
-    maintaining Backtrader's indicator interface.
-    
-    Parameters:
-    -----------
-    period : int
-        The period for moving average calculation (default: 20)
-    devfactor : float
-        The number of standard deviations for the bands (default: 2.0)
-    """
-    
-    lines = ('bb_upper', 'bb_middle', 'bb_lower',)
+    lines = ('bb_upper', 'bb_middle', 'bb_lower')
     params = (
         ('period', 20),
         ('devfactor', 2.0),
@@ -34,22 +27,31 @@ class TALibBB(bt.Indicator):
     
     def __init__(self):
         super(TALibBB, self).__init__()
-        self.lines.bb_upper = bt.LineNum()
-        self.lines.bb_middle = bt.LineNum()
-        self.lines.bb_lower = bt.LineNum()
         
-        # Calculate BB for all available data
+        # Initialize lines with 0
+        self.lines.bb_upper = bt.LineNum(0)
+        self.lines.bb_middle = bt.LineNum(0)
+        self.lines.bb_lower = bt.LineNum(0)
+        
+        # Convert data to numpy array
         close_prices = np.array([self.data.close[i] for i in range(len(self.data))])
-        self.bb_upper, self.bb_middle, self.bb_lower = talib.BBANDS(
+        
+        # Calculate Bollinger Bands using TA-Lib
+        upper, middle, lower = talib.BBANDS(
             close_prices,
             timeperiod=self.p.period,
             nbdevup=self.p.devfactor,
             nbdevdn=self.p.devfactor,
             matype=0  # Simple Moving Average
         )
-    
+        
+        # Assign values to lines
+        self.lines.bb_upper.array = upper
+        self.lines.bb_middle.array = middle
+        self.lines.bb_lower.array = lower
+
     def next(self):
         """Update the indicator values for the current bar"""
-        self.lines.bb_upper[0] = self.bb_upper[len(self) - 1]
-        self.lines.bb_middle[0] = self.bb_middle[len(self) - 1]
-        self.lines.bb_lower[0] = self.bb_lower[len(self) - 1] 
+        self.lines.bb_upper[0] = self.lines.bb_upper.array[len(self) - 1]
+        self.lines.bb_middle[0] = self.lines.bb_middle.array[len(self) - 1]
+        self.lines.bb_lower[0] = self.lines.bb_lower.array[len(self) - 1] 

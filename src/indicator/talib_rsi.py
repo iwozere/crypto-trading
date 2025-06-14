@@ -25,16 +25,21 @@ class TALibRSI(bt.Indicator):
     """
     
     lines = ('rsi',)
-    params = (('period', 14),)
+    params = (
+        ('period', 14),
+    )
     
     def __init__(self):
         super(TALibRSI, self).__init__()
-        self.lines.rsi = bt.LineNum()
+        self.lines.rsi = bt.LineNum(0)  # Initialize with 0
         
         # Calculate RSI for all available data
         close_prices = np.array([self.data.close[i] for i in range(len(self.data))])
-        self.rsi_values = talib.RSI(close_prices, timeperiod=self.p.period)
+        self.rsi_values = talib.RSI(
+            close_prices,
+            timeperiod=self.p.period
+        )
     
     def next(self):
-        """Update the indicator value for the current bar"""
+        """Update the indicator values for the current bar"""
         self.lines.rsi[0] = self.rsi_values[len(self) - 1] 

@@ -18,6 +18,7 @@ from src.entry.entry_mixin_factory import (get_entry_mixin,
 from src.exit.exit_mixin_factory import (get_exit_mixin,
                                          get_exit_mixin_from_config,
                                          EXIT_MIXIN_REGISTRY)
+from src.notification.logger import _logger, log_exception
 
 
 class CustomStrategy(bt.Strategy):
@@ -31,92 +32,98 @@ class CustomStrategy(bt.Strategy):
         - entry_logic: Entry mixin configuration
         - exit_logic: Exit mixin configuration
         - position_size: Position size as fraction of capital (default: 0.1)
-        - use_talib: Whether to use TA-Lib for indicator calculations (default: False)
+        - use_talib: Whether to use TA-Lib for indicator calculations
     """
 
     params = (
         ("strategy_config", None),  # Strategy configuration
         ("position_size", 1.0),     # Default position size
-        ("use_talib", True),        # Whether to use TA-Lib
     )
 
     def __init__(self):
         """Initialize strategy with configuration"""
-        self.strategy_config = self.p.strategy_config
-        self.entry_logic = self.strategy_config["entry_logic"]
-        self.exit_logic = self.strategy_config["exit_logic"]
-        
-        # Initialize entry and exit mixins
-        self.entry_mixin = self._create_entry_mixin()
-        self.exit_mixin = self._create_exit_mixin()
-        
-        # Initialize trade tracking
-        self.trades = []
-        self.has_position = False
-        
-        # Initialize equity curve tracking
-        self.equity_curve = []
-        self.equity_dates = []
+        try:
+            super().__init__()  # Call parent's __init__ first
+            
+            # Initialize basic attributes
+            self._use_talib = False  # Default value
+            self.entry_logic = None
+            self.exit_logic = None
+            
+            # Initialize trade tracking
+            self.trades = []
+            self.has_position = False
+            
+            # Initialize equity curve tracking
+            self.equity_curve = []
+            self.equity_dates = []
+            
+            # Initialize entry and exit mixins
+            self.entry_mixin = None
+            self.exit_mixin = None
+            
+            # Set configuration from params
+            if self.p.strategy_config:
+                self._use_talib = self.p.strategy_config.get("use_talib", False)
+                self.entry_logic = self.p.strategy_config.get("entry_logic")
+                self.exit_logic = self.p.strategy_config.get("exit_logic")
+            
+            # Create mixins
+            if self.entry_logic:
+                entry_mixin_class = ENTRY_MIXIN_REGISTRY[self.entry_logic["name"]]
+                if entry_mixin_class:
+                    self.entry_mixin = entry_mixin_class(params=self.entry_logic["params"])
+                    self.entry_mixin.strategy = self
+                    self.entry_mixin._init_indicators()
+            
+            if self.exit_logic:
+                exit_mixin_class = EXIT_MIXIN_REGISTRY[self.exit_logic["name"]]
+                if exit_mixin_class:
+                    self.exit_mixin = exit_mixin_class(params=self.exit_logic["params"])
+                    self.exit_mixin.strategy = self
+                    self.exit_mixin._init_indicators()
+        except Exception as e:
+            log_exception(_logger)
+            raise
 
-    def _create_entry_mixin(self):
-        """Create entry mixin based on configuration"""
-        if not self.entry_logic:
-            return None
-            
-        entry_mixin_class = ENTRY_MIXIN_REGISTRY[self.entry_logic["name"]]
-        if entry_mixin_class:
-            # Get default parameters for the entry mixin
-            default_params = entry_mixin_class.get_default_params()
-            
-            # Create entry mixin with parameters
-            entry_mixin = entry_mixin_class(params=default_params)
-            entry_mixin.strategy = self
-            entry_mixin._init_indicators()
-            return entry_mixin
-        return None
-
-    def _create_exit_mixin(self):
-        """Create exit mixin based on configuration"""
-        if not self.exit_logic:
-            return None
-            
-        exit_mixin_class = EXIT_MIXIN_REGISTRY[self.exit_logic["name"]]
-        if exit_mixin_class:
-            # Get default parameters for the exit mixin
-            default_params = exit_mixin_class.get_default_params()
-            
-            # Create exit mixin with parameters
-            exit_mixin = exit_mixin_class(params=default_params)
-            exit_mixin.strategy = self
-            exit_mixin._init_indicators()
-            return exit_mixin
-        return None
+    @property
+    def use_talib(self):
+        """Get whether to use TA-Lib"""
+        return self._use_talib
 
     def next(self):
         """Main strategy logic"""
-        # Track equity curve
-        self.equity_curve.append(self.broker.getvalue())
-        self.equity_dates.append(self.data.datetime.datetime())
-        
-        if not self.has_position and self.entry_mixin.should_enter():
-            self.buy(size=self.p.position_size)
-            self.has_position = True
-        elif self.has_position and self.exit_mixin.should_exit():
-            self.sell(size=self.p.position_size)
-            self.has_position = False
+        try:
+            # Track equity curve
+            self.equity_curve.append(self.broker.getvalue())
+            self.equity_dates.append(self.data.datetime.datetime())
+            
+            if not self.has_position and self.entry_mixin and self.entry_mixin.should_enter():
+                self.buy(size=self.p.position_size)
+                self.has_position = True
+            elif self.has_position and self.exit_mixin and self.exit_mixin.should_exit():
+                self.sell(size=self.p.position_size)
+                self.has_position = False
+        except Exception as e:
+            log_exception(_logger)
+            raise
 
     def notify_trade(self, trade):
         """Record trade information"""
-        if trade.isclosed:
-            self.trades.append({
-                'entry_date': trade.dtopen,
-                'entry_price': trade.price,
-                'exit_date': trade.dtclose,
-                'exit_price': trade.price,  # Use actual exit price, not PnL
-                'pnl': trade.pnl,
-                'size': trade.size
-            })
-            self.has_position = False
+        try:
+            if trade.isclosed:
+                self.trades.append({
+                    'entry_date': trade.dtopen,
+                    'entry_price': trade.price,
+                    'exit_date': trade.dtclose,
+                    'exit_price': trade.price,  # Use actual exit price, not PnL
+                    'pnl': trade.pnl,
+                    'size': trade.size
+                })
+                self.has_position = False
+        except Exception as e:
+            log_exception(_logger)
+            raise
 
 
 # Example of creating a strategy with a new approach

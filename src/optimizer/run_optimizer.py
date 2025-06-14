@@ -74,8 +74,8 @@ def prepare_data(data_file):
     return data
 
 
-def get_result_filename(data_file, entry_logic_name, exit_logic_name, suffix=""):
-    """Generate a standardized filename for results and plots"""
+def get_result_filename(data_file, entry_logic_name=None, exit_logic_name=None, suffix=""):
+    """Generate a standardized filename for results"""
     # Extract symbol, interval, and dates from data_file
     symbol = "SYMBOL"
     interval = "INTERVAL"
@@ -91,7 +91,13 @@ def get_result_filename(data_file, entry_logic_name, exit_logic_name, suffix="")
             end_date = parts[3]
 
     timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
-    return f"{symbol}_{interval}_{start_date}_{end_date}_{entry_logic_name}_{exit_logic_name}_{timestamp}{suffix}"
+    
+    # Include strategy names in filename if provided
+    strategy_part = ""
+    if entry_logic_name and exit_logic_name:
+        strategy_part = f"_{entry_logic_name}_{exit_logic_name}"
+    
+    return f"{symbol}_{interval}_{start_date}_{end_date}{strategy_part}_{timestamp}{suffix}"
 
 
 def save_results(results, data_file):

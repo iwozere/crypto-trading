@@ -7,6 +7,7 @@ This module sets up application-wide logging configuration and exposes a logger 
 import logging
 import os
 import sys
+import traceback
 from logging.handlers import RotatingFileHandler
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -40,7 +41,7 @@ LOG_CONFIG = {
     "version": 1,
     "formatters": {
         "detailed": {
-            "format": "%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s"
+            "format": "%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s\n%(exc_info)s"
         },
         "standard": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
     },
@@ -94,6 +95,14 @@ logging.config.dictConfig(LOG_CONFIG)
 _logger = logging.getLogger()
 
 
+def log_exception(logger, exc_info=None):
+    """Log an exception with full stack trace"""
+    if exc_info is None:
+        exc_info = sys.exc_info()
+    logger.error("Exception occurred:", exc_info=exc_info)
+    logger.error("Full traceback:\n" + "".join(traceback.format_exception(*exc_info)))
+
+
 #
 # Set up the logger for the application
 # Usage: setup_logger('live_trader')
@@ -115,9 +124,9 @@ def setup_logger():
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
 
-    # Create formatter
+    # Create formatter with stack trace support
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s\n%(exc_info)s"
     )
     file_handler.setFormatter(formatter)
     console_handler.setFormatter(formatter)

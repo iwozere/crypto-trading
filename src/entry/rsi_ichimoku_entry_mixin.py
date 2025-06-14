@@ -16,8 +16,6 @@ Parameters:
     tenkan_period (int): Period for Tenkan-sen calculation (default: 9)
     kijun_period (int): Period for Kijun-sen calculation (default: 26)
     senkou_span_b_period (int): Period for Senkou Span B calculation (default: 52)
-    displacement (int): Displacement for Ichimoku Cloud (default: 26)
-    use_talib (bool): Whether to use TA-Lib for calculations (default: True)
 
 This strategy combines mean reversion (RSI) with trend following (Ichimoku) to identify potential reversal points.
 """
@@ -28,6 +26,7 @@ import backtrader as bt
 import numpy as np
 from src.entry.base_entry_mixin import BaseEntryMixin
 from src.indicator.talib_rsi import TALibRSI
+from src.indicator.ichimoku import Ichimoku
 from src.notification.logger import setup_logger
 
 logger = setup_logger()
@@ -53,8 +52,6 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             "tenkan_period": 9,
             "kijun_period": 26,
             "senkou_span_b_period": 52,
-            "displacement": 26,
-            "use_talib": True,
         }
 
     def _init_indicators(self):
@@ -64,7 +61,7 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             
         try:
             data = self.strategy.data
-            use_talib = self.get_param("use_talib", True)
+            use_talib = self.strategy.use_talib
             
             if use_talib:
                 # Use TA-Lib for RSI
@@ -79,13 +76,12 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
                     period=self.get_param("rsi_period")
                 ))
             
-            # Ichimoku Cloud is always initialized using Backtrader's native indicator
-            setattr(self.strategy, self.ichimoku_name, bt.indicators.Ichimoku(
+            # Use our custom Ichimoku indicator
+            setattr(self.strategy, self.ichimoku_name, Ichimoku(
                 data,
-                tenkan_period=self.get_param("tenkan_period"),
-                kijun_period=self.get_param("kijun_period"),
-                senkou_span_b_period=self.get_param("senkou_span_b_period"),
-                displacement=self.get_param("displacement")
+                tenkan=self.get_param("tenkan_period"),
+                kijun=self.get_param("kijun_period"),
+                senkou_span_b=self.get_param("senkou_span_b_period")
             ))
                 
         except Exception as e:
