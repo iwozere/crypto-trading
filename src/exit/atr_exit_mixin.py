@@ -19,9 +19,9 @@ import backtrader as bt
 import numpy as np
 from src.exit.base_exit_mixin import BaseExitMixin
 from typing import Dict, Any, Optional
-from src.notification.logger import get_logger
+from src.notification.logger import setup_logger
 
-logger = get_logger(__name__)
+logger = setup_logger()
 
 class ATRExitMixin(BaseExitMixin):
     """Exit mixin based on ATR"""

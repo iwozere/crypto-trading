@@ -20,7 +20,6 @@ calendar day calculations based on the data feed's timeframe.
 
 from typing import Any, Dict, Optional
 
-import backtrader as bt
 from src.exit.base_exit_mixin import BaseExitMixin
 
 

@@ -27,9 +27,9 @@ import numpy as np
 from src.entry.base_entry_mixin import BaseEntryMixin
 from src.indicator.talib_rsi import TALibRSI
 from src.indicator.talib_bb import TALibBB
-from src.notification.logger import get_logger
+from src.notification.logger import setup_logger
 
-logger = get_logger(__name__)
+logger = setup_logger()
 
 class RSIBBEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI and Bollinger Bands"""

@@ -29,9 +29,9 @@ import talib
 
 from src.indicator.talib_rsi import TALibRSI
 from src.indicator.talib_bb import TALibBB
-from src.notification.logger import get_logger
+from src.notification.logger import setup_logger
 
-logger = get_logger(__name__)
+logger = setup_logger()
 
 
 class RSIBBExitMixin(BaseExitMixin):

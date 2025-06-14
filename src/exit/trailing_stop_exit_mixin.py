@@ -26,9 +26,9 @@ from typing import Any, Dict, Optional
 import backtrader as bt
 from src.exit.base_exit_mixin import BaseExitMixin
 import numpy as np
-from src.notification.logger import get_logger
+from src.notification.logger import setup_logger
 
-logger = get_logger(__name__)
+logger = setup_logger()
 
 class TrailingStopExitMixin(BaseExitMixin):
     """Exit mixin based on trailing stop"""

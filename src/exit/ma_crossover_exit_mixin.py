@@ -26,9 +26,9 @@ import numpy as np
 from src.exit.base_exit_mixin import BaseExitMixin
 from src.indicator.talib_sma import TALibSMA
 from src.indicator.talib_ema import TALibEMA
-from src.notification.logger import get_logger
+from src.notification.logger import setup_logger
 
-logger = get_logger(__name__)
+logger = setup_logger()
 
 class MACrossoverExitMixin(BaseExitMixin):
     """Exit mixin based on Moving Average crossovers"""

@@ -17,12 +17,10 @@ Parameters:
     bb_period (int): Period for Bollinger Bands calculation (default: 20)
     bb_stddev (float): Standard deviation multiplier for Bollinger Bands (default: 2.0)
     volume_ma_period (int): Period for volume moving average (default: 20)
-    min_volume_ratio (float): Minimum volume ratio compared to MA (default: 1.5)
     use_bb_touch (bool): Whether to require price touching the lower band (default: True)
     use_talib (bool): Whether to use TA-Lib for calculations (default: True)
 
-This strategy combines mean reversion (RSI + BB) with volume confirmation
-to identify potential reversal points with strong momentum.
+This strategy combines mean reversion (RSI + BB) with volume confirmation to identify potential reversal points.
 """
 
 from typing import Any, Dict, Optional
@@ -33,9 +31,9 @@ from src.entry.base_entry_mixin import BaseEntryMixin
 from src.indicator.talib_rsi import TALibRSI
 from src.indicator.talib_bb import TALibBB
 from src.indicator.talib_sma import TALibSMA
-from src.notification.logger import get_logger
+from src.notification.logger import setup_logger
 
-logger = get_logger(__name__)
+logger = setup_logger()
 
 class RSIBBVolumeEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI, Bollinger Bands, and Volume"""
@@ -44,7 +42,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         super().__init__(params)
         self.rsi_name = 'entry_rsi'
         self.bb_name = 'entry_bb'
-        self.volume_ma_name = 'entry_volume_ma'
+        self.vol_ma_name = 'entry_vol_ma'
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -59,7 +57,6 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             "bb_period": 20,
             "bb_stddev": 2.0,
             "volume_ma_period": 20,
-            "min_volume_ratio": 1.5,
             "use_bb_touch": True,
             "use_talib": True,
         }
@@ -88,7 +85,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
                 ))
                 
                 # Use TA-Lib for Volume MA
-                setattr(self.strategy, self.volume_ma_name, TALibSMA(
+                setattr(self.strategy, self.vol_ma_name, TALibSMA(
                     data.volume,
                     period=self.get_param("volume_ma_period")
                 ))
@@ -106,7 +103,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
                     devfactor=self.get_param("bb_stddev")
                 ))
                 
-                setattr(self.strategy, self.volume_ma_name, bt.indicators.SMA(
+                setattr(self.strategy, self.vol_ma_name, bt.indicators.SMA(
                     data.volume,
                     period=self.get_param("volume_ma_period")
                 ))
@@ -119,7 +116,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         """
         Entry logic: RSI oversold, price touching lower BB, and volume above MA
         """
-        if not all(hasattr(self.strategy, name) for name in [self.rsi_name, self.bb_name, self.volume_ma_name]):
+        if not all(hasattr(self.strategy, name) for name in [self.rsi_name, self.bb_name, self.vol_ma_name]):
             return False
 
         current_price = self.strategy.data.close[0]
@@ -127,7 +124,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         
         rsi = getattr(self.strategy, self.rsi_name)
         bb = getattr(self.strategy, self.bb_name)
-        vol_ma = getattr(self.strategy, self.volume_ma_name)
+        vol_ma = getattr(self.strategy, self.vol_ma_name)
 
         # Check RSI
         rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
@@ -136,6 +133,6 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         bb_condition = not self.get_param("use_bb_touch") or current_price <= bb.bb_lower[0] * 1.01  # Small tolerance
 
         # Check volume
-        volume_ok = current_volume >= vol_ma[0] * self.get_param("min_volume_ratio")
+        volume_condition = current_volume > vol_ma[0]
 
-        return rsi_condition and bb_condition and volume_ok
+        return rsi_condition and bb_condition and volume_condition
