@@ -108,3 +108,14 @@ class MACrossoverExitMixin(BaseExitMixin):
             return fast_ma_prev > slow_ma_prev and fast_ma_current < slow_ma_current
         else:  # Short position
             return fast_ma_prev < slow_ma_prev and fast_ma_current > slow_ma_current
+
+    def get_exit_reason(self) -> str:
+        """Get the reason for exiting the position"""
+        if not self.strategy.position:
+            return "unknown"
+            
+        if not all(hasattr(self.strategy, name) for name in [self.fast_ma_name, self.slow_ma_name]):
+            return "unknown"
+            
+        ma_type = self.get_param("ma_type", "sma").lower()
+        return f"{ma_type}_crossover"

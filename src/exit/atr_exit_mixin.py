@@ -75,3 +75,9 @@ class ATRExitMixin(BaseExitMixin):
         atr_val = atr[0] if hasattr(atr, '__getitem__') else atr.lines.atr[0]
         stop_loss = self.strategy.data.close[0] - (atr_val * self.get_param("atr_multiplier"))
         return self.strategy.data.close[0] < stop_loss
+
+    def get_exit_reason(self) -> str:
+        """Get the reason for exiting the position"""
+        if not self.strategy.position:
+            return "unknown"
+        return "atr_stop_loss"

@@ -113,4 +113,27 @@ class RSIBBExitMixin(BaseExitMixin):
             return rsi_condition and bb_condition
         except Exception as e:
             logger.error(f"Error in should_exit: {e}")
-            return False 
+            return False
+
+    def get_exit_reason(self) -> str:
+        """Get the reason for exiting the position"""
+        if not self.strategy.position:
+            return "unknown"
+            
+        try:
+            # Get indicators
+            rsi = getattr(self.strategy, self.rsi_name)
+            bb = getattr(self.strategy, self.bb_name)
+            
+            # Check which condition triggered the exit
+            if rsi[0] >= self.get_param("rsi_overbought"):
+                if self.get_param("use_bb_touch") and self.strategy.data.close[0] >= bb.bb_upper[0] * 0.99:
+                    return "rsi_bb_overbought"
+                return "rsi_overbought"
+            elif self.get_param("use_bb_touch") and self.strategy.data.close[0] >= bb.bb_upper[0] * 0.99:
+                return "bb_upper_touch"
+                
+            return "unknown"
+        except Exception as e:
+            logger.error(f"Error in get_exit_reason: {e}")
+            return "unknown" 

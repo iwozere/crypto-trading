@@ -52,5 +52,10 @@ class BaseExitMixin(ABC):
     def should_exit(self) -> bool:
         pass
 
+    @abstractmethod
+    def get_exit_reason(self) -> str:
+        """Get the reason for exiting the position"""
+        pass
+
     def get_param(self, key: str, default=None):
         return self.params.get(key, default)

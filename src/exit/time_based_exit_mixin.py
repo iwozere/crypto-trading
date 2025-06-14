@@ -62,3 +62,13 @@ class TimeBasedExitMixin(BaseExitMixin):
         else:
             bars_held = len(self.strategy.data) - self.strategy.position.dtopen
             return bars_held >= self.get_param("max_bars")
+
+    def get_exit_reason(self) -> str:
+        """Get the reason for exiting the position"""
+        if not self.strategy.position:
+            return "unknown"
+            
+        if self.get_param("use_time", False):
+            return "time_limit_minutes"
+        else:
+            return "time_limit_bars"

@@ -38,10 +38,11 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI, Bollinger Bands, and Volume"""
 
     def __init__(self, params: Optional[Dict[str, Any]] = None):
+        """Initialize the mixin with parameters"""
         super().__init__(params)
         self.rsi_name = 'entry_rsi'
         self.bb_name = 'entry_bb'
-        self.vol_ma_name = 'entry_vol_ma'
+        self.vol_ma_name = 'entry_volume_ma'
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""

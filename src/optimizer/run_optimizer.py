@@ -100,19 +100,85 @@ def get_result_filename(data_file, entry_logic_name=None, exit_logic_name=None, 
     return f"{symbol}_{interval}_{start_date}_{end_date}{strategy_part}_{timestamp}{suffix}"
 
 
-def save_results(results, data_file):
-    """Save optimization results to JSON file"""
-    output_file_name = get_result_filename(
-        data_file,
-        entry_logic_name=results["best_params"]["entry_logic"]["name"],
-        exit_logic_name=results["best_params"]["exit_logic"]["name"],
-        suffix="",
-    )
-    output_file = os.path.join("results", f"{output_file_name}.json")
-    os.makedirs("results", exist_ok=True)
-    with open(output_file, "w") as f:
-        json.dump(results, f, indent=4, cls=DateTimeEncoder)
-    print(f"Results saved to {output_file}")
+def save_results(result, data_file):
+    """Save optimization results to a JSON file"""
+    try:
+        # Create results directory if it doesn't exist
+        os.makedirs("results", exist_ok=True)
+        
+        # Generate filename based on data file
+        filename = get_result_filename(
+            data_file,
+            entry_logic_name=result.get("best_params", {}).get("entry_logic", {}).get("name", ""),
+            exit_logic_name=result.get("best_params", {}).get("exit_logic", {}).get("name", ""),
+            suffix=""
+        )
+        
+        # Convert trade records to serializable format
+        trades = []
+        for trade in result.get("trades", []):
+            serializable_trade = {
+                'entry_time': trade['entry_time'].isoformat() if isinstance(trade['entry_time'], dt) else trade['entry_time'],
+                'exit_time': trade['exit_time'].isoformat() if isinstance(trade['exit_time'], dt) else trade['exit_time'],
+                'entry_price': float(trade['entry_price']),
+                'exit_price': float(trade['exit_price']),
+                'pnl': float(trade['pnl']),
+                'size': float(trade['size']),
+                'symbol': str(trade['symbol']),
+                'direction': str(trade['direction']),
+                'commission': float(trade['commission']),
+                'pnl_comm': float(trade['pnl_comm']),
+                'exit_reason': str(trade['exit_reason'])
+            }
+            trades.append(serializable_trade)
+        
+        # Process analyzer results
+        analyzers = {}
+        for name, analyzer in result.get("analyzers", {}).items():
+            try:
+                # Get the analysis directly from the analyzer
+                analysis = analyzer.get_analysis()
+                
+                # Handle different types of analysis results
+                if isinstance(analysis, dict):
+                    # Convert dictionary values to serializable format
+                    processed_analysis = {}
+                    for k, v in analysis.items():
+                        if isinstance(v, (int, float)):
+                            processed_analysis[str(k)] = float(v)
+                        elif isinstance(v, dt):
+                            processed_analysis[str(k)] = v.isoformat()
+                        else:
+                            processed_analysis[str(k)] = str(v)
+                    analyzers[name] = processed_analysis
+                elif isinstance(analysis, (int, float)):
+                    analyzers[name] = float(analysis)
+                else:
+                    analyzers[name] = str(analysis)
+            except Exception as e:
+                _logger.warning(f"Could not process analyzer {name}: {str(e)}")
+                analyzers[name] = str(analyzer)
+        
+        # Create the final result dictionary
+        result_dict = {
+            "data_file": str(data_file),
+            "total_trades": len(trades),
+            "total_profit": float(result.get("total_profit", 0)),
+            "total_profit_with_commission": float(result.get("total_profit_with_commission", 0)),
+            "best_params": result.get("best_params", {}),
+            "analyzers": analyzers,
+            "trades": trades
+        }
+        
+        # Save to JSON file
+        with open(filename, "w") as f:
+            json.dump(result_dict, f, indent=4)
+            
+        _logger.info(f"Results saved to {filename}")
+        
+    except Exception as e:
+        _logger.error(f"Error saving results: {str(e)}")
+        raise
 
 
 def save_plot(strategy, data_file, optimizer_config):
@@ -150,16 +216,16 @@ def create_plotter(strategy, visualization_settings):
     indicators = {}
     
     # Add entry mixin indicators
-    if hasattr(strategy, 'rsi'):
-        indicators['rsi'] = strategy.rsi
-    if hasattr(strategy, 'bb'):
-        indicators['bb'] = strategy.bb
-    if hasattr(strategy, 'volume'):
-        indicators['volume'] = strategy.volume
-    if hasattr(strategy, 'supertrend'):
-        indicators['supertrend'] = strategy.supertrend
-    if hasattr(strategy, 'ichimoku'):
-        indicators['ichimoku'] = strategy.ichimoku
+    if hasattr(strategy, 'entry_rsi'):
+        indicators['entry_rsi'] = strategy.entry_rsi
+    if hasattr(strategy, 'entry_bb'):
+        indicators['entry_bb'] = strategy.entry_bb
+    if hasattr(strategy, 'entry_volume_ma'):
+        indicators['entry_volume_ma'] = strategy.entry_volume_ma
+    if hasattr(strategy, 'entry_supertrend'):
+        indicators['entry_supertrend'] = strategy.entry_supertrend
+    if hasattr(strategy, 'entry_ichimoku'):
+        indicators['entry_ichimoku'] = strategy.entry_ichimoku
         
     # Add exit mixin indicators
     if hasattr(strategy, 'exit_rsi'):
@@ -169,39 +235,39 @@ def create_plotter(strategy, visualization_settings):
     
     # Add indicator plotters based on entry/exit mixins
     if entry_name == "RSIIchimokuEntryMixin":
-        if hasattr(strategy, 'rsi'):
+        if hasattr(strategy, 'entry_rsi'):
             plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'ichimoku'):
+        if hasattr(strategy, 'entry_ichimoku'):
             plotter.indicator_plotters.append(IchimokuPlotter(strategy.data, indicators, visualization_settings))
     
     elif entry_name == "RSIBBEntryMixin":
-        if hasattr(strategy, 'rsi'):
+        if hasattr(strategy, 'entry_rsi'):
             plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'bb'):
+        if hasattr(strategy, 'entry_bb'):
             plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, indicators, visualization_settings))
     
     elif entry_name == "RSIBBVolumeEntryMixin":
-        if hasattr(strategy, 'rsi'):
+        if hasattr(strategy, 'entry_rsi'):
             plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'bb'):
+        if hasattr(strategy, 'entry_bb'):
             plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'volume'):
+        if hasattr(strategy, 'entry_volume_ma'):
             plotter.indicator_plotters.append(VolumePlotter(strategy.data, indicators, visualization_settings))
     
     elif entry_name == "RSIVolumeSuperTrendEntryMixin":
-        if hasattr(strategy, 'rsi'):
+        if hasattr(strategy, 'entry_rsi'):
             plotter.indicator_plotters.append(RSIPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'volume'):
+        if hasattr(strategy, 'entry_volume_ma'):
             plotter.indicator_plotters.append(VolumePlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'supertrend'):
+        if hasattr(strategy, 'entry_supertrend'):
             plotter.indicator_plotters.append(SuperTrendPlotter(strategy.data, indicators, visualization_settings))
     
     elif entry_name == "BBVolumeSuperTrendEntryMixin":
-        if hasattr(strategy, 'bb'):
+        if hasattr(strategy, 'entry_bb'):
             plotter.indicator_plotters.append(BollingerBandsPlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'volume'):
+        if hasattr(strategy, 'entry_volume_ma'):
             plotter.indicator_plotters.append(VolumePlotter(strategy.data, indicators, visualization_settings))
-        if hasattr(strategy, 'supertrend'):
+        if hasattr(strategy, 'entry_supertrend'):
             plotter.indicator_plotters.append(SuperTrendPlotter(strategy.data, indicators, visualization_settings))
     
     # Add exit strategy indicators if needed

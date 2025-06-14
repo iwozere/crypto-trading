@@ -53,6 +53,7 @@ class CustomStrategy(bt.Strategy):
             # Initialize trade tracking
             self.trades = []
             self.has_position = False
+            self.current_exit_reason = None  # Track current exit reason
             
             # Initialize equity curve tracking
             self.equity_curve = []
@@ -102,6 +103,7 @@ class CustomStrategy(bt.Strategy):
                 self.buy(size=self.p.position_size)
                 self.has_position = True
             elif self.has_position and self.exit_mixin and self.exit_mixin.should_exit():
+                self.current_exit_reason = self.exit_mixin.get_exit_reason()  # Get reason before selling
                 self.sell(size=self.p.position_size)
                 self.has_position = False
         except Exception as e:
@@ -113,14 +115,20 @@ class CustomStrategy(bt.Strategy):
         try:
             if trade.isclosed:
                 self.trades.append({
-                    'entry_date': trade.dtopen,
-                    'entry_price': trade.price,
-                    'exit_date': trade.dtclose,
-                    'exit_price': trade.price,  # Use actual exit price, not PnL
+                    'entry_time': trade.dtopen,
+                    'entry_price': trade.priceopen,
+                    'exit_time': trade.dtclose,
+                    'exit_price': trade.priceclose,
                     'pnl': trade.pnl,
-                    'size': trade.size
+                    'size': trade.size,
+                    'symbol': self.data._name,
+                    'direction': 'long' if trade.size > 0 else 'short',
+                    'commission': trade.commission,
+                    'pnl_comm': trade.pnlcomm,
+                    'exit_reason': self.current_exit_reason or 'unknown'  # Add exit reason
                 })
                 self.has_position = False
+                self.current_exit_reason = None  # Reset exit reason
         except Exception as e:
             log_exception(_logger)
             raise

@@ -40,7 +40,7 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
         """Initialize the mixin with parameters"""
         super().__init__(params)
         self.rsi_name = 'entry_rsi'
-        self.vol_ma_name = 'entry_vol_ma'
+        self.vol_ma_name = 'entry_volume_ma'
         self.supertrend_name = 'entry_supertrend'
         self.direction_name = 'entry_direction'
 

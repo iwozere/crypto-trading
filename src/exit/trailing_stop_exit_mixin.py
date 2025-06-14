@@ -104,3 +104,18 @@ class TrailingStopExitMixin(BaseExitMixin):
 
         # Exit if price falls below trailing stop
         return price < stop_level
+
+    def get_exit_reason(self) -> str:
+        """Get the reason for exiting the position"""
+        if not self.strategy.position:
+            return "unknown"
+        
+        price = self.strategy.data.close[0]
+        entry_price = self.strategy.position.price
+        profit_pct = (price - entry_price) / entry_price
+        
+        # If trailing stop is not activated yet
+        if self.get_param("activation_pct", 0.0) > 0 and profit_pct < self.get_param("activation_pct"):
+            return "unknown"
+            
+        return "trailing_stop"

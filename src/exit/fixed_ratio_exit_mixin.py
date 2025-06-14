@@ -61,4 +61,18 @@ class FixedRatioExitMixin(BaseExitMixin):
             return True
         if profit_ratio <= -self.get_param("loss_ratio"):
             return True
-        return False 
+        return False
+
+    def get_exit_reason(self) -> str:
+        """Get the reason for exiting the position"""
+        if not self.strategy.position:
+            return "unknown"
+        entry_price = self.strategy.position.price
+        current_price = self.strategy.data.close[0]
+        profit_ratio = (current_price - entry_price) / entry_price
+        
+        if profit_ratio >= self.get_param("profit_ratio"):
+            return "take_profit"
+        if profit_ratio <= -self.get_param("loss_ratio"):
+            return "stop_loss"
+        return "unknown" 

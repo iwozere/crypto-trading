@@ -167,17 +167,17 @@ class CustomOptimizer:
             "drawdown": strategy.analyzers.drawdown.get_analysis(),
             "returns": strategy.analyzers.returns.get_analysis(),
             "trades_summary": strategy.analyzers.trades.get_analysis(),
+            "sqn": strategy.analyzers.sqn.get_analysis(),
+            "time_drawdown": strategy.analyzers.time_drawdown.get_analysis(),
+            "time_return": strategy.analyzers.time_return.get_analysis(),
+            "vwr": strategy.analyzers.vwr.get_analysis(),
             "profit_factor": strategy.analyzers.profit_factor.get_analysis(),
             "calmar": strategy.analyzers.calmar.get_analysis(),
             "cagr": strategy.analyzers.cagr.get_analysis(),
             "sortino": strategy.analyzers.sortino.get_analysis(),
             "winrate": strategy.analyzers.winrate.get_analysis(),
-            "consecutivewinslosses": strategy.analyzers.consecutivewinslosses.get_analysis(),
             "portfoliovolatility": strategy.analyzers.portfoliovolatility.get_analysis(),
-            "sqn": strategy.analyzers.sqn.get_analysis(),
-            "time_drawdown": strategy.analyzers.time_drawdown.get_analysis(),
-            "time_return": strategy.analyzers.time_return.get_analysis(),
-            "vwr": strategy.analyzers.vwr.get_analysis(),
+            "consecutivewinslosses": strategy.analyzers.consecutivewinslosses.get_analysis(),
         }
 
         # Get trade analysis
@@ -188,30 +188,12 @@ class CustomOptimizer:
         total_commission = trades_analysis.get("pnl", {}).get("comm", {}).get("total", 0.0)
         total_profit_with_comm = total_profit - total_commission
 
-        # Convert trades to serializable format
-        serializable_trades = []
-        for trade in strategy.trades:
-            serializable_trade = {
-                'timestamp': trade.get('timestamp', datetime.datetime.now()).isoformat(),
-                'symbol': trade.get('symbol', ''),
-                'signal': trade.get('signal', ''),
-                'price': float(trade.get('price', 0.0)),
-                'size': float(trade.get('size', 0.0)),
-                'commission': float(trade.get('commission', 0.0)),
-                'reason': trade.get('reason', ''),
-                'raw_pnl': float(trade.get('raw_pnl', 0.0)),
-                'commission_pct': float(trade.get('commission_pct', 0.0)),
-                'pnl': float(trade.get('pnl', 0.0)),
-                'portfolio_value': float(trade.get('portfolio_value', 0.0))
-            }
-            serializable_trades.append(serializable_trade)
-
         output = {
             "best_params": strategy_params,
             "total_profit": float(total_profit),
             "total_profit_with_commission": float(total_profit_with_comm),
             "analyzers": analyzers,
-            "trades": serializable_trades
+            "trades": strategy.trades
         }
 
         return strategy, output
