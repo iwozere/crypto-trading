@@ -101,15 +101,13 @@ class CustomStrategy(bt.Strategy):
             self.equity_curve.append(self.broker.getvalue())
             self.equity_dates.append(self.data.datetime.datetime())
             
+            _logger.info(f"Current position state - has_position: {self.has_position}, position.size: {self.position.size}")
+            
             if not self.has_position and self.entry_mixin and self.entry_mixin.should_enter():
                 self.buy(size=self.p.position_size)
-                self.has_position = True
-                _logger.info(f"ENTRY: Price: {self.data.close[0]}, Size: {self.p.position_size}")
             elif self.has_position and self.exit_mixin and self.exit_mixin.should_exit():
                 self.current_exit_reason = self.exit_mixin.get_exit_reason()  # Get reason before selling
                 self.sell(size=self.p.position_size)
-                self.has_position = False
-                _logger.info(f"EXIT: Price: {self.data.close[0]}, Size: {self.p.position_size}")
         except Exception as e:
             _logger.error(f"Error in next: {e}")
             raise
@@ -119,13 +117,14 @@ class CustomStrategy(bt.Strategy):
         try:
             _logger.info(f"Trade notification received - Status: {'CLOSED' if trade.isclosed else 'OPEN'}, "
                         f"Size: {trade.size}, PnL: {trade.pnl}, "
-                        f"Open Price: {trade.priceopen}, Close Price: {trade.priceclose}")
+                        f"Open Price: {trade.price}, Close Price: {trade.priceclose if trade.isclosed else 'N/A'}, "
+                        f"Current has_position: {self.has_position}")
             
             # Update position state based on trade status
             if trade.isclosed:
                 self.trades.append({
                     'entry_time': trade.dtopen,
-                    'entry_price': trade.priceopen,
+                    'entry_price': trade.price,
                     'exit_time': trade.dtclose,
                     'exit_price': trade.priceclose,
                     'pnl': trade.pnl,
@@ -138,9 +137,11 @@ class CustomStrategy(bt.Strategy):
                 })
                 self.has_position = False
                 self.current_exit_reason = None  # Reset exit reason
+                _logger.info("Position closed, has_position set to False")
             else:
                 # Trade is opened
                 self.has_position = True
+                _logger.info("Position opened, has_position set to True")
         except Exception as e:
             _logger.error(f"Error in notify_trade: {e}")
             raise

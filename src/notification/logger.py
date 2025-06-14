@@ -41,7 +41,7 @@ LOG_CONFIG = {
     "version": 1,
     "formatters": {
         "detailed": {
-            "format": "%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s%(exc_info)s"
+            "format": "%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s"
         },
         "standard": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
     },
