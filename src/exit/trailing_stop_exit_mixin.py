@@ -26,7 +26,9 @@ from typing import Any, Dict, Optional
 import backtrader as bt
 from src.exit.base_exit_mixin import BaseExitMixin
 import numpy as np
+from src.notification.logger import get_logger
 
+logger = get_logger(__name__)
 
 class TrailingStopExitMixin(BaseExitMixin):
     """Exit mixin based on trailing stop"""
@@ -35,6 +37,7 @@ class TrailingStopExitMixin(BaseExitMixin):
         """Initialize the mixin with parameters"""
         super().__init__(params)
         self.highest_price = 0
+        self.atr_name = 'exit_atr'
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -55,43 +58,33 @@ class TrailingStopExitMixin(BaseExitMixin):
         """Initialize trailing stop indicators"""
         if not hasattr(self, 'strategy'):
             return
-
+        data = self.strategy.data
         if self.get_param("use_atr", False):
             use_talib = self.get_param("use_talib", False)
-            if use_talib:
-                try:
+            try:
+                if use_talib:
                     import talib
-                    # Calculate ATR using TA-Lib
-                    high_prices = np.array([self.strategy.data.high[i] for i in range(len(self.strategy.data))])
-                    low_prices = np.array([self.strategy.data.low[i] for i in range(len(self.strategy.data))])
-                    close_prices = np.array([self.strategy.data.close[i] for i in range(len(self.strategy.data))])
-                    
+                    high_prices = np.array([data.high[i] for i in range(len(data))])
+                    low_prices = np.array([data.low[i] for i in range(len(data))])
+                    close_prices = np.array([data.close[i] for i in range(len(data))])
                     atr_values = talib.ATR(high_prices, low_prices, close_prices, timeperiod=14)
-                    
-                    # Initialize Backtrader ATR
-                    self.indicators["atr"] = bt.indicators.ATR(
-                        self.strategy.data,
-                        period=14,
-                        plot=False
-                    )
-                    
-                    # Update ATR values one by one
-                    for i, value in enumerate(atr_values):
-                        if i < len(self.indicators["atr"].lines[0]):
-                            self.indicators["atr"].lines[0][i] = value
-                except ImportError:
-                    self.strategy.logger.warning("TA-Lib not available, using Backtrader's ATR")
-                    self.indicators["atr"] = bt.indicators.ATR(
-                        self.strategy.data,
-                        period=14,
-                        plot=False
-                    )
-            else:
-                self.indicators["atr"] = bt.indicators.ATR(
-                    self.strategy.data,
-                    period=14,
-                    plot=False
-                )
+                    class TALibATR(bt.Indicator):
+                        lines = ('atr',)
+                        def __init__(self):
+                            self.addminperiod(self.p.period)
+                        def next(self):
+                            idx = len(self.data) - 1
+                            if idx < len(atr_values):
+                                self.lines.atr[0] = atr_values[idx]
+                    setattr(self.strategy, self.atr_name, TALibATR(data, period=14))
+                else:
+                    setattr(self.strategy, self.atr_name, bt.indicators.ATR(data, period=14, plot=False))
+            except ImportError:
+                logger.warning("TA-Lib not available, using Backtrader's ATR")
+                setattr(self.strategy, self.atr_name, bt.indicators.ATR(data, period=14, plot=False))
+            except Exception as e:
+                logger.error(f"Error initializing ATR indicator: {str(e)}")
+                raise
 
     def should_exit(self) -> bool:
         """Check if we should exit a position"""
@@ -107,8 +100,11 @@ class TrailingStopExitMixin(BaseExitMixin):
 
         # Calculate trailing stop level
         if self.get_param("use_atr", False):
-            atr = self.indicators["atr"][0]
-            stop_level = self.highest_price - (atr * self.get_param("atr_multiplier"))
+            if not hasattr(self.strategy, self.atr_name):
+                return False
+            atr = getattr(self.strategy, self.atr_name)
+            atr_val = atr[0] if hasattr(atr, '__getitem__') else atr.lines.atr[0]
+            stop_level = self.highest_price - (atr_val * self.get_param("atr_multiplier"))
         else:
             stop_level = self.highest_price * (1 - self.get_param("trail_pct"))
 

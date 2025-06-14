@@ -2,24 +2,25 @@
 RSI, Volume, and Supertrend Entry Mixin
 
 This module implements an entry strategy based on the combination of:
-1. Relative Strength Index (RSI)
+1. RSI (Relative Strength Index)
 2. Volume analysis
 3. Supertrend indicator
 
 The strategy enters a position when:
-1. RSI is in the oversold zone (below the configured threshold)
+1. RSI is oversold
 2. Volume is above its moving average
 3. Supertrend indicator shows a bullish signal
 
 Parameters:
     rsi_period (int): Period for RSI calculation (default: 14)
-    rsi_oversold (float): RSI threshold for oversold condition (default: 30)
-    atr_period (int): Period for ATR calculation (default: 10)
-    atr_multiplier (float): Multiplier for ATR in Supertrend (default: 3.0)
+    rsi_oversold (float): Oversold threshold for RSI (default: 30)
     volume_ma_period (int): Period for volume moving average (default: 20)
     min_volume_ratio (float): Minimum volume ratio compared to MA (default: 1.5)
+    supertrend_period (int): Period for ATR calculation in Supertrend (default: 10)
+    supertrend_multiplier (float): Multiplier for ATR in Supertrend (default: 3.0)
+    use_talib (bool): Whether to use TA-Lib for calculations (default: True)
 
-This strategy combines mean reversion (RSI), volume confirmation, and trend following (Supertrend)
+This strategy combines mean reversion (RSI) with volume confirmation and trend following (Supertrend)
 to identify potential reversal points with strong momentum.
 """
 
@@ -28,7 +29,12 @@ from typing import Any, Dict, Optional
 import backtrader as bt
 import numpy as np
 from src.entry.base_entry_mixin import BaseEntryMixin
+from src.indicator.talib_rsi import TALibRSI
+from src.indicator.talib_atr import TALibATR
+from src.indicator.talib_sma import TALibSMA
+from src.notification.logger import get_logger
 
+logger = get_logger(__name__)
 
 class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI, Volume, and Supertrend"""
@@ -36,6 +42,10 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
         super().__init__(params)
+        self.rsi_name = 'entry_rsi'
+        self.volume_ma_name = 'entry_volume_ma'
+        self.supertrend_name = 'entry_supertrend'
+        self.direction_name = 'entry_direction'
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -48,109 +58,138 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             "rsi_period": 14,
             "rsi_oversold": 30,
             "volume_ma_period": 20,
+            "min_volume_ratio": 1.5,
             "supertrend_period": 10,
             "supertrend_multiplier": 3.0,
-            "use_talib": False,
+            "use_talib": True,
         }
 
     def _init_indicators(self):
-        """Initialize RSI, Volume MA, and Supertrend indicators"""
+        """Initialize RSI, Volume, and Supertrend indicators"""
         if not hasattr(self, 'strategy'):
             return
             
-        use_talib = self.get_param("use_talib", False)
-        if use_talib:
-            try:
-                import talib
-                # RSI
-                close_prices = np.array([self.strategy.data.close[i] for i in range(len(self.strategy.data))])
-                rsi_values = talib.RSI(close_prices, timeperiod=self.get_param("rsi_period"))
-                self.indicators["rsi"] = bt.indicators.RSI(self.strategy.data, period=self.get_param("rsi_period"), plot=False)
-                for i, value in enumerate(rsi_values):
-                    if i < len(self.indicators["rsi"].lines[0]):
-                        self.indicators["rsi"].lines[0][i] = value
+        try:
+            data = self.strategy.data
+            use_talib = self.get_param("use_talib", True)
+            
+            if use_talib:
+                # Use TA-Lib for RSI
+                setattr(self.strategy, self.rsi_name, TALibRSI(
+                    data,
+                    period=self.get_param("rsi_period")
+                ))
+                
+                # Use TA-Lib for ATR
+                setattr(self.strategy, 'entry_atr', TALibATR(
+                    data,
+                    period=self.get_param("supertrend_period")
+                ))
+                
+                # Use TA-Lib for Volume MA
+                setattr(self.strategy, self.volume_ma_name, TALibSMA(
+                    data.volume,
+                    period=self.get_param("volume_ma_period")
+                ))
 
-                # Volume MA
-                volume = np.array([self.strategy.data.volume[i] for i in range(len(self.strategy.data))])
-                volume_ma = talib.SMA(volume, timeperiod=self.get_param("volume_ma_period"))
-                self.indicators["volume_ma"] = bt.indicators.SMA(
-                    self.strategy.data.volume,
-                    period=self.get_param("volume_ma_period"),
-                    plot=False
-                )
-                for i, value in enumerate(volume_ma):
-                    if i < len(self.indicators["volume_ma"].lines[0]):
-                        self.indicators["volume_ma"].lines[0][i] = value
+                # Calculate Supertrend
+                multiplier = self.get_param("supertrend_multiplier")
+                atr = getattr(self.strategy, 'entry_atr')
 
-                # Supertrend
-                high_prices = np.array([self.strategy.data.high[i] for i in range(len(self.strategy.data))])
-                low_prices = np.array([self.strategy.data.low[i] for i in range(len(self.strategy.data))])
-                close_prices = np.array([self.strategy.data.close[i] for i in range(len(self.strategy.data))])
-                
-                atr = talib.ATR(high_prices, low_prices, close_prices, timeperiod=self.get_param("supertrend_period"))
-                
-                supertrend = np.zeros_like(close_prices)
-                direction = np.zeros_like(close_prices)
-                
-                for i in range(1, len(close_prices)):
-                    basic_upper = (high_prices[i] + low_prices[i]) / 2 + self.get_param("supertrend_multiplier") * atr[i]
-                    basic_lower = (high_prices[i] + low_prices[i]) / 2 - self.get_param("supertrend_multiplier") * atr[i]
-                    
-                    if i == 1:
-                        direction[i] = 1 if close_prices[i] > basic_upper else -1
-                        supertrend[i] = basic_lower if direction[i] == 1 else basic_upper
+                # Calculate basic upper and lower bands
+                hl2 = (data.high + data.low) / 2
+                basic_upper = hl2 + (multiplier * atr)
+                basic_lower = hl2 - (multiplier * atr)
+
+                # Initialize Supertrend arrays
+                supertrend = bt.indicators.SMA(data.close, period=1)
+                direction = bt.indicators.SMA(data.close, period=1)
+
+                # Calculate Supertrend values
+                for i in range(1, len(data)):
+                    if data.close[i] > basic_upper[i - 1]:
+                        direction[i] = 1
+                    elif data.close[i] < basic_lower[i - 1]:
+                        direction[i] = -1
                     else:
-                        final_upper = basic_upper if (basic_upper < supertrend[i-1] or close_prices[i-1] > supertrend[i-1]) else supertrend[i-1]
-                        final_lower = basic_lower if (basic_lower > supertrend[i-1] or close_prices[i-1] < supertrend[i-1]) else supertrend[i-1]
-                        
-                        if supertrend[i-1] == final_upper:
-                            direction[i] = 1 if close_prices[i] > final_upper else -1
-                        else:
-                            direction[i] = -1 if close_prices[i] < final_lower else 1
-                        
-                        supertrend[i] = final_lower if direction[i] == 1 else final_upper
-                
-                self.indicators["supertrend"] = bt.indicators.Supertrend(
-                    self.strategy.data,
-                    period=self.get_param("supertrend_period"),
-                    multiplier=self.get_param("supertrend_multiplier"),
-                    plot=False
-                )
-                for i, value in enumerate(supertrend):
-                    if i < len(self.indicators["supertrend"].lines[0]):
-                        self.indicators["supertrend"].lines[0][i] = value
-            except ImportError:
-                self.strategy.logger.warning("TA-Lib not available, using Backtrader's indicators")
-                self._init_backtrader_indicators()
-        else:
-            self._init_backtrader_indicators()
+                        direction[i] = direction[i - 1]
 
-    def _init_backtrader_indicators(self):
-        self.indicators["rsi"] = bt.indicators.RSI(self.strategy.data, period=self.get_param("rsi_period"), plot=False)
-        self.indicators["volume_ma"] = bt.indicators.SMA(
-            self.strategy.data.volume,
-            period=self.get_param("volume_ma_period"),
-            plot=False
-        )
-        self.indicators["supertrend"] = bt.indicators.Supertrend(
-            self.strategy.data,
-            period=self.get_param("supertrend_period"),
-            multiplier=self.get_param("supertrend_multiplier"),
-            plot=False
-        )
+                    if direction[i] == 1:
+                        supertrend[i] = basic_lower[i]
+                    else:
+                        supertrend[i] = basic_upper[i]
+
+                setattr(self.strategy, self.supertrend_name, supertrend)
+                setattr(self.strategy, self.direction_name, direction)
+                
+            else:
+                # Use Backtrader's native indicators
+                setattr(self.strategy, self.rsi_name, bt.indicators.RSI(
+                    data,
+                    period=self.get_param("rsi_period")
+                ))
+                
+                setattr(self.strategy, self.volume_ma_name, bt.indicators.SMA(
+                    data.volume,
+                    period=self.get_param("volume_ma_period")
+                ))
+                
+                # Calculate Supertrend using Backtrader's ATR
+                atr = bt.indicators.ATR(
+                    data,
+                    period=self.get_param("supertrend_period")
+                )
+                
+                # Calculate basic upper and lower bands
+                hl2 = (data.high + data.low) / 2
+                basic_upper = hl2 + (self.get_param("supertrend_multiplier") * atr)
+                basic_lower = hl2 - (self.get_param("supertrend_multiplier") * atr)
+
+                # Initialize Supertrend arrays
+                supertrend = bt.indicators.SMA(data.close, period=1)
+                direction = bt.indicators.SMA(data.close, period=1)
+
+                # Calculate Supertrend values
+                for i in range(1, len(data)):
+                    if data.close[i] > basic_upper[i - 1]:
+                        direction[i] = 1
+                    elif data.close[i] < basic_lower[i - 1]:
+                        direction[i] = -1
+                    else:
+                        direction[i] = direction[i - 1]
+
+                    if direction[i] == 1:
+                        supertrend[i] = basic_lower[i]
+                    else:
+                        supertrend[i] = basic_upper[i]
+
+                setattr(self.strategy, self.supertrend_name, supertrend)
+                setattr(self.strategy, self.direction_name, direction)
+                
+        except Exception as e:
+            logger.error(f"Error initializing indicators: {str(e)}")
+            raise
 
     def should_enter(self) -> bool:
-        """Check if we should enter a position"""
-        if not self.indicators:
+        """
+        Entry logic: RSI oversold, volume above MA, and Supertrend bullish
+        """
+        if not all(hasattr(self.strategy, name) for name in [self.rsi_name, self.volume_ma_name, self.supertrend_name, self.direction_name]):
             return False
-        rsi = self.indicators["rsi"][0]
-        volume_ma = self.indicators["volume_ma"][0]
-        supertrend = self.indicators["supertrend"][0]
-        current_price = self.strategy.data.close[0]
+
         current_volume = self.strategy.data.volume[0]
         
-        rsi_condition = rsi < self.get_param("rsi_oversold")
-        volume_condition = current_volume > volume_ma
-        supertrend_condition = current_price > supertrend
-        
-        return rsi_condition and volume_condition and supertrend_condition
+        rsi = getattr(self.strategy, self.rsi_name)
+        vol_ma = getattr(self.strategy, self.volume_ma_name)
+        direction = getattr(self.strategy, self.direction_name)
+
+        # Check RSI
+        rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
+
+        # Check volume
+        volume_ok = current_volume >= vol_ma[0] * self.get_param("min_volume_ratio")
+
+        # Check Supertrend (bullish when price is above Supertrend)
+        supertrend_bullish = direction[0] > 0
+
+        return rsi_condition and volume_ok and supertrend_bullish

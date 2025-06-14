@@ -19,6 +19,7 @@ Parameters:
     volume_ma_period (int): Period for volume moving average (default: 20)
     min_volume_ratio (float): Minimum volume ratio compared to MA (default: 1.5)
     use_bb_touch (bool): Whether to require price touching the lower band (default: True)
+    use_talib (bool): Whether to use TA-Lib for calculations (default: True)
 
 This strategy combines mean reversion (BB) with volume confirmation and trend following (Supertrend)
 to identify potential reversal points with strong momentum.
@@ -29,13 +30,22 @@ from typing import Any, Dict, Optional
 import backtrader as bt
 import numpy as np
 from src.entry.base_entry_mixin import BaseEntryMixin
+from src.indicator.talib_bb import TALibBB
+from src.indicator.talib_atr import TALibATR
+from src.indicator.talib_sma import TALibSMA
+from src.notification.logger import get_logger
 
+logger = get_logger(__name__)
 
 class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
     """Entry mixin based on Bollinger Bands, Volume, and Supertrend"""
 
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         super().__init__(params)
+        self.bb_name = 'entry_bb'
+        self.volume_ma_name = 'entry_volume_ma'
+        self.supertrend_name = 'entry_supertrend'
+        self.direction_name = 'entry_direction'
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -52,160 +62,138 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
             "min_volume": 1.0,
             "supertrend_period": 10,
             "supertrend_multiplier": 3.0,
-            "use_talib": False,
+            "use_talib": True,
         }
 
     def _init_indicators(self):
         """Initialize Bollinger Bands, Volume, and Supertrend indicators"""
         if not hasattr(self, 'strategy'):
             return
-        data = self.strategy.data
-        use_talib = self.get_param("use_talib", False)
-        if use_talib:
-            try:
-                import talib
-                # Convert data to numpy arrays
-                close_data = np.array(data.close.get(size=len(data)))
-                high_data = np.array(data.high.get(size=len(data)))
-                low_data = np.array(data.low.get(size=len(data)))
-                volume_data = np.array(data.volume.get(size=len(data)))
-                
-                # Create Bollinger Bands using TA-Lib
-                upper, middle, lower = talib.BBANDS(
-                    close_data,
-                    timeperiod=self.get_param("bb_period"),
-                    nbdevup=self.get_param("bb_stddev"),
-                    nbdevdn=self.get_param("bb_stddev"),
-                    matype=0
-                )
-                
-                # Create Backtrader indicators and update their values
-                bb = bt.indicators.BollingerBands(
-                    data.close,
-                    period=self.get_param("bb_period"),
-                    devfactor=self.get_param("bb_stddev"),
-                    plot=False
-                )
-                self.indicators["bb"] = bb
-                for i, (u, m, l) in enumerate(zip(upper, middle, lower)):
-                    if i < len(bb.lines[0]):
-                        bb.lines[0][i] = u
-                        bb.lines[1][i] = m
-                        bb.lines[2][i] = l
-
-                # Create ATR using TA-Lib
-                atr_values = talib.ATR(
-                    high_data,
-                    low_data,
-                    close_data,
-                    timeperiod=self.get_param("supertrend_period")
-                )
-                self.indicators["atr"] = bt.indicators.ATR(
+            
+        try:
+            data = self.strategy.data
+            use_talib = self.get_param("use_talib", True)
+            
+            if use_talib:
+                # Use TA-Lib for Bollinger Bands
+                setattr(self.strategy, self.bb_name, TALibBB(
                     data,
-                    period=self.get_param("supertrend_period"),
-                    plot=False
-                )
-                for i, value in enumerate(atr_values):
-                    if i < len(self.indicators["atr"].lines[0]):
-                        self.indicators["atr"].lines[0][i] = value
-
-                # Create Volume MA using TA-Lib
-                vol_ma_values = talib.SMA(
-                    volume_data,
-                    timeperiod=self.get_param("volume_ma_period")
-                )
-                self.indicators["vol_ma"] = bt.indicators.SMA(
+                    period=self.get_param("bb_period"),
+                    devfactor=self.get_param("bb_stddev")
+                ))
+                
+                # Use TA-Lib for ATR
+                setattr(self.strategy, 'entry_atr', TALibATR(
+                    data,
+                    period=self.get_param("supertrend_period")
+                ))
+                
+                # Use TA-Lib for Volume MA
+                setattr(self.strategy, self.volume_ma_name, TALibSMA(
                     data.volume,
-                    period=self.get_param("volume_ma_period"),
-                    plot=False
+                    period=self.get_param("volume_ma_period")
+                ))
+
+                # Calculate Supertrend
+                multiplier = self.get_param("supertrend_multiplier")
+                atr = getattr(self.strategy, 'entry_atr')
+
+                # Calculate basic upper and lower bands
+                hl2 = (data.high + data.low) / 2
+                basic_upper = hl2 + (multiplier * atr)
+                basic_lower = hl2 - (multiplier * atr)
+
+                # Initialize Supertrend arrays
+                supertrend = bt.indicators.SMA(data.close, period=1)
+                direction = bt.indicators.SMA(data.close, period=1)
+
+                # Calculate Supertrend values
+                for i in range(1, len(data)):
+                    if data.close[i] > basic_upper[i - 1]:
+                        direction[i] = 1
+                    elif data.close[i] < basic_lower[i - 1]:
+                        direction[i] = -1
+                    else:
+                        direction[i] = direction[i - 1]
+
+                    if direction[i] == 1:
+                        supertrend[i] = basic_lower[i]
+                    else:
+                        supertrend[i] = basic_upper[i]
+
+                setattr(self.strategy, self.supertrend_name, supertrend)
+                setattr(self.strategy, self.direction_name, direction)
+                
+            else:
+                # Use Backtrader's native indicators
+                setattr(self.strategy, self.bb_name, bt.indicators.BollingerBands(
+                    data,
+                    period=self.get_param("bb_period"),
+                    devfactor=self.get_param("bb_stddev")
+                ))
+                
+                setattr(self.strategy, self.volume_ma_name, bt.indicators.SMA(
+                    data.volume,
+                    period=self.get_param("volume_ma_period")
+                ))
+                
+                # Calculate Supertrend using Backtrader's ATR
+                atr = bt.indicators.ATR(
+                    data,
+                    period=self.get_param("supertrend_period")
                 )
-                for i, value in enumerate(vol_ma_values):
-                    if i < len(self.indicators["vol_ma"].lines[0]):
-                        self.indicators["vol_ma"].lines[0][i] = value
+                
+                # Calculate basic upper and lower bands
+                hl2 = (data.high + data.low) / 2
+                basic_upper = hl2 + (self.get_param("supertrend_multiplier") * atr)
+                basic_lower = hl2 - (self.get_param("supertrend_multiplier") * atr)
 
-            except ImportError:
-                self.strategy.logger.warning("TA-Lib not available, using Backtrader's indicators")
-                self._init_backtrader_indicators()
-        else:
-            self._init_backtrader_indicators()
+                # Initialize Supertrend arrays
+                supertrend = bt.indicators.SMA(data.close, period=1)
+                direction = bt.indicators.SMA(data.close, period=1)
 
-        # Calculate Supertrend
-        atr = self.indicators["atr"]
-        multiplier = self.get_param("supertrend_multiplier")
+                # Calculate Supertrend values
+                for i in range(1, len(data)):
+                    if data.close[i] > basic_upper[i - 1]:
+                        direction[i] = 1
+                    elif data.close[i] < basic_lower[i - 1]:
+                        direction[i] = -1
+                    else:
+                        direction[i] = direction[i - 1]
 
-        # Calculate basic upper and lower bands
-        hl2 = (data.high + data.low) / 2
-        basic_upper = hl2 + (multiplier * atr)
-        basic_lower = hl2 - (multiplier * atr)
+                    if direction[i] == 1:
+                        supertrend[i] = basic_lower[i]
+                    else:
+                        supertrend[i] = basic_upper[i]
 
-        # Initialize Supertrend arrays
-        supertrend = bt.indicators.SMA(data.close, period=1, plot=False)
-        direction = bt.indicators.SMA(data.close, period=1, plot=False)
-
-        # Calculate Supertrend values
-        for i in range(1, len(data)):
-            if data.close[i] > basic_upper[i - 1]:
-                direction[i] = 1
-            elif data.close[i] < basic_lower[i - 1]:
-                direction[i] = -1
-            else:
-                direction[i] = direction[i - 1]
-
-            if direction[i] == 1:
-                supertrend[i] = basic_lower[i]
-            else:
-                supertrend[i] = basic_upper[i]
-
-        self.indicators["supertrend"] = supertrend
-        self.indicators["direction"] = direction
-
-    def _init_backtrader_indicators(self):
-        """Initialize indicators using Backtrader's built-in implementations"""
-        data = self.strategy.data
-
-        # Create Bollinger Bands indicators
-        bb = bt.indicators.BollingerBands(
-            data.close,
-            period=self.get_param("bb_period"),
-            devfactor=self.get_param("bb_stddev"),
-            plot=False
-        )
-        self.indicators["bb"] = bb
-
-        # Create ATR indicator
-        self.indicators["atr"] = bt.indicators.ATR(
-            data,
-            period=self.get_param("supertrend_period"),
-            plot=False
-        )
-
-        # Create Volume MA indicator
-        self.indicators["vol_ma"] = bt.indicators.SMA(
-            data.volume,
-            period=self.get_param("volume_ma_period"),
-            plot=False
-        )
+                setattr(self.strategy, self.supertrend_name, supertrend)
+                setattr(self.strategy, self.direction_name, direction)
+                
+        except Exception as e:
+            logger.error(f"Error initializing indicators: {str(e)}")
+            raise
 
     def should_enter(self) -> bool:
         """
         Entry logic: Price touching lower BB, volume above MA, and Supertrend bullish
         """
-        if not self.indicators:
+        if not all(hasattr(self.strategy, name) for name in [self.bb_name, self.volume_ma_name, self.supertrend_name, self.direction_name]):
             return False
 
         current_price = self.strategy.data.close[0]
         current_volume = self.strategy.data.volume[0]
-        vol_ma = self.indicators["vol_ma"][0]
-        direction = self.indicators["direction"][0]
-        bb = self.indicators["bb"]
+        
+        bb = getattr(self.strategy, self.bb_name)
+        vol_ma = getattr(self.strategy, self.volume_ma_name)
+        direction = getattr(self.strategy, self.direction_name)
 
         # Check volume
-        volume_ok = current_volume >= vol_ma * self.get_param("min_volume")
+        volume_ok = current_volume >= vol_ma[0] * self.get_param("min_volume")
 
         # Check touching the Bollinger Bands (if enabled)
-        bb_condition = not self.get_param("use_bb_touch") or current_price <= bb.lines[2][0] * 1.01  # Small tolerance
+        bb_condition = not self.get_param("use_bb_touch") or current_price <= bb.bb_lower[0] * 1.01  # Small tolerance
 
         # Check Supertrend (bullish when price is above Supertrend)
-        supertrend_bullish = direction > 0
+        supertrend_bullish = direction[0] > 0
 
         return volume_ok and bb_condition and supertrend_bullish

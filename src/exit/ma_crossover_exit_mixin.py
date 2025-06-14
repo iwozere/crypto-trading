@@ -11,6 +11,7 @@ Parameters:
     slow_period (int): Period for slow MA (default: 20)
     ma_type (str): Type of MA to use ('SMA', 'EMA', 'WMA', 'DEMA', 'TEMA', 'TRIMA', 'KAMA', 'MAMA', 'T3') (default: 'SMA')
     require_confirmation (bool): Whether to require confirmation of crossover (default: False)
+    use_talib (bool): Whether to use TA-Lib for calculations (default: True)
 
 This strategy is particularly effective for:
 1. Trend following exit signals
@@ -23,7 +24,11 @@ from typing import Any, Dict, Optional
 import backtrader as bt
 import numpy as np
 from src.exit.base_exit_mixin import BaseExitMixin
+from src.indicator.talib_sma import TALibSMA
+from src.indicator.talib_ema import TALibEMA
+from src.notification.logger import get_logger
 
+logger = get_logger(__name__)
 
 class MACrossoverExitMixin(BaseExitMixin):
     """Exit mixin based on Moving Average crossovers"""
@@ -31,6 +36,8 @@ class MACrossoverExitMixin(BaseExitMixin):
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
         super().__init__(params)
+        self.fast_ma_name = 'exit_fast_ma'
+        self.slow_ma_name = 'exit_slow_ma'
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -44,6 +51,7 @@ class MACrossoverExitMixin(BaseExitMixin):
             "slow_period": 20,
             "ma_type": "sma",
             "require_confirmation": False,
+            "use_talib": True,
         }
 
     def _init_indicators(self):
@@ -51,25 +59,53 @@ class MACrossoverExitMixin(BaseExitMixin):
         if not hasattr(self, 'strategy'):
             return
 
-        ma_type = self.get_param("ma_type", "sma")
-        if ma_type == "sma":
-            self.indicators["fast_ma"] = bt.indicators.SMA(self.strategy.data, period=self.get_param("fast_period"))
-            self.indicators["slow_ma"] = bt.indicators.SMA(self.strategy.data, period=self.get_param("slow_period"))
-        elif ma_type == "ema":
-            self.indicators["fast_ma"] = bt.indicators.EMA(self.strategy.data, period=self.get_param("fast_period"))
-            self.indicators["slow_ma"] = bt.indicators.EMA(self.strategy.data, period=self.get_param("slow_period"))
-        else:
-            raise ValueError(f"Unsupported MA type: {ma_type}")
+        try:
+            data = self.strategy.data
+            ma_type = self.get_param("ma_type", "sma").lower()
+            use_talib = self.get_param("use_talib", True)
+
+            if use_talib:
+                if ma_type == "sma":
+                    setattr(self.strategy, self.fast_ma_name, TALibSMA(data, period=self.get_param("fast_period")))
+                    setattr(self.strategy, self.slow_ma_name, TALibSMA(data, period=self.get_param("slow_period")))
+                elif ma_type == "ema":
+                    setattr(self.strategy, self.fast_ma_name, TALibEMA(data, period=self.get_param("fast_period")))
+                    setattr(self.strategy, self.slow_ma_name, TALibEMA(data, period=self.get_param("slow_period")))
+                else:
+                    raise ValueError(f"Unsupported MA type: {ma_type}")
+            else:
+                if ma_type == "sma":
+                    setattr(self.strategy, self.fast_ma_name, bt.indicators.SMA(data, period=self.get_param("fast_period")))
+                    setattr(self.strategy, self.slow_ma_name, bt.indicators.SMA(data, period=self.get_param("slow_period")))
+                elif ma_type == "ema":
+                    setattr(self.strategy, self.fast_ma_name, bt.indicators.EMA(data, period=self.get_param("fast_period")))
+                    setattr(self.strategy, self.slow_ma_name, bt.indicators.EMA(data, period=self.get_param("slow_period")))
+                else:
+                    raise ValueError(f"Unsupported MA type: {ma_type}")
+
+        except Exception as e:
+            logger.error(f"Error initializing indicators: {str(e)}")
+            raise
 
     def should_exit(self) -> bool:
         """Check if we should exit a position"""
         if not self.strategy.position:
             return False
-        fast_ma = self.indicators["fast_ma"][0]
-        slow_ma = self.indicators["slow_ma"][0]
-        prev_fast_ma = self.indicators["fast_ma"][-1]
-        prev_slow_ma = self.indicators["slow_ma"][-1]
-        if self.strategy.position.size > 0:
-            return prev_fast_ma > prev_slow_ma and fast_ma < slow_ma
-        else:
-            return prev_fast_ma < prev_slow_ma and fast_ma > slow_ma
+
+        if not all(hasattr(self.strategy, name) for name in [self.fast_ma_name, self.slow_ma_name]):
+            return False
+
+        fast_ma = getattr(self.strategy, self.fast_ma_name)
+        slow_ma = getattr(self.strategy, self.slow_ma_name)
+
+        # Get current and previous values
+        fast_ma_current = fast_ma[0]
+        slow_ma_current = slow_ma[0]
+        fast_ma_prev = fast_ma[-1]
+        slow_ma_prev = slow_ma[-1]
+
+        # Check for crossover based on position
+        if self.strategy.position.size > 0:  # Long position
+            return fast_ma_prev > slow_ma_prev and fast_ma_current < slow_ma_current
+        else:  # Short position
+            return fast_ma_prev < slow_ma_prev and fast_ma_current > slow_ma_current

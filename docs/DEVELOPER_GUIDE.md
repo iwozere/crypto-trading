@@ -249,17 +249,148 @@ optimized_strategy = CustomStrategy({
 
 4. **Result Visualization**:
 ```python
-# Create plotter
-plotter = BasePlotter(
-    data=strategy.data,
-    trades=strategy.trades,
-    strategy=strategy,
-    vis_settings=plot_config
-)
+# Create plotter with configuration
+plotter = Plotter(plot_config)
 
-# Generate and save plot
-plotter.plot("results/strategy_backtest.png")
+# Generate strategy visualization
+plotter.plot(strategy)
 ```
+
+### Creating TA-Lib Indicators
+
+The system provides a framework for creating custom TA-Lib indicators that integrate seamlessly with Backtrader. This allows you to leverage TA-Lib's optimized calculations while maintaining compatibility with Backtrader's indicator interface.
+
+#### Basic Structure
+
+Each TA-Lib indicator should:
+1. Inherit from `bt.Indicator`
+2. Define its lines and parameters
+3. Implement the `__init__` method for calculations
+4. Implement the `next` method (can be empty if pre-calculating)
+
+Example template:
+```python
+class TALibCustomIndicator(bt.Indicator):
+    """
+    TA-Lib Custom Indicator Wrapper
+    
+    Parameters:
+        period (int): Period for calculation (default: 20)
+        data (bt.Data): The data source (default: None)
+    """
+    
+    lines = ('line1', 'line2')  # Define indicator lines
+    params = (('period', 20),)  # Define parameters
+    
+    def __init__(self, data=None):
+        super(TALibCustomIndicator, self).__init__()
+        
+        # Convert data to numpy arrays
+        data_array = np.array(self.data.get(size=len(self.data)))
+        
+        # Calculate using TA-Lib
+        values = talib.CUSTOM_FUNCTION(
+            data_array,
+            timeperiod=self.p.period
+        )
+        
+        # Update indicator lines
+        for i, value in enumerate(values):
+            if i < len(self.lines[0]):
+                self.lines[0][i] = value
+    
+    def next(self):
+        """Required by Backtrader but can be empty if pre-calculating"""
+        pass
+```
+
+#### Example: TALibRSI
+
+Here's a complete example of the RSI indicator:
+```python
+class TALibRSI(bt.Indicator):
+    """
+    TA-Lib RSI (Relative Strength Index) Indicator Wrapper
+    
+    Parameters:
+        period (int): Period for RSI calculation (default: 14)
+    """
+    
+    lines = ('rsi',)  # Single line for RSI values
+    params = (('period', 14),)  # Default period is 14
+    
+    def __init__(self):
+        super(TALibRSI, self).__init__()
+        
+        # Convert data to numpy array
+        close_data = np.array(self.data.close.get(size=len(self.data)))
+        
+        # Calculate RSI using TA-Lib
+        rsi_values = talib.RSI(
+            close_data,
+            timeperiod=self.p.period
+        )
+        
+        # Update the indicator's line with calculated values
+        for i, value in enumerate(rsi_values):
+            if i < len(self.lines[0]):
+                self.lines[0][i] = value
+    
+    def next(self):
+        """Required by Backtrader but can be empty if pre-calculating"""
+        pass
+```
+
+#### Best Practices
+
+1. **Error Handling**:
+   - Always handle potential TA-Lib import errors
+   - Provide fallback to Backtrader's native indicators
+   - Log errors appropriately
+
+2. **Performance**:
+   - Pre-calculate values in `__init__` when possible
+   - Use numpy arrays for efficient calculations
+   - Minimize data copying
+
+3. **Documentation**:
+   - Document all parameters and their defaults
+   - Explain the indicator's purpose and usage
+   - Include examples in docstrings
+
+4. **Testing**:
+   - Test with both TA-Lib and Backtrader calculations
+   - Verify results match expected values
+   - Test edge cases and error conditions
+
+#### Using TA-Lib Indicators
+
+To use a TA-Lib indicator in your strategy:
+
+```python
+# In your strategy or mixin
+if use_talib:
+    self.rsi = TALibRSI(
+        self.data,
+        period=14
+    )
+else:
+    self.rsi = bt.indicators.RSI(
+        self.data,
+        period=14
+    )
+```
+
+#### Available TA-Lib Indicators
+
+The system includes several pre-built TA-Lib indicators:
+
+1. `TALibRSI`: Relative Strength Index
+2. `TALibBB`: Bollinger Bands
+3. `TALibATR`: Average True Range
+4. `TALibSMA`: Simple Moving Average
+
+Each indicator follows the same pattern and can be used interchangeably with Backtrader's native indicators.
 
 ## Adding New Entry/Exit Mixins
 
