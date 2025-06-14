@@ -159,8 +159,10 @@ class CustomOptimizer:
         cerebro.addanalyzer(PortfolioVolatility, _name="portfoliovolatility")
 
         # Run backtest
+        _logger.debug("Running backtest")
         results = cerebro.run()
         strategy = results[0]
+        _logger.debug("Backtest completed")
 
         analyzers = {
             "sharpe": strategy.analyzers.sharpe.get_analysis(),

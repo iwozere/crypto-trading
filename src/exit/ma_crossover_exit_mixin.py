@@ -55,43 +55,71 @@ class MACrossoverExitMixin(BaseExitMixin):
         }
 
     def _init_indicators(self):
-        """Initialize Moving Average indicators"""
+        """Initialize indicators"""
+        logger.debug("MACrossoverExitMixin._init_indicators called")
         if not hasattr(self, 'strategy'):
+            logger.error("No strategy available in _init_indicators")
             return
 
         try:
             data = self.strategy.data
             use_talib = self.strategy.use_talib
+            logger.debug(f"Initializing indicators with use_talib={use_talib}")
+
+            # Calculate required data length based on indicator periods
+            required_length = max(
+                self.get_param("fast_period"),
+                self.get_param("slow_period")
+            )
+            logger.debug(f"Required data length: {required_length}, Current data length: {len(data)}")
+
+            # Ensure we have enough data
+            if len(data) <= required_length:
+                logger.debug(f"Not enough data yet. Need {required_length} bars, have {len(data)}")
+                return
 
             if use_talib:
-                if self.get_param("ma_type", "sma").lower() == "sma":
-                    fast_ma = TALibSMA(data, period=self.get_param("fast_period"))
-                    slow_ma = TALibSMA(data, period=self.get_param("slow_period"))
-                    self.register_indicator(self.fast_ma_name, fast_ma)
-                    self.register_indicator(self.slow_ma_name, slow_ma)
-                elif self.get_param("ma_type", "sma").lower() == "ema":
-                    fast_ma = TALibEMA(data, period=self.get_param("fast_period"))
-                    slow_ma = TALibEMA(data, period=self.get_param("slow_period"))
-                    self.register_indicator(self.fast_ma_name, fast_ma)
-                    self.register_indicator(self.slow_ma_name, slow_ma)
-                else:
-                    raise ValueError(f"Unsupported MA type: {self.get_param('ma_type')}")
-            else:
-                if self.get_param("ma_type", "sma").lower() == "sma":
-                    fast_ma = bt.indicators.SMA(data, period=self.get_param("fast_period"))
-                    slow_ma = bt.indicators.SMA(data, period=self.get_param("slow_period"))
-                    self.register_indicator(self.fast_ma_name, fast_ma)
-                    self.register_indicator(self.slow_ma_name, slow_ma)
-                elif self.get_param("ma_type", "sma").lower() == "ema":
-                    fast_ma = bt.indicators.EMA(data, period=self.get_param("fast_period"))
-                    slow_ma = bt.indicators.EMA(data, period=self.get_param("slow_period"))
-                    self.register_indicator(self.fast_ma_name, fast_ma)
-                    self.register_indicator(self.slow_ma_name, slow_ma)
-                else:
-                    raise ValueError(f"Unsupported MA type: {self.get_param('ma_type')}")
+                # Use TA-Lib for fast MA
+                logger.debug("Creating TA-Lib fast MA indicator")
+                fast_ma = TALibSMA(
+                    data,
+                    period=self.get_param("fast_period")
+                )
+                logger.debug("Registering TA-Lib fast MA indicator")
+                self.register_indicator(self.fast_ma_name, fast_ma)
+                logger.debug(f"Fast MA indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
 
+                # Use TA-Lib for slow MA
+                logger.debug("Creating TA-Lib slow MA indicator")
+                slow_ma = TALibSMA(
+                    data,
+                    period=self.get_param("slow_period")
+                )
+                logger.debug("Registering TA-Lib slow MA indicator")
+                self.register_indicator(self.slow_ma_name, slow_ma)
+                logger.debug(f"Slow MA indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
+            else:
+                # Use Backtrader's native fast MA
+                logger.debug("Creating Backtrader fast MA indicator")
+                fast_ma = bt.indicators.SMA(
+                    data,
+                    period=self.get_param("fast_period")
+                )
+                logger.debug("Registering Backtrader fast MA indicator")
+                self.register_indicator(self.fast_ma_name, fast_ma)
+                logger.debug(f"Fast MA indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
+
+                # Use Backtrader's native slow MA
+                logger.debug("Creating Backtrader slow MA indicator")
+                slow_ma = bt.indicators.SMA(
+                    data,
+                    period=self.get_param("slow_period")
+                )
+                logger.debug("Registering Backtrader slow MA indicator")
+                self.register_indicator(self.slow_ma_name, slow_ma)
+                logger.debug(f"Slow MA indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
         except Exception as e:
-            logger.error(f"Error initializing indicators: {str(e)}")
+            logger.error(f"Error initializing indicators: {e}")
             raise
 
     def should_exit(self) -> bool:

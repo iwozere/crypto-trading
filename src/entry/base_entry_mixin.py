@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, get_type_hints, get_origin, get_args
 import inspect
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class BaseEntryMixin(ABC):
@@ -243,11 +246,19 @@ class BaseEntryMixin(ABC):
 
     def register_indicator(self, name: str, indicator: Any):
         """
-        Register an indicator in the indicators dictionary
+        Register an indicator in the indicators dictionary and set it as a strategy attribute
         
         Args:
             name: Name of the indicator
-            indicator: The indicator instance
+            indicator: Indicator instance
         """
+        # Store in indicators dictionary
         self.indicators[name] = indicator
-        setattr(self.strategy, name, indicator)
+        _logger.debug(f"Registered indicator '{name}' in indicators dictionary")
+        
+        # Set as strategy attribute if strategy exists
+        if self.strategy:
+            setattr(self.strategy, name, indicator)
+            _logger.debug(f"Set indicator '{name}' as strategy attribute")
+        else:
+            _logger.warning(f"Strategy not set, indicator '{name}' only stored in indicators dictionary")

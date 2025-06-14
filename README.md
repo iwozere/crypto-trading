@@ -6,33 +6,44 @@ A modular framework for developing, testing, and optimizing cryptocurrency and s
 
 ```
 crypto-trading/
-├── config/
-│   ├── optimizer/
-│   │   ├── entry/              # Entry strategy configurations
-│   │   │   ├── RSIBBMixin.json
-│   │   │   ├── RSIIchimokuMixin.json
-│   │   │   ├── RSIBBVolumeMixin.json
-│   │   │   ├── RSIVolumeSuperTrendMixin.json
-│   │   │   └── BBVolumeSuperTrendMixin.json
-│   │   ├── exit/               # Exit strategy configurations
-│   │   │   ├── ATRExitMixin.json
-│   │   │   ├── FixedRatioExitMixin.json
-│   │   │   ├── MACrossoverExitMixin.json
-│   │   │   ├── TimeBasedExitMixin.json
-│   │   │   └── TrailingStopExitMixin.json
-│   │   ├── optimize_entry.yaml # Entry optimization schema
-│   │   ├── optimize_exit.yaml  # Exit optimization schema
-│   │   └── optimizer.json      # Main optimizer configuration
-├── data/                       # Historical price data
-├── src/
-│   ├── analyzer/              # Custom analyzers
-│   ├── entry/                 # Entry strategy mixins
-│   ├── exit/                  # Exit strategy mixins
-│   ├── indicators/            # Custom indicators
-│   ├── optimizer/             # Optimization framework
-│   ├── strategy/              # Strategy implementations
-│   └── notification/          # Logging and notifications
-└── studies/                   # Optimization results
+├── config/                 # Configuration files
+│   ├── donotshare/        # Sensitive configuration files (API keys, etc.)
+│   ├── optimizer/         # Optimization configuration
+│   └── trading/          # Trading strategy configurations
+│
+├── data/                  # Data storage directory
+│
+├── db/                    # Database files
+│
+├── docs/                  # Documentation
+│
+├── logs/                  # Log files
+│
+├── results/              # Backtesting and optimization results
+│
+├── src/                  # Source code
+│   ├── analyzer/         # Analysis tools and metrics
+│   ├── broker/          # Exchange/broker integrations
+│   ├── data/            # Data handling and processing
+│   ├── entry/           # Entry strategy implementations
+│   ├── exit/            # Exit strategy implementations
+│   ├── indicator/       # Technical indicators
+│   ├── management/      # Position and risk management
+│   ├── ml/              # Machine learning models
+│   ├── notification/    # Notification systems
+│   ├── optimizer/       # Strategy optimization
+│   ├── plotter/         # Visualization tools
+│   ├── screener/        # Market screening tools
+│   ├── strategy/        # Trading strategies
+│   ├── trading/         # Core trading functionality
+│   └── util/            # Utility functions
+│
+├── tests/               # Test suite
+│
+├── .gitignore          # Git ignore file
+├── requirements.txt    # Python dependencies
+├── setup.py           # Package setup file
+└── TODO.md            # Project roadmap and tasks
 ```
 
 ## Features
@@ -42,19 +53,27 @@ crypto-trading/
   - Mixin-based architecture for easy strategy composition
   - Support for multiple entry and exit strategies
 
-- **Entry Strategies**
-  - RSI + Bollinger Bands
-  - RSI + Ichimoku
-  - RSI + BB + Volume
-  - RSI + Volume + SuperTrend
-  - BB + Volume + SuperTrend
+### Source Code (`src/`)
+- **Analyzer**: Performance analysis and metrics calculation
+- **Broker**: Exchange API integrations and order management
+- **Data**: Data fetching, processing, and storage
+- **Entry/Exit**: Trading signal generation and position management
+- **Indicator**: Technical analysis indicators (RSI, Bollinger Bands, etc.)
+- **Management**: Position sizing and risk management
+- **ML**: Machine learning models for prediction
+- **Notification**: Alert and notification systems
+- **Optimizer**: Strategy parameter optimization
+- **Plotter**: Data visualization and charting
+- **Screener**: Market scanning and opportunity identification
+- **Strategy**: Trading strategy implementations
+- **Trading**: Core trading engine and execution
+- **Util**: Helper functions and utilities
 
-- **Exit Strategies**
-  - ATR-based exits
-  - Fixed ratio exits
-  - Moving Average crossover exits
-  - Time-based exits
-  - Trailing stop exits
+### Data and Results
+- `data/`: Historical price data and market information
+- `results/`: Backtesting results and optimization outputs
+- `logs/`: System and trading logs
+- `db/`: Database files for persistent storage
 
 - **Optimization Framework**
   - Parameter optimization using Optuna

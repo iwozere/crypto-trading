@@ -56,26 +56,50 @@ class TrailingStopExitMixin(BaseExitMixin):
         }
 
     def _init_indicators(self):
-        """Initialize trailing stop indicators"""
+        """Initialize indicators"""
+        logger.debug("TrailingStopExitMixin._init_indicators called")
         if not hasattr(self, 'strategy'):
+            logger.error("No strategy available in _init_indicators")
             return
-        data = self.strategy.data
-        if self.get_param("use_atr", False):
+
+        try:
+            data = self.strategy.data
             use_talib = self.strategy.use_talib
-            try:
+            logger.debug(f"Initializing indicators with use_talib={use_talib}")
+
+            # Calculate required data length based on indicator periods
+            required_length = self.get_param("atr_period") if self.get_param("use_atr", False) else 1
+            logger.debug(f"Required data length: {required_length}, Current data length: {len(data)}")
+
+            # Ensure we have enough data
+            if len(data) <= required_length:
+                logger.debug(f"Not enough data yet. Need {required_length} bars, have {len(data)}")
+                return
+
+            if self.get_param("use_atr", False):
                 if use_talib:
-                    atr = TALibATR(data, period=14)
+                    # Use TA-Lib for ATR
+                    logger.debug("Creating TA-Lib ATR indicator")
+                    atr = TALibATR(
+                        data,
+                        period=self.get_param("atr_period")
+                    )
+                    logger.debug("Registering TA-Lib ATR indicator")
                     self.register_indicator(self.atr_name, atr)
+                    logger.debug(f"ATR indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
                 else:
-                    atr = bt.indicators.ATR(data, period=14, plot=False)
+                    # Use Backtrader's native ATR
+                    logger.debug("Creating Backtrader ATR indicator")
+                    atr = bt.indicators.ATR(
+                        data,
+                        period=self.get_param("atr_period")
+                    )
+                    logger.debug("Registering Backtrader ATR indicator")
                     self.register_indicator(self.atr_name, atr)
-            except ImportError:
-                logger.warning("TA-Lib not available, using Backtrader's ATR")
-                atr = bt.indicators.ATR(data, period=14, plot=False)
-                self.register_indicator(self.atr_name, atr)
-            except Exception as e:
-                logger.error(f"Error initializing ATR indicator: {str(e)}")
-                raise
+                    logger.debug(f"ATR indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
+        except Exception as e:
+            logger.error(f"Error initializing indicators: {e}")
+            raise
 
     def should_exit(self) -> bool:
         """Check if we should exit a position"""

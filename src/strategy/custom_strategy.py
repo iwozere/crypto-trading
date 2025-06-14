@@ -42,18 +42,9 @@ class CustomStrategy(bt.Strategy):
         ("position_size", 1.0),     # Default position size
     )
 
-    def __new__(cls, *args, **kwargs):
-        """Control instance creation to ensure proper initialization"""
-        if not hasattr(cls, '_instance'):
-            cls._instance = super(CustomStrategy, cls).__new__(cls)
-        return cls._instance
-
     def __init__(self):
         """Initialize strategy with configuration"""
-        # Skip if already initialized
-        if hasattr(self, '_initialized'):
-            return
-            
+        _logger.debug("CustomStrategy.__init__ called")
         super().__init__()  # Call parent's __init__ first
         
         # Initialize basic attributes
@@ -73,69 +64,70 @@ class CustomStrategy(bt.Strategy):
         # Initialize entry and exit mixins
         self.entry_mixin = None
         self.exit_mixin = None
-        
-        # Mark as initialized
-        self._initialized = True
+        _logger.debug("CustomStrategy.__init__ completed")
 
     def start(self):
         """Called once at the start of the strategy"""
+        _logger.debug("CustomStrategy.start called")
         try:
+            _logger.debug("Starting strategy initialization...")
             # Set configuration from params
             if self.p.strategy_config:
                 self._use_talib = self.p.strategy_config.get("use_talib", False)
                 self.entry_logic = self.p.strategy_config.get("entry_logic")
                 self.exit_logic = self.p.strategy_config.get("exit_logic")
+                _logger.debug(f"Strategy config loaded - Entry: {self.entry_logic['name']}, Exit: {self.exit_logic['name']}")
             
             # Create mixins but don't initialize indicators yet
             if self.entry_logic:
                 entry_mixin_class = ENTRY_MIXIN_REGISTRY[self.entry_logic["name"]]
                 if entry_mixin_class:
+                    _logger.debug(f"Creating entry mixin: {self.entry_logic['name']}")
                     self.entry_mixin = entry_mixin_class(params=self.entry_logic["params"])
                     self.entry_mixin.strategy = self
+                    _logger.debug(f"Entry mixin created with params: {self.entry_logic['params']}")
             
             if self.exit_logic:
                 exit_mixin_class = EXIT_MIXIN_REGISTRY[self.exit_logic["name"]]
                 if exit_mixin_class:
+                    _logger.debug(f"Creating exit mixin: {self.exit_logic['name']}")
                     self.exit_mixin = exit_mixin_class(params=self.exit_logic["params"])
                     self.exit_mixin.strategy = self
+                    _logger.debug(f"Exit mixin created with params: {self.exit_logic['params']}")
         except Exception as e:
             _logger.error(f"Error in start: {e}")
             raise
 
-    def prenext(self):
-        """Called before next() when we don't have enough data"""
-        # Initialize indicators once we have enough data
-        if len(self.data) > max(
-            self.entry_logic["params"].get("rsi_period", 14) if self.entry_logic else 0,
-            self.exit_logic["params"].get("rsi_period", 14) if self.exit_logic else 0
-        ):
-            if self.entry_mixin and not hasattr(self, self.entry_mixin.rsi_name):
-                self.entry_mixin._init_indicators()
-            if self.exit_mixin and not hasattr(self, self.exit_mixin.rsi_name):
-                self.exit_mixin._init_indicators()
+    def next(self):
+        """Called for each bar"""
+        # Initialize indicators if not already done
+        if not hasattr(self, '_indicators_initialized'):
+            try:
+                _logger.debug("Initializing indicators in next()")
+                if self.entry_mixin:
+                    _logger.debug("Initializing entry mixin...")
+                    self.entry_mixin.init_entry(self)
+                    _logger.debug("Entry mixin initialized")
+                
+                if self.exit_mixin:
+                    _logger.debug("Initializing exit mixin...")
+                    self.exit_mixin.init_exit(self)
+                    _logger.debug("Exit mixin initialized")
+                
+                self._indicators_initialized = True
+                _logger.debug("All indicators initialized")
+            except Exception as e:
+                _logger.error(f"Error initializing indicators in next: {e}")
+                raise
+
+        # Rest of next() logic...
+        if self.entry_mixin and self.entry_mixin.should_enter():
+            self.buy()
 
     @property
     def use_talib(self):
         """Get whether to use TA-Lib"""
         return self._use_talib
-
-    def next(self):
-        """Main strategy logic"""
-        try:
-            # Track equity curve
-            self.equity_curve.append(self.broker.getvalue())
-            self.equity_dates.append(self.data.datetime.datetime())
-            
-            if not self.current_trade and self.entry_mixin and self.entry_mixin.should_enter():
-                self.buy(size=self.p.position_size)
-                _logger.debug(f"ENTRY: Price: {self.data.close[0]}, Size: {self.p.position_size}")
-            elif self.current_trade and self.exit_mixin and self.exit_mixin.should_exit():
-                self.current_exit_reason = self.exit_mixin.get_exit_reason()  # Get reason before selling
-                self.sell(size=self.p.position_size)
-                _logger.debug(f"EXIT: Price: {self.data.close[0]}, Size: {self.p.position_size}")
-        except Exception as e:
-            _logger.error(f"Error in next: {e}")
-            raise
 
     def notify_trade(self, trade):
         """Record trade information"""

@@ -62,42 +62,76 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
 
     def _init_indicators(self):
         """Initialize indicators"""
+        logger.debug("BBVolumeSupertrendEntryMixin._init_indicators called")
         if not hasattr(self, 'strategy'):
+            logger.error("No strategy available in _init_indicators")
             return
 
         try:
             data = self.strategy.data
             use_talib = self.strategy.use_talib
+            logger.debug(f"Initializing indicators with use_talib={use_talib}")
 
-            # Initialize Bollinger Bands
+            # Calculate required data length based on indicator periods
+            required_length = max(
+                self.get_param("bb_period"),
+                self.get_param("volume_ma_period"),
+                self.get_param("supertrend_period")
+            )
+            logger.debug(f"Required data length: {required_length}, Current data length: {len(data)}")
+
+            # Ensure we have enough data
+            if len(data) <= required_length:
+                logger.debug(f"Not enough data yet. Need {required_length} bars, have {len(data)}")
+                return
+
             if use_talib:
+                # Use TA-Lib for Bollinger Bands
+                logger.debug("Creating TA-Lib BB indicator")
                 bb = TALibBB(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
                 )
+                logger.debug("Registering TA-Lib BB indicator")
                 self.register_indicator(self.bb_name, bb)
+
+                # Use TA-Lib for Volume MA
+                logger.debug("Creating TA-Lib Volume MA indicator")
+                vol_ma = TALibSMA(
+                    data.volume,
+                    period=self.get_param("volume_ma_period")
+                )
+                logger.debug("Registering TA-Lib Volume MA indicator")
+                self.register_indicator(self.volume_ma_name, vol_ma)
             else:
+                # Use Backtrader's native Bollinger Bands
+                logger.debug("Creating Backtrader BB indicator")
                 bb = bt.indicators.BollingerBands(
                     data,
                     period=self.get_param("bb_period"),
                     devfactor=self.get_param("bb_stddev")
                 )
+                logger.debug("Registering Backtrader BB indicator")
                 self.register_indicator(self.bb_name, bb)
 
-            # Initialize Volume MA
-            vol_ma = bt.indicators.SMA(
-                data.volume,
-                period=self.get_param("volume_ma_period")
-            )
-            self.register_indicator(self.volume_ma_name, vol_ma)
+                # Use Backtrader's native SMA for Volume
+                logger.debug("Creating Backtrader Volume MA indicator")
+                vol_ma = bt.indicators.SMA(
+                    data.volume,
+                    period=self.get_param("volume_ma_period")
+                )
+                logger.debug("Registering Backtrader Volume MA indicator")
+                self.register_indicator(self.volume_ma_name, vol_ma)
 
-            # Initialize Supertrend
+            # Create Supertrend indicator (same for both TA-Lib and Backtrader)
+            logger.debug("Creating Supertrend indicator")
             supertrend = SuperTrend(
                 data,
                 period=self.get_param("supertrend_period"),
                 multiplier=self.get_param("supertrend_multiplier")
             )
+            logger.debug("Registering Supertrend indicator")
             self.register_indicator(self.supertrend_name, supertrend)
         except Exception as e:
             logger.error(f"Error initializing indicators: {e}")

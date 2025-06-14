@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
+from src.notification.logger import setup_logger
 
+_logger = setup_logger(__name__)
 
 class BaseExitMixin(ABC):
     """Base class for all exit mixins"""
@@ -59,3 +61,22 @@ class BaseExitMixin(ABC):
 
     def get_param(self, key: str, default=None):
         return self.params.get(key, default)
+
+    def register_indicator(self, name: str, indicator: Any):
+        """
+        Register an indicator in the indicators dictionary and set it as a strategy attribute
+        
+        Args:
+            name: Name of the indicator
+            indicator: The indicator instance
+        """
+        _logger.debug(f"Registering indicator: {name}")
+        # Store in indicators dictionary
+        self.indicators[name] = indicator
+        
+        # Also set as strategy attribute if strategy exists
+        if hasattr(self, 'strategy') and self.strategy is not None:
+            setattr(self.strategy, name, indicator)
+            _logger.debug(f"Indicator {name} set as strategy attribute")
+        else:
+            _logger.warning(f"Cannot set {name} as strategy attribute - strategy not available")

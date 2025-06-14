@@ -83,7 +83,7 @@ LOG_CONFIG = {
         },
         "telegram_bot": {
             "handlers": ["console", "file"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         "default": {"handlers": ["console", "file"], "level": "DEBUG"},
@@ -121,7 +121,7 @@ def setup_logger(name: str):
     
     # If the logger is not configured yet, use the default configuration
     if not logger.handlers:
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.DEBUG)
         # Use the default handlers from LOG_CONFIG
         for handler in logging.getLogger('default').handlers:
             # Create a new handler instance to avoid sharing the same handler

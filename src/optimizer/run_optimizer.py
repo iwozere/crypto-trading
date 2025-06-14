@@ -235,15 +235,15 @@ def create_plotter(strategy, visualization_settings):
         else:
             # Add individual indicators if not in indicators dict
             if hasattr(strategy, 'entry_rsi'):
-                indicators['rsi'] = strategy.entry_rsi
+                indicators['entry_rsi'] = strategy.entry_rsi
             if hasattr(strategy, 'entry_bb'):
-                indicators['bb'] = strategy.entry_bb
+                indicators['entry_bb'] = strategy.entry_bb
             if hasattr(strategy, 'entry_volume_ma'):
-                indicators['volume'] = strategy.entry_volume_ma
+                indicators['entry_volume_ma'] = strategy.entry_volume_ma
             if hasattr(strategy, 'entry_supertrend'):
-                indicators['supertrend'] = strategy.entry_supertrend
+                indicators['entry_supertrend'] = strategy.entry_supertrend
             if hasattr(strategy, 'entry_ichimoku'):
-                indicators['ichimoku'] = strategy.entry_ichimoku
+                indicators['entry_ichimoku'] = strategy.entry_ichimoku
     
     # Add exit mixin indicators
     if hasattr(strategy, 'exit_mixin'):
@@ -257,8 +257,8 @@ def create_plotter(strategy, visualization_settings):
                 indicators['exit_bb'] = strategy.exit_bb
     
     # Update strategy's indicators dictionary
-    if hasattr(strategy, 'entry_mixin'):
-        strategy.entry_mixin.indicators = indicators
+    #if hasattr(strategy, 'entry_mixin'):
+    #    strategy.entry_mixin.indicators = indicators
     
     # Log available indicators for debugging
     _logger.info(f"Available indicators: {list(indicators.keys())}")
@@ -331,8 +331,11 @@ if __name__ == "__main__":
                 # Get best result
                 best_trial = study.best_trial
                 best_optimizer = CustomOptimizer(_optimizer_config)
+                
+                # Run full backtest with best parameters
+                _logger.info("Running full backtest with best parameters")
                 strategy, best_result = best_optimizer.run_optimization(best_trial)
-
+                
                 # Save results
                 save_results(best_result, data_file)
 
