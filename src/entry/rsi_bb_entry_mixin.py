@@ -21,10 +21,7 @@ This strategy combines mean reversion (RSI + BB) to identify potential reversal 
 
 from typing import Any, Dict, Optional
 
-import backtrader as bt
 from src.entry.base_entry_mixin import BaseEntryMixin
-from src.indicator.talib_rsi import TALibRSI
-from src.indicator.talib_bb import TALibBB
 from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -66,8 +63,8 @@ class RSIBBEntryMixin(BaseEntryMixin):
             required_length = max(
                 self.get_param("rsi_period"),
                 self.get_param("bb_period")
-            )
-            logger.debug(f"Required data length: {required_length}, Current data length: {len(self.strategy.data)}")
+            ) * 3
+            logger.debug(f"Required data length: {required_length}, Current data length: {len(self.strategy.data)}, rsi_period: {self.get_param("rsi_period")}")
 
             # Ensure we have enough data
             if len(self.strategy.data) <= required_length:
@@ -90,7 +87,7 @@ class RSIBBEntryMixin(BaseEntryMixin):
             self.register_indicator(self.bb_name, bb)
 
         except Exception as e:
-            logger.error(f"Error initializing indicators: {e}")
+            logger.error(f"Error initializing indicators: {e}", exc_info=e)
             return
 
     def should_enter(self) -> bool:

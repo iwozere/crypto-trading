@@ -8,6 +8,7 @@ and indicator lifecycle management.
 
 from typing import Any, Dict, Optional
 import backtrader as bt
+import pandas as pd
 from src.notification.logger import setup_logger
 
 # Import TA-Lib indicators
@@ -42,11 +43,14 @@ class IndicatorFactory:
         if name in self.indicators:
             return self.indicators[name]
 
-        logger.debug(f"Creating {'TA-Lib' if self.use_talib else 'Backtrader'} RSI indicator")
+        if pd.isna(self.data.close[0]):
+            raise ValueError("Data contains NaN values")
+
+        logger.debug(f"Creating {'TA-Lib' if self.use_talib else 'Backtrader'} RSI indicator. Bars: {len(self.data)}")
         if self.use_talib:
             indicator = TALibRSI(self.data, period=period)
         else:
-            indicator = RSI(self.data, period=period)
+            indicator = RSI(self.data, period=period, safediv=True)
         
         self.indicators[name] = indicator
         return indicator

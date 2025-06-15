@@ -36,36 +36,28 @@ def prepare_data(data_file):
     print("Available columns:", df.columns.tolist())
 
     # Find datetime column
-    datetime_col = None
-    for col in ["datetime", "date", "time", "timestamp"]:
-        if col in df.columns:
-            datetime_col = col
-            break
-
-    if datetime_col:
-        df["datetime"] = pd.to_datetime(df[datetime_col])
-    else:
-        # If no datetime column found, create one from index
-        df["datetime"] = pd.date_range(start="2020-01-01", periods=len(df), freq="1min")
-
-    # Ensure all required columns exist
-    required_columns = ["open", "high", "low", "close", "volume"]
-    for col in required_columns:
-        if col not in df.columns:
-            raise ValueError(f"Required column '{col}' not found in data file")
-
-    # Set datetime as index
+    df["datetime"] = pd.to_datetime(df["timestamp"], utc=True)    
+    df = df.sort_values("datetime", ascending=True)
     df.set_index("datetime", inplace=True)
-    
+
+    df = df[["open", "high", "low", "close", "volume"]]
+
+    for col in ["open", "high", "low", "close", "volume"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    df.ffill(inplace=True)
+    df.bfill(inplace=True)
+
     # Create Backtrader data feed
     data = bt.feeds.PandasData(
         dataname=df,
-        open="open",
-        high="high",
-        low="low",
-        close="close",
-        volume="volume",
-        openinterest=-1,
+        datetime=None,
+        open=df.columns.get_loc("open"),
+        high=df.columns.get_loc("high"),
+        low=df.columns.get_loc("low"),
+        close=df.columns.get_loc("close"),
+        volume=df.columns.get_loc("volume"),
+        openinterest=None
     )
     return data
 

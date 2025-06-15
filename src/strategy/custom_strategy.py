@@ -98,6 +98,10 @@ class CustomStrategy(bt.Strategy):
             _logger.error(f"Error in start: {e}")
             raise
 
+    def prenext(self):
+        """Skip bars until we have enough data"""
+        pass
+
     def next(self):
         """Called for each bar"""
         # Initialize indicators if not already done
