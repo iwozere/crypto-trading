@@ -110,13 +110,15 @@ def save_results(result, data_file):
                 'exit_time': trade['exit_time'].isoformat() if isinstance(trade['exit_time'], dt) else trade['exit_time'],
                 'entry_price': float(trade['entry_price']),
                 'exit_price': float(trade['exit_price']),
-                'pnl': float(trade['pnl']),
                 'size': float(trade['size']),
                 'symbol': str(trade['symbol']),
-                'direction': str(trade['direction']),
+                'trade_type': str(trade['trade_type']),
                 'commission': float(trade['commission']),
-                'pnl_comm': float(trade['pnl_comm']),
-                'exit_reason': str(trade['exit_reason'])
+                'gross_pnl': float(trade['gross_pnl']),
+                'net_pnl': float(trade['net_pnl']),
+                'pnl_percentage': float(trade['pnl_percentage']),
+                'exit_reason': str(trade['exit_reason']),
+                'status': str(trade['status'])
             }
             trades.append(serializable_trade)
         

@@ -186,15 +186,15 @@ class BasePlotter:
             # Get data within valid range
             for i in range(data_len):
                 try:
-                    # Skip the first few bars as they might not have all indicators ready
-                    if i < self.data.buflen():
-                        continue
+                    # Check if we can access the data at this index
+                    if i >= len(self.data.datetime) or i >= len(self.data.close):
+                        break
                         
                     dates.append(self.data.datetime.datetime(i))
-                    prices.append(self.data.close.array[i])  # Use array access for price data
+                    prices.append(self.data.close[i])
                 except (IndexError, AttributeError) as e:
                     _logger.warning(f"Error accessing data at index {i}: {str(e)}", exc_info=False)
-                    break
+                    break  # Stop if we hit an error
         except Exception as e:
             _logger.error(f"Error accessing data: {str(e)}", exc_info=False)
             return

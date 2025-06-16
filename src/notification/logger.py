@@ -19,6 +19,9 @@ from datetime import datetime as dt
 log_dir = os.path.join("logs", "log")
 os.makedirs(log_dir, exist_ok=True)
 
+# Constants for log file configuration
+MAX_BYTES = 10 * 1024 * 1024  # 10MB
+BACKUP_COUNT = 50  # Keep 5 backup files
 
 ####################################################################
 # Simple logger, which logs to console
@@ -52,20 +55,26 @@ LOG_CONFIG = {
             "formatter": "detailed",
         },
         "file": {
-            "class": "logging.FileHandler",
+            "class": "logging.handlers.RotatingFileHandler",
             "filename": "logs/log/app.log",
+            "maxBytes": MAX_BYTES,
+            "backupCount": BACKUP_COUNT,
             "level": "DEBUG",
             "formatter": "detailed",
         },
         "trade_file": {
-            "class": "logging.FileHandler",
+            "class": "logging.handlers.RotatingFileHandler",
             "filename": "logs/log/trades.log",
+            "maxBytes": MAX_BYTES,
+            "backupCount": BACKUP_COUNT,
             "level": "DEBUG",
             "formatter": "detailed",
         },
         "error_file": {
-            "class": "logging.FileHandler",
+            "class": "logging.handlers.RotatingFileHandler",
             "filename": "logs/log/app_errors.log",
+            "maxBytes": MAX_BYTES,
+            "backupCount": BACKUP_COUNT,
             "level": "ERROR",
             "formatter": "detailed",
         },
@@ -127,8 +136,13 @@ def setup_logger(name: str):
             # Create a new handler instance to avoid sharing the same handler
             if isinstance(handler, logging.StreamHandler):
                 new_handler = logging.StreamHandler(handler.stream)
-            elif isinstance(handler, logging.FileHandler):
-                new_handler = logging.FileHandler(handler.baseFilename, mode=handler.mode)
+            elif isinstance(handler, RotatingFileHandler):
+                new_handler = RotatingFileHandler(
+                    handler.baseFilename,
+                    maxBytes=handler.maxBytes,
+                    backupCount=handler.backupCount,
+                    mode=handler.mode
+                )
             else:
                 new_handler = handler
             

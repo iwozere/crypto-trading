@@ -65,27 +65,58 @@ class RSIBBEntryMixin(BaseEntryMixin):
         try:
             rsi_period = self.get_param("rsi_period")
             bb_period = self.get_param("bb_period")
-            bb_dev_factor=self.get_param("bb_stddev")
+            bb_dev_factor = self.get_param("bb_stddev")
 
             if self.strategy.use_talib:
-                self.rsi = bt.talib.RSI(self.strategy.data.close, period=rsi_period)
-                self.bb = bt.talib.BBANDS(self.strategy.data.close, bb_period, bb_dev_factor)
-                self.bb_top = self.bbands.lines.upper
-                self.bb_mid = self.bbands.lines.middle
-                self.bb_bot = self.bbands.lines.lower
+                self.rsi = bt.talib.RSI(self.strategy.data.close, timeperiod=rsi_period)
+                self.bb = bt.talib.BBANDS(self.strategy.data.close, timeperiod=bb_period, nbdevup=bb_dev_factor, nbdevdn=bb_dev_factor)
+                self.bb_top = self.bb.lines.upper
+                self.bb_mid = self.bb.lines.middle
+                self.bb_bot = self.bb.lines.lower
             else:
                 self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
-                self.bb = bt.indicators.BollingerBands(self.strategy.data.close, bb_period, bb_dev_factor)
-                self.bb_top = self.bbands.lines.top
-                self.bb_mid = self.bbands.lines.mid
-                self.bb_bot = self.bbands.lines.bot
+                self.bb = bt.indicators.BollingerBands(self.strategy.data.close, period=bb_period, devfactor=bb_dev_factor)
+                self.bb_top = self.bb.lines.top
+                self.bb_mid = self.bb.lines.mid
+                self.bb_bot = self.bb.lines.bot
 
-            self.register_indicator(self.rsi_name, self.rsi)
-            self.register_indicator(self.bb_name, self.bb)
+            # Register indicators after they are created
+            if self.rsi is not None:
+                self.register_indicator(self.rsi_name, self.rsi)
+            if self.bb is not None:
+                self.register_indicator(self.bb_name, self.bb)
 
         except Exception as e:
             logger.error(f"Error initializing indicators: {e}", exc_info=e)
-            return
+            raise
+
+    def are_indicators_ready(self) -> bool:
+        """Check if indicators are ready to be used"""
+        if not hasattr(self, 'indicators'):
+            return False
+            
+        try:
+            # Check if we have enough data points
+            if len(self.strategy.data) < max(self.get_param("rsi_period"), self.get_param("bb_period")):
+                return False
+                
+            # Check if indicators are registered and have values
+            if self.rsi_name not in self.indicators or self.bb_name not in self.indicators:
+                return False
+                
+            # Check if we can access the first value of each indicator
+            rsi = self.indicators[self.rsi_name]
+            bb = self.indicators[self.bb_name]
+            
+            # Try to access the first value of each indicator
+            _ = rsi[0]
+            _ = bb.lines.top[0]
+            _ = bb.lines.mid[0]
+            _ = bb.lines.bot[0]
+            
+            return True
+        except (IndexError, AttributeError):
+            return False
 
     def should_enter(self) -> bool:
         """Check if we should enter a position"""

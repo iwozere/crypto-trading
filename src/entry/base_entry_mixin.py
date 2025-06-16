@@ -259,10 +259,12 @@ class BaseEntryMixin(ABC):
             indicator: Indicator instance
         """
         _logger.debug(f"Registering indicator: {name}")
+        if not hasattr(self, 'indicators'):
+            self.indicators = {}
         self.indicators[name] = indicator
         
         # Set as strategy attribute if strategy exists
-        if self.strategy:
+        if hasattr(self, 'strategy') and self.strategy is not None:
             # Set the indicator as a strategy attribute
             setattr(self.strategy, name, indicator)
             _logger.debug(f"Set indicator '{name}' as strategy attribute")

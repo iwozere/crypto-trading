@@ -112,11 +112,11 @@ class CustomStrategy(bt.Strategy):
             self.exit_mixin.next()
 
         # Check for entry signals
-        if self.entry_mixin and self.entry_mixin.should_enter():
+        if self.current_trade is None and self.entry_mixin and self.entry_mixin.should_enter():
             self.buy()
 
         # Check for exit signals
-        if self.exit_mixin and self.exit_mixin.should_exit():
+        if self.current_trade is not None and self.exit_mixin and self.exit_mixin.should_exit():
             self.sell()
 
     @property
@@ -133,9 +133,9 @@ class CustomStrategy(bt.Strategy):
             
             # Update position state based on trade status
             if trade.isclosed:
-                # Calculate trade duration
-                duration = trade.dtclose - self.current_trade['entry_time']
-                duration_minutes = duration.total_seconds() / 60
+                # Calculate trade duration in minutes
+                duration_days = trade.dtclose - trade.dtopen
+                duration_minutes = duration_days * 24 * 60  # Convert days to minutes
                 
                 # Calculate PnL
                 entry_value = self.current_trade['entry_price'] * self.current_trade['size']
