@@ -19,6 +19,7 @@ from src.exit.exit_mixin_factory import (get_exit_mixin,
                                          get_exit_mixin_from_config,
                                          EXIT_MIXIN_REGISTRY)
 from src.notification.logger import setup_logger
+import pandas as pd
 
 _logger = setup_logger(__name__)
 
@@ -143,10 +144,13 @@ class CustomStrategy(bt.Strategy):
                 gross_pnl = exit_value - entry_value
                 net_pnl = gross_pnl - (self.current_trade['commission'] + trade.commission)
                 
+                # Convert Backtrader datetime to pandas datetime
+                exit_time = pd.to_datetime(trade.dtclose)
+                
                 # Update trade record with exit information
                 self.current_trade.update({
-                    'exit_time': trade.dtclose,
-                    'exit_price': trade.price,
+                    'exit_time': exit_time,
+                    'exit_price': exit_value,
                     'exit_reason': self.current_exit_reason or 'unknown',
                     'commission': self.current_trade['commission'] + trade.commission,
                     'duration_minutes': duration_minutes,
@@ -165,9 +169,12 @@ class CustomStrategy(bt.Strategy):
                 self.current_trade = None
                 self.current_exit_reason = None  # Reset exit reason
             else:
+                # Convert Backtrader datetime to pandas datetime
+                entry_time = pd.to_datetime(trade.dtopen)
+                
                 # Trade is opened
                 self.current_trade = {
-                    'entry_time': trade.dtopen,
+                    'entry_time': entry_time,
                     'entry_price': trade.price,
                     'size': trade.size,
                     'symbol': self.data._name,

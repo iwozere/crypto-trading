@@ -105,22 +105,50 @@ def save_results(result, data_file):
         # Convert trade records to serializable format
         trades = []
         for trade in result.get("trades", []):
-            serializable_trade = {
-                'entry_time': trade['entry_time'].isoformat() if isinstance(trade['entry_time'], dt) else trade['entry_time'],
-                'exit_time': trade['exit_time'].isoformat() if isinstance(trade['exit_time'], dt) else trade['exit_time'],
-                'entry_price': float(trade['entry_price']),
-                'exit_price': float(trade['exit_price']),
-                'size': float(trade['size']),
-                'symbol': str(trade['symbol']),
-                'trade_type': str(trade['trade_type']),
-                'commission': float(trade['commission']),
-                'gross_pnl': float(trade['gross_pnl']),
-                'net_pnl': float(trade['net_pnl']),
-                'pnl_percentage': float(trade['pnl_percentage']),
-                'exit_reason': str(trade['exit_reason']),
-                'status': str(trade['status'])
-            }
-            trades.append(serializable_trade)
+            try:
+                # Ensure we have all required fields
+                if not all(k in trade for k in ['entry_time', 'exit_time', 'entry_price', 'exit_price']):
+                    _logger.warning(f"Skipping trade with missing required fields: {trade}")
+                    continue
+                    
+                # Convert datetime objects to ISO format strings
+                entry_time = trade['entry_time']
+                exit_time = trade['exit_time']
+                
+                if isinstance(entry_time, pd.Timestamp):
+                    entry_time = entry_time.isoformat()
+                elif isinstance(entry_time, dt):
+                    entry_time = entry_time.isoformat()
+                    
+                if isinstance(exit_time, pd.Timestamp):
+                    exit_time = exit_time.isoformat()
+                elif isinstance(exit_time, dt):
+                    exit_time = exit_time.isoformat()
+                
+                # Create serializable trade record
+                serializable_trade = {
+                    'entry_time': entry_time,
+                    'exit_time': exit_time,
+                    'entry_price': float(trade['entry_price']),
+                    'exit_price': float(trade['exit_price']),
+                    'size': float(trade['size']),
+                    'symbol': str(trade['symbol']),
+                    'trade_type': str(trade['trade_type']),
+                    'commission': float(trade['commission']),
+                    'gross_pnl': float(trade['gross_pnl']),
+                    'net_pnl': float(trade['net_pnl']),
+                    'pnl_percentage': float(trade['pnl_percentage']),
+                    'exit_reason': str(trade['exit_reason']),
+                    'status': str(trade['status'])
+                }
+                trades.append(serializable_trade)
+                
+                # Log trade details for debugging
+                _logger.debug(f"Processed trade: Entry={serializable_trade['entry_price']} @ {serializable_trade['entry_time']}, "
+                            f"Exit={serializable_trade['exit_price']} @ {serializable_trade['exit_time']}")
+            except Exception as e:
+                _logger.error(f"Error processing trade: {str(e)}")
+                continue
         
         # Process analyzer results
         analyzers = {}

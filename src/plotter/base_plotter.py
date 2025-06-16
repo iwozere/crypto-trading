@@ -251,19 +251,31 @@ class BasePlotter:
         """Plot trade markers"""
         ax = self.axes[0]
         for trade in self.trades:
-            # Plot entry
-            if 'entry_time' in trade:
-                entry_date = pd.to_datetime(trade['entry_time'])
-                ax.scatter(entry_date, trade['entry_price'], 
-                          marker='^', color='green', s=100, 
-                          label='Buy' if trade == self.trades[0] else "")
-            
-            # Plot exit
-            if 'exit_time' in trade:
-                exit_date = pd.to_datetime(trade['exit_time'])
-                ax.scatter(exit_date, trade['exit_price'], 
-                          marker='v', color='red', s=100, 
-                          label='Sell' if trade == self.trades[0] else "")
+            try:
+                # Plot entry
+                if 'entry_time' in trade:
+                    # Convert Backtrader datetime to pandas datetime
+                    entry_date = pd.to_datetime(trade['entry_time'])
+                    if entry_date.year < 2000:  # Skip invalid dates
+                        _logger.warning(f"Invalid entry date: {entry_date}")
+                        continue
+                    ax.scatter(entry_date, trade['entry_price'], 
+                             marker='^', color='green', s=100, 
+                             label='Buy' if trade == self.trades[0] else "")
+                
+                # Plot exit
+                if 'exit_time' in trade:
+                    # Convert Backtrader datetime to pandas datetime
+                    exit_date = pd.to_datetime(trade['exit_time'])
+                    if exit_date.year < 2000:  # Skip invalid dates
+                        _logger.warning(f"Invalid exit date: {exit_date}")
+                        continue
+                    ax.scatter(exit_date, trade['exit_price'], 
+                             marker='v', color='red', s=100, 
+                             label='Sell' if trade == self.trades[0] else "")
+            except Exception as e:
+                _logger.error(f"Error plotting trade: {str(e)}")
+                continue
 
     def _plot_equity(self):
         """Plot equity curve"""
