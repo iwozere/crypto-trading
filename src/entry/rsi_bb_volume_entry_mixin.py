@@ -27,9 +27,6 @@ from typing import Any, Dict, Optional
 
 import backtrader as bt
 from src.entry.base_entry_mixin import BaseEntryMixin
-from src.indicator.talib_bb import TALibBB
-from src.indicator.talib_rsi import TALibRSI
-from src.indicator.talib_sma import TALibSMA
 from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -43,6 +40,14 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         self.rsi_name = 'entry_rsi'
         self.bb_name = 'entry_bb'
         self.vol_ma_name = 'entry_volume_ma'
+
+        self.rsi = None
+        self.bb = None
+        self.bb_bot = None
+        self.bb_mid = None
+        self.bb_top = None
+        self.sma = None
+
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -68,81 +73,31 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             return
 
         try:
-            data = self.strategy.data
-            use_talib = self.strategy.use_talib
-            logger.debug(f"Initializing indicators with use_talib={use_talib}")
+            rsi_period = self.get_param("rsi_period")
+            bb_period = self.get_param("bb_period")
+            bb_dev_factor = self.get_param("bb_stddev")
+            sma_period = self.get_param("volume_ma_period")
 
-            # Calculate required data length based on indicator periods
-            required_length = max(
-                self.get_param("rsi_period"),
-                self.get_param("bb_period"),
-                self.get_param("volume_ma_period")
-            )
-            logger.debug(f"Required data length: {required_length}, Current data length: {len(data)}")
-
-            # Ensure we have enough data
-            if len(data) <= required_length:
-                logger.debug(f"Not enough data yet. Need {required_length} bars, have {len(data)}")
-                return
-
-            if use_talib:
-                # Use TA-Lib for RSI
-                logger.debug("Creating TA-Lib RSI indicator")
-                rsi = TALibRSI(
-                    data,
-                    period=self.get_param("rsi_period")
-                )
-                logger.debug("Registering TA-Lib RSI indicator")
-                self.register_indicator(self.rsi_name, rsi)
-
-                # Use TA-Lib for Bollinger Bands
-                logger.debug("Creating TA-Lib BB indicator")
-                bb = TALibBB(
-                    data,
-                    period=self.get_param("bb_period"),
-                    devfactor=self.get_param("bb_stddev")
-                )
-                logger.debug("Registering TA-Lib BB indicator")
-                self.register_indicator(self.bb_name, bb)
-
-                # Use TA-Lib for Volume MA
-                logger.debug("Creating TA-Lib Volume MA indicator")
-                vol_ma = TALibSMA(
-                    data.volume,
-                    period=self.get_param("volume_ma_period")
-                )
-                logger.debug("Registering TA-Lib Volume MA indicator")
-                self.register_indicator(self.vol_ma_name, vol_ma)
+            if self.strategy.use_talib:
+                self.rsi = bt.talib.RSI(self.strategy.data.close, period=rsi_period)
+                self.bb = bt.talib.BBANDS(self.strategy.data.close, bb_period, bb_dev_factor)
+                self.bb_top = self.bbands.lines.upper
+                self.bb_mid = self.bbands.lines.middle
+                self.bb_bot = self.bbands.lines.lower
+                self.sma = bt.talib.SMA(self.strategy.data.volume, sma_period)
             else:
-                # Use Backtrader's native RSI
-                logger.debug("Creating Backtrader RSI indicator")
-                rsi = bt.indicators.RSI(
-                    data,
-                    period=self.get_param("rsi_period")
-                )
-                logger.debug("Registering Backtrader RSI indicator")
-                self.register_indicator(self.rsi_name, rsi)
+                self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
+                self.bb = bt.indicators.BollingerBands(self.strategy.data.close, bb_period, bb_dev_factor)
+                self.bb_top = self.bbands.lines.top
+                self.bb_mid = self.bbands.lines.mid
+                self.bb_bot = self.bbands.lines.bot
+                self.sma = bt.indicators.SMA(self.strategy.data.volume, sma_period)
 
-                # Use Backtrader's native Bollinger Bands
-                logger.debug("Creating Backtrader BB indicator")
-                bb = bt.indicators.BollingerBands(
-                    data,
-                    period=self.get_param("bb_period"),
-                    devfactor=self.get_param("bb_stddev")
-                )
-                logger.debug("Registering Backtrader BB indicator")
-                self.register_indicator(self.bb_name, bb)
-
-                # Use Backtrader's native SMA for Volume
-                logger.debug("Creating Backtrader Volume MA indicator")
-                vol_ma = bt.indicators.SMA(
-                    data.volume,
-                    period=self.get_param("volume_ma_period")
-                )
-                logger.debug("Registering Backtrader Volume MA indicator")
-                self.register_indicator(self.vol_ma_name, vol_ma)
+            self.register_indicator(self.rsi_name, self.rsi)
+            self.register_indicator(self.bb_name, self.bb)
+            self.register_indicator(self.vol_ma_name, self.sma)
         except Exception as e:
-            logger.error(f"Error initializing indicators: {e}")
+            logger.error(f"Error initializing indicators: {e}", exc_info=e)
             raise
 
     def should_enter(self) -> bool:
@@ -183,5 +138,5 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
                 logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, BB Lower: {bb.bb_lower[0] if self.strategy.use_talib else bb.lines.bot[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}")
             return return_value
         except Exception as e:
-            logger.error(f"Error in should_enter: {e}")
+            logger.error(f"Error in should_enter: {e}", exc_info=e)
             return False

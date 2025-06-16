@@ -18,9 +18,8 @@ Parameters:
 
 This strategy combines mean reversion (RSI + BB) to identify potential reversal points.
 """
-
+import backtrader as bt
 from typing import Any, Dict, Optional
-
 from src.entry.base_entry_mixin import BaseEntryMixin
 from src.notification.logger import setup_logger
 
@@ -35,6 +34,11 @@ class RSIBBEntryMixin(BaseEntryMixin):
         super().__init__(params)
         self.rsi_name = 'entry_rsi'
         self.bb_name = 'entry_bb'
+        self.rsi = None
+        self.bb = None
+        self.bb_bot = None
+        self.bb_mid = None
+        self.bb_top = None
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -59,32 +63,25 @@ class RSIBBEntryMixin(BaseEntryMixin):
             return
 
         try:
-            # Calculate required data length based on indicator periods
-            required_length = max(
-                self.get_param("rsi_period"),
-                self.get_param("bb_period")
-            ) * 3
-            logger.debug(f"Required data length: {required_length}, Current data length: {len(self.strategy.data)}, rsi_period: {self.get_param("rsi_period")}")
+            rsi_period = self.get_param("rsi_period")
+            bb_period = self.get_param("bb_period")
+            bb_dev_factor=self.get_param("bb_stddev")
 
-            # Ensure we have enough data
-            if len(self.strategy.data) <= required_length:
-                logger.debug(f"Not enough data yet. Need {required_length} bars, have {len(self.strategy.data)}")
-                return
+            if self.strategy.use_talib:
+                self.rsi = bt.talib.RSI(self.strategy.data.close, period=rsi_period)
+                self.bb = bt.talib.BBANDS(self.strategy.data.close, bb_period, bb_dev_factor)
+                self.bb_top = self.bbands.lines.upper
+                self.bb_mid = self.bbands.lines.middle
+                self.bb_bot = self.bbands.lines.lower
+            else:
+                self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
+                self.bb = bt.indicators.BollingerBands(self.strategy.data.close, bb_period, bb_dev_factor)
+                self.bb_top = self.bbands.lines.top
+                self.bb_mid = self.bbands.lines.mid
+                self.bb_bot = self.bbands.lines.bot
 
-            # Create RSI indicator
-            rsi = self.indicator_factory.create_rsi(
-                name=self.rsi_name,
-                period=self.get_param("rsi_period")
-            )
-            self.register_indicator(self.rsi_name, rsi)
-
-            # Create Bollinger Bands indicator
-            bb = self.indicator_factory.create_bollinger_bands(
-                name=self.bb_name,
-                period=self.get_param("bb_period"),
-                devfactor=self.get_param("bb_stddev")
-            )
-            self.register_indicator(self.bb_name, bb)
+            self.register_indicator(self.rsi_name, self.rsi)
+            self.register_indicator(self.bb_name, self.bb)
 
         except Exception as e:
             logger.error(f"Error initializing indicators: {e}", exc_info=e)
@@ -98,30 +95,20 @@ class RSIBBEntryMixin(BaseEntryMixin):
         try:
             # Get indicators from mixin's indicators dictionary
             rsi = self.indicators[self.rsi_name]
-            bb = self.indicators[self.bb_name]
             current_price = self.strategy.data.close[0]
 
             # Check RSI
             rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
 
-            # Check Bollinger Bands
-            if self.strategy.use_talib:
-                # For TA-Lib BB, use bb_lower
-                if self.get_param("use_bb_touch"):
-                    bb_condition = current_price <= bb.bb_lower[0]
-                else:
-                    bb_condition = current_price < bb.bb_lower[0]
+            if self.get_param("use_bb_touch"):
+                bb_condition = current_price <= self.bb_bot[0]
             else:
-                # For Backtrader's native BB, use lines.bot
-                if self.get_param("use_bb_touch"):
-                    bb_condition = current_price <= bb.lines.bot[0]
-                else:
-                    bb_condition = current_price < bb.lines.bot[0]
+                bb_condition = current_price < self.bb_bot[0]
 
             return_value = rsi_condition and bb_condition
             if return_value:
-                logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, BB Lower: {bb.bb_lower[0] if self.strategy.use_talib else bb.lines.bot[0]}")
+                logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, BB Lower: {self.bb_bot[0]}")
             return return_value
         except Exception as e:
-            logger.error(f"Error in should_enter: {e}")
+            logger.error(f"Error in should_enter: {e}", exc_info=e)
             return False

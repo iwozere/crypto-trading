@@ -160,7 +160,7 @@ class CustomOptimizer:
 
         # Run backtest
         _logger.debug("Running backtest")
-        results = cerebro.run()
+        results = cerebro.run(runonce=True, preload=True)
         strategy = results[0]
         _logger.debug("Backtest completed")
 

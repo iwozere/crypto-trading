@@ -24,8 +24,6 @@ from typing import Any, Dict, Optional
 
 import backtrader as bt
 from src.exit.base_exit_mixin import BaseExitMixin
-from src.indicator.talib_rsi import TALibRSI
-from src.indicator.talib_bb import TALibBB
 from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -39,6 +37,14 @@ class RSIBBExitMixin(BaseExitMixin):
         super().__init__(params)
         self.rsi_name = 'exit_rsi'
         self.bb_name = 'exit_bb'
+        self.rsi_name = 'entry_rsi'
+        self.bb_name = 'entry_bb'
+
+        self.rsi = None
+        self.bb = None
+        self.bb_bot = None
+        self.bb_mid = None
+        self.bb_top = None
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -63,66 +69,27 @@ class RSIBBExitMixin(BaseExitMixin):
             return
 
         try:
-            data = self.strategy.data
-            use_talib = self.strategy.use_talib
-            logger.debug(f"Initializing indicators with use_talib={use_talib}")
+            rsi_period = self.get_param("rsi_period")
+            bb_period = self.get_param("bb_period")
+            bb_dev_factor=self.get_param("bb_stddev")
 
-            # Calculate required data length based on indicator periods
-            required_length = max(
-                self.get_param("rsi_period"),
-                self.get_param("bb_period")
-            )
-            logger.debug(f"Required data length: {required_length}, Current data length: {len(data)}")
-
-            # Ensure we have enough data
-            if len(data) <= required_length:
-                logger.debug(f"Not enough data yet. Need {required_length} bars, have {len(data)}")
-                return
-
-            if use_talib:
-                # Use TA-Lib for RSI
-                logger.debug("Creating TA-Lib RSI indicator")
-                rsi = TALibRSI(
-                    data,
-                    period=self.get_param("rsi_period")
-                )
-                logger.debug("Registering TA-Lib RSI indicator")
-                self.register_indicator(self.rsi_name, rsi)
-                logger.debug(f"RSI indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
-
-                # Use TA-Lib for Bollinger Bands
-                logger.debug("Creating TA-Lib BB indicator")
-                bb = TALibBB(
-                    data,
-                    period=self.get_param("bb_period"),
-                    devfactor=self.get_param("bb_stddev")
-                )
-                logger.debug("Registering TA-Lib BB indicator")
-                self.register_indicator(self.bb_name, bb)
-                logger.debug(f"BB indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
+            if self.strategy.use_talib:
+                self.rsi = bt.talib.RSI(self.strategy.data.close, period=rsi_period)
+                self.bb = bt.talib.BBANDS(self.strategy.data.close, bb_period, bb_dev_factor)
+                self.bb_top = self.bbands.lines.upper
+                self.bb_mid = self.bbands.lines.middle
+                self.bb_bot = self.bbands.lines.lower
             else:
-                # Use Backtrader's native RSI
-                logger.debug("Creating Backtrader RSI indicator")
-                rsi = bt.indicators.RSI(
-                    data,
-                    period=self.get_param("rsi_period")
-                )
-                logger.debug("Registering Backtrader RSI indicator")
-                self.register_indicator(self.rsi_name, rsi)
-                logger.debug(f"RSI indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
+                self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
+                self.bb = bt.indicators.BollingerBands(self.strategy.data.close, bb_period, bb_dev_factor)
+                self.bb_top = self.bbands.lines.top
+                self.bb_mid = self.bbands.lines.mid
+                self.bb_bot = self.bbands.lines.bot
 
-                # Use Backtrader's native Bollinger Bands
-                logger.debug("Creating Backtrader BB indicator")
-                bb = bt.indicators.BollingerBands(
-                    data,
-                    period=self.get_param("bb_period"),
-                    devfactor=self.get_param("bb_stddev")
-                )
-                logger.debug("Registering Backtrader BB indicator")
-                self.register_indicator(self.bb_name, bb)
-                logger.debug(f"BB indicator registered, indicators dict now has keys: {list(self.indicators.keys())}")
+            self.register_indicator(self.rsi_name, self.rsi)
+            self.register_indicator(self.bb_name, self.bb)
         except Exception as e:
-            logger.error(f"Error initializing indicators: {e}")
+            logger.error(f"Error initializing indicators: {e}", exc_info=e)
             raise
 
     def should_exit(self) -> bool:
@@ -149,11 +116,10 @@ class RSIBBExitMixin(BaseExitMixin):
 
             return_value = rsi_condition or bb_condition
             if return_value:
-                logger.debug(f"EXIT: Price: {current_price}, RSI: {rsi[0]}, "
-                           f"BB Upper: {bb.bb_upper[0]}, RSI Overbought: {self.get_param('rsi_overbought')}")
+                logger.debug(f"EXIT: Price: {current_price}, RSI: {rsi[0]}, BB Upper: {bb.bb_upper[0]}, RSI Overbought: {self.get_param('rsi_overbought')}")
             return return_value
         except Exception as e:
-            logger.error(f"Error in should_exit: {e}")
+            logger.error(f"Error in should_exit: {e}", exc_info=e)
             return False
 
     def get_exit_reason(self) -> str:
@@ -176,5 +142,5 @@ class RSIBBExitMixin(BaseExitMixin):
                 
             return "unknown"
         except Exception as e:
-            logger.error(f"Error in get_exit_reason: {e}")
+            logger.error(f"Error in get_exit_reason: {e}", exc_info=e)
             return "unknown" 

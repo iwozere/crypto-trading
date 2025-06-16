@@ -64,6 +64,7 @@ class CustomStrategy(bt.Strategy):
         # Initialize entry and exit mixins
         self.entry_mixin = None
         self.exit_mixin = None
+
         _logger.debug("CustomStrategy.__init__ completed")
 
     def start(self):
@@ -84,7 +85,7 @@ class CustomStrategy(bt.Strategy):
                 if entry_mixin_class:
                     _logger.debug(f"Creating entry mixin: {self.entry_logic['name']}")
                     self.entry_mixin = entry_mixin_class(params=self.entry_logic["params"])
-                    self.entry_mixin.strategy = self
+                    self.entry_mixin.init_entry(self)
                     _logger.debug(f"Entry mixin created with params: {self.entry_logic['params']}")
             
             if self.exit_logic:
@@ -92,10 +93,10 @@ class CustomStrategy(bt.Strategy):
                 if exit_mixin_class:
                     _logger.debug(f"Creating exit mixin: {self.exit_logic['name']}")
                     self.exit_mixin = exit_mixin_class(params=self.exit_logic["params"])
-                    self.exit_mixin.strategy = self
+                    self.exit_mixin.init_exit(self)
                     _logger.debug(f"Exit mixin created with params: {self.exit_logic['params']}")
         except Exception as e:
-            _logger.error(f"Error in start: {e}")
+            _logger.error(f"Error in start: {e}", exc_info=e)
             raise
 
     def prenext(self):
@@ -104,26 +105,6 @@ class CustomStrategy(bt.Strategy):
 
     def next(self):
         """Called for each bar"""
-        # Initialize indicators if not already done
-        if not hasattr(self, '_indicators_initialized'):
-            try:
-                _logger.debug("Initializing indicators in next()")
-                if self.entry_mixin:
-                    _logger.debug("Initializing entry mixin...")
-                    self.entry_mixin.init_entry(self)
-                    _logger.debug("Entry mixin initialized")
-                
-                if self.exit_mixin:
-                    _logger.debug("Initializing exit mixin...")
-                    self.exit_mixin.init_exit(self)
-                    _logger.debug("Exit mixin initialized")
-                
-                self._indicators_initialized = True
-                _logger.debug("All indicators initialized")
-            except Exception as e:
-                _logger.error(f"Error initializing indicators in next: {e}")
-                raise
-
         # Call mixins' next method to check for indicator reinitialization
         if self.entry_mixin:
             self.entry_mixin.next()

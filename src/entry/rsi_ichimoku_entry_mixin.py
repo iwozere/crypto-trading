@@ -23,9 +23,7 @@ This strategy combines mean reversion (RSI) with trend following (Ichimoku) to i
 from typing import Any, Dict, Optional
 
 import backtrader as bt
-import numpy as np
 from src.entry.base_entry_mixin import BaseEntryMixin
-from src.indicator.talib_rsi import TALibRSI
 from src.notification.logger import setup_logger
 from src.indicator.ichimoku import Ichimoku
 
@@ -38,6 +36,8 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         super().__init__(params)
         self.rsi_name = 'entry_rsi'
         self.ichimoku_name = 'entry_ichimoku'
+        self.rsi = None
+        self.ichimoku = None
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -62,66 +62,23 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             return
 
         try:
-            data = self.strategy.data
-            use_talib = self.strategy.use_talib
-            logger.debug(f"Initializing indicators with use_talib={use_talib}")
-
-            # Calculate required data length based on indicator periods
-            required_length = max(
-                self.get_param("rsi_period"),
-                self.get_param("tenkan_period"),
-                self.get_param("kijun_period"),
-                self.get_param("senkou_span_b_period")
-            )
-            logger.debug(f"Required data length: {required_length}, Current data length: {len(data)}")
-
-            # Ensure we have enough data
-            if len(data) <= required_length:
-                logger.debug(f"Not enough data yet. Need {required_length} bars, have {len(data)}")
-                return
-
-            if use_talib:
-                # Use TA-Lib for RSI
-                logger.debug("Creating TA-Lib RSI indicator")
-                rsi = TALibRSI(
-                    data,
-                    period=self.get_param("rsi_period")
-                )
-                logger.debug("Registering TA-Lib RSI indicator")
-                self.register_indicator(self.rsi_name, rsi)
-
-                # Use TA-Lib for Ichimoku
-                logger.debug("Creating TA-Lib Ichimoku indicator")
-                ichimoku = Ichimoku(
-                    data,
-                    tenkan_period=self.get_param("tenkan_period"),
-                    kijun_period=self.get_param("kijun_period"),
-                    senkou_span_b_period=self.get_param("senkou_span_b_period")
-                )
-                logger.debug("Registering TA-Lib Ichimoku indicator")
-                self.register_indicator(self.ichimoku_name, ichimoku)
+            rsi_period = self.get_param("rsi_period")
+            if self.strategy.use_talib:
+                self.rsi = bt.talib.RSI(self.strategy.data.close, period=rsi_period)
             else:
-                # Use Backtrader's native RSI
-                logger.debug("Creating Backtrader RSI indicator")
-                rsi = bt.indicators.RSI(
-                    data,
-                    period=self.get_param("rsi_period")
-                )
-                logger.debug("Registering Backtrader RSI indicator")
-                self.register_indicator(self.rsi_name, rsi)
+                self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
 
-                # Use Backtrader's native Ichimoku
-                logger.debug("Creating Backtrader Ichimoku indicator")
-                ichimoku = bt.indicators.Ichimoku(
-                    data,
-                    tenkan_period=self.get_param("tenkan_period"),
-                    kijun_period=self.get_param("kijun_period"),
-                    senkou_span_b_period=self.get_param("senkou_span_b_period")
-                )
-                logger.debug("Registering Backtrader Ichimoku indicator")
-                self.register_indicator(self.ichimoku_name, ichimoku)
+            self.register_indicator(self.rsi_name, self.rsi)
+
+            self.ichimoku = Ichimoku(
+                self.strategy.data,
+                tenkan_period=self.get_param("tenkan_period"),
+                kijun_period=self.get_param("kijun_period"),
+                senkou_span_b_period=self.get_param("senkou_span_b_period")
+            )
+            self.register_indicator(self.ichimoku_name, self.ichimoku)
         except Exception as e:
-            logger.error(f"Error initializing indicators: {e}")
+            logger.error(f"Error initializing indicators: {e}", exc_info=e)
             raise
 
     def should_enter(self) -> bool:
@@ -146,5 +103,5 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
                 logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, Ichimoku Span A: {ichimoku.senkou_span_a[0]}, Ichimoku Span B: {ichimoku.senkou_span_b[0]}")
             return return_value
         except Exception as e:
-            logger.error(f"Error in should_enter: {e}")
+            logger.error(f"Error in should_enter: {e}", exc_info=e)
             return False

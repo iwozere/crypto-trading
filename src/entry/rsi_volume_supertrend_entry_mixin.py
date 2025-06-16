@@ -25,10 +25,8 @@ to identify potential reversal points with strong momentum.
 from typing import Any, Dict, Optional
 
 import backtrader as bt
-import numpy as np
 from src.entry.base_entry_mixin import BaseEntryMixin
-from src.indicator.talib_rsi import TALibRSI
-from src.indicator.talib_sma import TALibSMA
+from src.indicator.super_trend import SuperTrend
 from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -43,6 +41,9 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
         self.vol_ma_name = 'entry_volume_ma'
         self.supertrend_name = 'entry_supertrend'
         self.direction_name = 'entry_direction'
+
+        self.rsi = None
+        self.sma = None
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -68,71 +69,28 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             return
 
         try:
-            data = self.strategy.data
-            use_talib = self.strategy.use_talib
-            logger.debug(f"Initializing indicators with use_talib={use_talib}")
+            rsi_period = self.get_param("rsi_period")
+            sma_period = self.get_param("volume_ma_period")
 
-            # Calculate required data length based on indicator periods
-            required_length = max(
-                self.get_param("rsi_period"),
-                self.get_param("volume_ma_period"),
-                self.get_param("supertrend_period")
-            )
-            logger.debug(f"Required data length: {required_length}, Current data length: {len(data)}")
-
-            # Ensure we have enough data
-            if len(data) <= required_length:
-                logger.debug(f"Not enough data yet. Need {required_length} bars, have {len(data)}")
-                return
-
-            if use_talib:
-                # Use TA-Lib for RSI
-                logger.debug("Creating TA-Lib RSI indicator")
-                rsi = TALibRSI(
-                    data,
-                    period=self.get_param("rsi_period")
-                )
-                logger.debug("Registering TA-Lib RSI indicator")
-                self.register_indicator(self.rsi_name, rsi)
-
-                # Use TA-Lib for Volume MA
-                logger.debug("Creating TA-Lib Volume MA indicator")
-                vol_ma = TALibSMA(
-                    data.volume,
-                    period=self.get_param("volume_ma_period")
-                )
-                logger.debug("Registering TA-Lib Volume MA indicator")
-                self.register_indicator(self.vol_ma_name, vol_ma)
+            if self.strategy.use_talib:
+                self.rsi = bt.talib.RSI(self.strategy.data.close, period=rsi_period)
+                self.sma = bt.talib.SMA(self.strategy.data.volume, sma_period)
             else:
-                # Use Backtrader's native RSI
-                logger.debug("Creating Backtrader RSI indicator")
-                rsi = bt.indicators.RSI(
-                    data,
-                    period=self.get_param("rsi_period")
-                )
-                logger.debug("Registering Backtrader RSI indicator")
-                self.register_indicator(self.rsi_name, rsi)
+                self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
+                self.sma = bt.indicators.SMA(self.strategy.data.volume, sma_period)
 
-                # Use Backtrader's native SMA for Volume
-                logger.debug("Creating Backtrader Volume MA indicator")
-                vol_ma = bt.indicators.SMA(
-                    data.volume,
-                    period=self.get_param("volume_ma_period")
-                )
-                logger.debug("Registering Backtrader Volume MA indicator")
-                self.register_indicator(self.vol_ma_name, vol_ma)
+            self.register_indicator(self.rsi_name, self.rsi)
+            self.register_indicator(self.vol_ma_name, self.sma)
 
             # Create Supertrend indicator (same for both TA-Lib and Backtrader)
-            logger.debug("Creating Supertrend indicator")
-            supertrend = bt.indicators.Supertrend(
-                data,
+            supertrend = SuperTrend(
+                self.strategy.data,
                 period=self.get_param("supertrend_period"),
                 multiplier=self.get_param("supertrend_multiplier")
             )
-            logger.debug("Registering Supertrend indicator")
             self.register_indicator(self.supertrend_name, supertrend)
         except Exception as e:
-            logger.error(f"Error initializing indicators: {e}")
+            logger.error(f"Error initializing indicators: {e}", exc_info=e)
             raise
 
     def should_enter(self) -> bool:
@@ -162,5 +120,5 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
                 logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}, Supertrend: {supertrend[0]}")
             return return_value
         except Exception as e:
-            logger.error(f"Error in should_enter: {e}")
+            logger.error(f"Error in should_enter: {e}", exc_info=e)
             return False

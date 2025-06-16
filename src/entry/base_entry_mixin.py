@@ -7,9 +7,7 @@ This module provides the base class for all entry mixins.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, get_type_hints, get_origin, get_args
 import inspect
-import logging
 from src.notification.logger import setup_logger
-from src.indicator.indicator_factory import IndicatorFactory
 
 _logger = setup_logger(__name__)
 
@@ -27,7 +25,6 @@ class BaseEntryMixin(ABC):
         self.strategy = None
         self.params = params or {}
         self.indicators = {}
-        self.indicator_factory = None
 
         # Validate class method implementation
         self._validate_class_methods()
@@ -214,12 +211,6 @@ class BaseEntryMixin(ABC):
         if additional_params:
             self.params.update(additional_params)
             self._validate_params()
-
-        # Create indicator factory
-        self.indicator_factory = IndicatorFactory(
-            data=self.strategy.data,
-            use_talib=self.strategy.use_talib
-        )
 
         # Initialize indicators
         self._init_indicators()
