@@ -1,10 +1,19 @@
 import numpy as np
 import yfinance as yf
+from src.notification.logger import setup_logger
 
+logger = setup_logger('telegram_bot')
 
 def calculate_technicals(ticker: str) -> dict:
     try:
         df = yf.download(ticker, period="6mo", interval="1d")
+        
+        if df.empty:
+            logger.error(f"No data downloaded for ticker {ticker}")
+            return {}
+            
+        logger.debug(f"Downloaded {len(df)} days of data for {ticker}")
+        
         df.dropna(inplace=True)
 
         # SMA
@@ -51,6 +60,8 @@ def calculate_technicals(ticker: str) -> dict:
             else "Downtrend" if sma50 < sma200 and last_close < sma50 else "Sideways"
         )
 
+        logger.debug(f"Calculated technicals for {ticker}: RSI={rsi:.2f}, Trend={trend}")
+
         return {
             "rsi": round(rsi, 2),
             "sma_50": round(sma50, 2),
@@ -64,5 +75,5 @@ def calculate_technicals(ticker: str) -> dict:
         }
 
     except Exception as e:
-        print(f"[ERROR] Technical analysis failed for {ticker}: {e}")
+        logger.error(f"Technical analysis failed for {ticker}: {str(e)}", exc_info=e)
         return {}

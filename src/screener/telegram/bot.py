@@ -36,7 +36,7 @@ async def send_welcome(message: Message):
     )
 
 
-@dp.message(lambda message: message.text and message.text.strip().isalnum())
+@dp.message(lambda message: message.text and message.text.strip().replace('.', '').replace('-', '').isalnum())
 async def handle_ticker(message: Message):
     ticker = message.text.strip().upper()
     logger.info(f"User {message.from_user.id} requested analysis for {ticker}")
