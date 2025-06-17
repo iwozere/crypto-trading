@@ -52,7 +52,7 @@ LOG_CONFIG = {
         "console": {
             "class": "logging.StreamHandler",
             "level": "DEBUG",
-            "formatter": "detailed",
+            "formatter": "standard",  # Less verbose for console
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
@@ -81,9 +81,9 @@ LOG_CONFIG = {
     },
     "loggers": {
         "matplotlib": {
-            "level": "WARNING",  # Logging level for matplotlib matplotlib to WARNING
+            "level": "WARNING",
             "handlers": ["console"],
-            "propagate": False,  # Switch off the log propagation to the root logger
+            "propagate": False,
         },
         "live_trader": {
             "handlers": ["console", "file"],
@@ -95,10 +95,15 @@ LOG_CONFIG = {
             "level": "DEBUG",
             "propagate": False,
         },
-        "default": {"handlers": ["console", "file"], "level": "DEBUG"},
-        "root": {"handlers": ["console", "file"], "level": "DEBUG"},
+        # Add trade_file and error_file handlers to relevant loggers as needed
     },
+    "root": {
+        "handlers": ["console", "file"],
+        "level": "DEBUG"
+    }
 }
+
+
 
 logging.config.dictConfig(LOG_CONFIG)
 _logger = logging.getLogger()

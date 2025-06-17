@@ -69,8 +69,8 @@ class MACrossoverExitMixin(BaseExitMixin):
                 self.fast_ma = bt.talib.SMA(self.strategy.data.volume, fast_period)
                 self.slow_ma = bt.talib.SMA(self.strategy.data.volume, slow_period)
             else:
-                self.fast_ma = bt.indicators.SMA(self.strategy.data.volume, fast_period)
-                self.slow_ma = bt.indicators.SMA(self.strategy.data.volume, slow_period)
+                self.fast_ma = bt.indicators.SMA(self.strategy.data.volume, period=fast_period)
+                self.slow_ma = bt.indicators.SMA(self.strategy.data.volume, period=slow_period)
 
             self.register_indicator(self.fast_ma_name, self.fast_ma)
             self.register_indicator(self.slow_ma_name, self.slow_ma)

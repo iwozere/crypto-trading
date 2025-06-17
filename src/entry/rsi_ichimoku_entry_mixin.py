@@ -64,17 +64,17 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         try:
             rsi_period = self.get_param("rsi_period")
             if self.strategy.use_talib:
-                self.rsi = bt.talib.RSI(self.strategy.data.close, period=rsi_period)
+                self.rsi = bt.talib.RSI(self.strategy.data.close, timeperiod=rsi_period)
             else:
                 self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
 
             self.register_indicator(self.rsi_name, self.rsi)
 
-            self.ichimoku = Ichimoku(
-                self.strategy.data,
-                tenkan_period=self.get_param("tenkan_period"),
-                kijun_period=self.get_param("kijun_period"),
-                senkou_span_b_period=self.get_param("senkou_span_b_period")
+            self.ichimoku = bt.indicators.Ichimoku(
+                self.data,
+                tenkan=self.get_param("tenkan_period"),
+                kijun=self.get_param("kijun_period"),
+                senkou_span_b=self.get_param("senkou_span_b_period")
             )
             self.register_indicator(self.ichimoku_name, self.ichimoku)
         except Exception as e:
