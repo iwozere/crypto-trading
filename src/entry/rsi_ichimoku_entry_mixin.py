@@ -25,7 +25,6 @@ from typing import Any, Dict, Optional
 import backtrader as bt
 from src.entry.base_entry_mixin import BaseEntryMixin
 from src.notification.logger import setup_logger
-from src.indicator.ichimoku import Ichimoku
 
 logger = setup_logger(__name__)
 
@@ -49,9 +48,11 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
         return {
             "rsi_period": 14,
             "rsi_oversold": 30,
-            "tenkan_period": 9,
-            "kijun_period": 26,
-            "senkou_span_b_period": 52,
+            "tenkan": 9,
+            "kijun": 26,
+            "senkou": 52,
+            "senkou_lead": 26,
+            "chikou": 26
         }
 
     def _init_indicators(self):
@@ -71,10 +72,12 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             self.register_indicator(self.rsi_name, self.rsi)
 
             self.ichimoku = bt.indicators.Ichimoku(
-                self.data,
-                tenkan=self.get_param("tenkan_period"),
-                kijun=self.get_param("kijun_period"),
-                senkou_span_b=self.get_param("senkou_span_b_period")
+                self.strategy.data,
+                tenkan=self.get_param("tenkan"),
+                kijun=self.get_param("kijun"),
+                senkou=self.get_param("senkou"),
+                senkou_lead=self.get_param("senkou_lead"),
+                chikou=self.get_param("chikou")
             )
             self.register_indicator(self.ichimoku_name, self.ichimoku)
         except Exception as e:

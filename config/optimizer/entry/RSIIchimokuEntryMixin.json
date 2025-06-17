@@ -7,23 +7,41 @@
             "high": 30,
             "default": 14
         },
-        "tenkan_period": {
-            "type": "int",
-            "low": 5,
-            "high": 20,
-            "default": 9
-        },
-        "kijun_period": {
-            "type": "int",
-            "low": 15,
-            "high": 50,
-            "default": 26
-        },
         "rsi_oversold": {
             "type": "int",
             "low": 20,
             "high": 40,
             "default": 30
+        },
+        "tenkan": {
+            "type": "int",
+            "low": 7,
+            "high": 12,
+            "default": 9
+        },
+        "kijun": {
+            "type": "int",
+            "low": 22,
+            "high": 30,
+            "default": 26
+        },
+        "senkou": {
+            "type": "int",
+            "low": 48,
+            "high": 58,
+            "default": 52
+        },
+        "senkou_lead": {
+            "type": "int",
+            "low": 22,
+            "high": 30,
+            "default": 26
+        },
+        "chikou": {
+            "type": "int",
+            "low": 22,
+            "high": 30,
+            "default": 26
         }
     }
 } 
