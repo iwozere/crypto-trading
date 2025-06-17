@@ -6,6 +6,12 @@
             "low": 0.01,
             "high": 0.05,
             "default": 0.02
+        },
+        "atr_period": {
+            "type": "int",
+            "low": 5,
+            "high": 30,
+            "default": 14
         }
     }
 }

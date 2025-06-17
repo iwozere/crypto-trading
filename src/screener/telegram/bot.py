@@ -5,7 +5,6 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 import asyncio
-import logging
 import tempfile
 
 from aiogram import Bot, Dispatcher, types
@@ -17,7 +16,7 @@ from src.notification.logger import setup_logger
 from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
 
 # Set up logger
-logger = setup_logger()
+logger = setup_logger(__name__, log_file="ticker_bot.log", level="DEBUG")
 
 if not TELEGRAM_BOT_TOKEN:
     logger.error("TELEGRAM_BOT_TOKEN environment variable is not set")
@@ -84,7 +83,7 @@ async def handle_ticker(message: Message):
         os.unlink(temp_file.name)
 
     except Exception as e:
-        logger.exception(f"Error analyzing {ticker}")
+        logger.error(f"Error analyzing {ticker}", exc_info=e)
         await message.reply(
             f"⚠️ Error analyzing {ticker}:\n"
             f"Please check if the ticker symbol is correct and try again."

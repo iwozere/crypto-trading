@@ -52,6 +52,7 @@ class TrailingStopExitMixin(BaseExitMixin):
             "activation_pct": 0.0,
             "use_atr": False,
             "atr_multiplier": 2.0,
+            "atr_period": 14,
             "use_talib": False,
         }
 
@@ -65,7 +66,7 @@ class TrailingStopExitMixin(BaseExitMixin):
         try:
             atr_period = self.get_param("atr_period")
             if self.strategy.use_talib:
-                self.rsi = bt.talib.ATR(self.strategy.data.high, self.strategy.data.low, self.strategy.data.close, timeperiod=atr_period)
+                self.atr = bt.talib.ATR(self.strategy.data.high, self.strategy.data.low, self.strategy.data.close, timeperiod=atr_period)
             else:
                 self.atr = bt.indicators.AverageTrueRange(self.strategy.data, period=atr_period)
             self.register_indicator(self.atr_name, self.atr)

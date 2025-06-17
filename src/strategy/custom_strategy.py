@@ -49,7 +49,7 @@ class CustomStrategy(bt.Strategy):
         super().__init__()  # Call parent's __init__ first
         
         # Initialize basic attributes
-        self._use_talib = False  # Default value
+        self.use_talib = False  # Default value
         self.entry_logic = None
         self.exit_logic = None
         
@@ -65,6 +65,8 @@ class CustomStrategy(bt.Strategy):
         # Initialize entry and exit mixins
         self.entry_mixin = None
         self.exit_mixin = None
+        
+        self.trade = None
 
         _logger.debug("CustomStrategy.__init__ completed")
 
@@ -75,7 +77,7 @@ class CustomStrategy(bt.Strategy):
             _logger.debug("Starting strategy initialization...")
             # Set configuration from params
             if self.p.strategy_config:
-                self._use_talib = self.p.strategy_config.get("use_talib", False)
+                self.use_talib = self.p.strategy_config.get("use_talib", False)
                 self.entry_logic = self.p.strategy_config.get("entry_logic")
                 self.exit_logic = self.p.strategy_config.get("exit_logic")
                 _logger.debug(f"Strategy config loaded - Entry: {self.entry_logic['name']}, Exit: {self.exit_logic['name']}")
@@ -122,6 +124,7 @@ class CustomStrategy(bt.Strategy):
 
     def notify_trade(self, trade):
         """Record trade information"""
+        self.trade = trade
         try:
             _logger.info(f"Trade notification received - Status: {'CLOSED' if trade.isclosed else 'OPEN'}, "
                         f"Size: {trade.size}, PnL: {trade.pnl}, "
@@ -167,6 +170,7 @@ class CustomStrategy(bt.Strategy):
                 
                 self.current_trade = None
                 self.current_exit_reason = None  # Reset exit reason
+                self.trade = None
             else:
                 # Convert Backtrader datetime to pandas datetime
                 entry_time = pd.to_datetime(trade.dtopen)
@@ -187,9 +191,9 @@ class CustomStrategy(bt.Strategy):
                 _logger.info(f"Position opened - Price: {trade.price}, Size: {trade.size}")
 
             if self.entry_mixin:
-                self.entry_mixin.notify_trade()
+                self.entry_mixin.notify_trade(trade)
             if self.exit_mixin:
-                self.exit_mixin.notify_trade()
+                self.exit_mixin.notify_trade(trade)
 
         except Exception as e:
             _logger.error(f"Error in notify_trade: {e}")
