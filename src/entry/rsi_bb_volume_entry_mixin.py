@@ -81,16 +81,16 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             if self.strategy.use_talib:
                 self.rsi = bt.talib.RSI(self.strategy.data.close, timeperiod=rsi_period)
                 self.bb = bt.talib.BBANDS(self.strategy.data.close, timeperiod=bb_period, nbdevup=bb_dev_factor, nbdevdn=bb_dev_factor)
-                self.bb_top = self.bbands.lines.upper
-                self.bb_mid = self.bbands.lines.middle
-                self.bb_bot = self.bbands.lines.lower
+                self.bb_top = self.bb.upperband
+                self.bb_mid = self.bb.middleband
+                self.bb_bot = self.bb.lowerband
                 self.sma = bt.talib.SMA(self.strategy.data.volume, sma_period)
             else:
                 self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
                 self.bb = bt.indicators.BollingerBands(self.strategy.data.close, period=bb_period, devfactor=bb_dev_factor)
-                self.bb_top = self.bbands.lines.top
-                self.bb_mid = self.bbands.lines.mid
-                self.bb_bot = self.bbands.lines.bot
+                self.bb_top = self.bb.top
+                self.bb_mid = self.bb.mid
+                self.bb_bot = self.bb.bot
                 self.sma = bt.indicators.SMA(self.strategy.data.volume, sma_period)
 
             self.register_indicator(self.rsi_name, self.rsi)
