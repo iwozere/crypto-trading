@@ -15,8 +15,8 @@ from src.notification.logger import setup_logger
 
 from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
 
-# Set up logger
-logger = setup_logger(__name__, log_file="ticker_bot.log", level="DEBUG")
+# Set up logger using the telegram_bot configuration
+logger = setup_logger('telegram_bot')
 
 if not TELEGRAM_BOT_TOKEN:
     logger.error("TELEGRAM_BOT_TOKEN environment variable is not set")

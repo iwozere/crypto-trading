@@ -70,6 +70,14 @@ LOG_CONFIG = {
             "level": "DEBUG",
             "formatter": "detailed",
         },
+        "telegram_bot_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "logs/log/telegram_bot.log",
+            "maxBytes": MAX_BYTES,
+            "backupCount": BACKUP_COUNT,
+            "level": "DEBUG",
+            "formatter": "detailed",
+        },
         "error_file": {
             "class": "logging.handlers.RotatingFileHandler",
             "filename": "logs/log/app_errors.log",
@@ -91,11 +99,11 @@ LOG_CONFIG = {
             "propagate": False,
         },
         "telegram_bot": {
-            "handlers": ["console", "file"],
+            "handlers": ["console", "telegram_bot_file"],
             "level": "DEBUG",
             "propagate": False,
         },
-        # Add trade_file and error_file handlers to relevant loggers as needed
+        # Add telegram_bot_file and error_file handlers to relevant loggers as needed
     },
     "root": {
         "handlers": ["console", "file"],
