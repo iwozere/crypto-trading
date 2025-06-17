@@ -58,12 +58,12 @@ class TimeBasedExitMixin(BaseExitMixin):
             return False
 
         current_time = self.strategy.data.datetime.datetime(0)
-        entry_time = self.strategy.position.dtopen
+        entry_time = self.strategy.current_trade.get('entry_time')
         if self.get_param("use_time", False):
             time_diff = (current_time - entry_time).total_seconds() / 60
             return_value = time_diff >= self.get_param("max_minutes")
         else:
-            bars_held = len(self.strategy.data) - self.strategy.position.dtopen
+            bars_held = len(self.strategy.data) - self.strategy.trade.dtopen
             return_value = bars_held >= self.get_param("max_bars")
 
         if return_value:
@@ -86,3 +86,9 @@ class TimeBasedExitMixin(BaseExitMixin):
         super().next()
         if self.get_param("use_time", False) == False and self.entry_bar is not None:
             self.entry_bar += 1
+
+    def notify_trade(self, trade):
+        if trade.isclosed:
+            self.entry_bar = None
+        else:
+            self.entry_bar = 0

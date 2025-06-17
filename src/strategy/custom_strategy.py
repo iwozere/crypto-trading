@@ -120,11 +120,6 @@ class CustomStrategy(bt.Strategy):
         if self.current_trade is not None and self.exit_mixin and self.exit_mixin.should_exit():
             self.sell()
 
-    @property
-    def use_talib(self):
-        """Get whether to use TA-Lib"""
-        return self._use_talib
-
     def notify_trade(self, trade):
         """Record trade information"""
         try:
@@ -190,6 +185,12 @@ class CustomStrategy(bt.Strategy):
                     'trade_type': 'long' if trade.size > 0 else 'short'
                 }
                 _logger.info(f"Position opened - Price: {trade.price}, Size: {trade.size}")
+
+            if self.entry_mixin:
+                self.entry_mixin.notify_trade()
+            if self.exit_mixin:
+                self.exit_mixin.notify_trade()
+
         except Exception as e:
             _logger.error(f"Error in notify_trade: {e}")
             raise

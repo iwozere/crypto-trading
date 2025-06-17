@@ -277,12 +277,6 @@ class BaseEntryMixin(ABC):
         else:
             _logger.warning(f"Strategy not set, indicator '{name}' only stored in indicators dictionary")
 
-    def next(self):
-        """Called for each new bar"""
-        # Check if we need to reinitialize indicators
-        if not self.indicators:
-            self._init_indicators()
-
     def are_indicators_ready(self) -> bool:
         """Check if indicators are ready to be used"""
         if not self.indicators:
@@ -299,6 +293,12 @@ class BaseEntryMixin(ABC):
             return True
         except (IndexError, TypeError):
             return False
+
+    def next(self):
+        """Called for each new bar"""
+        # Check if we need to reinitialize indicators
+        if not self.indicators:
+            self._init_indicators()
 
     def notify_trade(self, trade):
         """Strategy will call this method when BUY order is executed (for long position)"""

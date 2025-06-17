@@ -77,12 +77,6 @@ class BaseExitMixin(ABC):
         else:
             _logger.warning(f"Cannot set {name} as strategy attribute - strategy not available")
 
-    def next(self):
-        """Called for each new bar"""
-        # Check if we need to reinitialize indicators
-        if not self.indicators:
-            self._init_indicators()
-
     def are_indicators_ready(self) -> bool:
         """Check if indicators are ready to be used"""
         if not self.indicators:
@@ -100,6 +94,12 @@ class BaseExitMixin(ABC):
         except (IndexError, TypeError):
             return False
         
+    def next(self):
+        """Called for each new bar"""
+        # Check if we need to reinitialize indicators
+        if not self.indicators:
+            self._init_indicators()
+
     def notify_trade(self, trade):
         """Strategy will call this method when SELL order is executed (for long position)"""
         pass        

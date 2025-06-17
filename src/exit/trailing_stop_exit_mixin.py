@@ -65,9 +65,9 @@ class TrailingStopExitMixin(BaseExitMixin):
         try:
             atr_period = self.get_param("atr_period")
             if self.strategy.use_talib:
-                self.rsi = bt.talib.ATR(self.strategy.data.close, timeperiod=atr_period)
+                self.rsi = bt.talib.ATR(self.strategy.data.high, self.strategy.data.low, self.strategy.data.close, timeperiod=atr_period)
             else:
-                self.atr = bt.indicators.AverageTrueRange(self.strategy.data.close, period=atr_period)
+                self.atr = bt.indicators.AverageTrueRange(self.strategy.data, period=atr_period)
             self.register_indicator(self.atr_name, self.atr)
         except Exception as e:
             logger.error(f"Error initializing indicators: {e}", exc_info=e)
