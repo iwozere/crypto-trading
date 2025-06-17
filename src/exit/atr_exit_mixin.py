@@ -145,12 +145,6 @@ class ATRExitMixin(BaseExitMixin):
             logger.error(f"Error in should_exit: {e}", exc_info=e)
             return False
 
-    def get_exit_reason(self) -> str:
-        """Get the reason for exiting the position"""
-        if not self.strategy.position:
-            return "unknown"
-        return "atr_stop_loss"
-
     def next(self):
         """Called for each new bar"""
         super().next()

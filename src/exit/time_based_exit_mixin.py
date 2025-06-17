@@ -31,7 +31,8 @@ class TimeBasedExitMixin(BaseExitMixin):
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
         super().__init__(params)
-        self.entry_bar = 0
+        self.entry_bar = None
+        self.entry_time = None
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -56,9 +57,9 @@ class TimeBasedExitMixin(BaseExitMixin):
         if not self.strategy.position:
             return False
 
+        current_time = self.strategy.data.datetime.datetime(0)
+        entry_time = self.strategy.position.dtopen
         if self.get_param("use_time", False):
-            current_time = self.strategy.data.datetime.datetime(0)
-            entry_time = self.strategy.position.dtopen
             time_diff = (current_time - entry_time).total_seconds() / 60
             return_value = time_diff >= self.get_param("max_minutes")
         else:
@@ -70,18 +71,18 @@ class TimeBasedExitMixin(BaseExitMixin):
                 logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
                            f"Time held: {time_diff:.2f} minutes, "
                            f"Max time: {self.get_param('max_minutes')} minutes")
+                self.strategy.current_exit_reason = "time_limit_minutes"
+                self.entry_time = current_time
             else:
                 logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
                            f"Bars held: {bars_held}, "
                            f"Max bars: {self.get_param('max_bars')}")
+                self.strategy.current_exit_reason = "time_limit_bars"
+                self.entry_bar = 0
         return return_value
 
-    def get_exit_reason(self) -> str:
-        """Get the reason for exiting the position"""
-        if not self.strategy.position:
-            return "unknown"
-            
-        if self.get_param("use_time", False):
-            return "time_limit_minutes"
-        else:
-            return "time_limit_bars"
+    def next(self):
+        """Called for each new bar"""
+        super().next()
+        if self.get_param("use_time", False) == False and self.entry_bar is not None:
+            self.entry_bar += 1

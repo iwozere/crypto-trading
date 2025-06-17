@@ -82,9 +82,9 @@ class RSIBBExitMixin(BaseExitMixin):
             else:
                 self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
                 self.bb = bt.indicators.BollingerBands(self.strategy.data.close, period=bb_period, devfactor=bb_dev_factor)
-                self.bb_top = self.bbands.lines.top
-                self.bb_mid = self.bbands.lines.mid
-                self.bb_bot = self.bbands.lines.bot
+                self.bb_top = self.bb.lines.top
+                self.bb_mid = self.bb.lines.mid
+                self.bb_bot = self.bb.lines.bot
 
             self.register_indicator(self.rsi_name, self.rsi)
             self.register_indicator(self.bb_name, self.bb)
@@ -112,35 +112,13 @@ class RSIBBExitMixin(BaseExitMixin):
             # Check Bollinger Bands condition if enabled
             bb_condition = False
             if self.get_param("use_bb_touch"):
-                bb_condition = current_price >= bb.bb_upper[0] * 0.99
+                bb_condition = current_price >= bb.bb_top[0] * 0.99
 
             return_value = rsi_condition or bb_condition
             if return_value:
-                logger.debug(f"EXIT: Price: {current_price}, RSI: {rsi[0]}, BB Upper: {bb.bb_upper[0]}, RSI Overbought: {self.get_param('rsi_overbought')}")
+                logger.debug(f"EXIT: Price: {current_price}, RSI: {rsi[0]}, BB Upper: {bb.bb_top[0]}, RSI Overbought: {self.get_param('rsi_overbought')}")
+                self.strategy.current_exit_reason = "rsi_bb_overbought"
             return return_value
         except Exception as e:
             logger.error(f"Error in should_exit: {e}", exc_info=e)
             return False
-
-    def get_exit_reason(self) -> str:
-        """Get the reason for exiting the position"""
-        if not self.strategy.position:
-            return "unknown"
-            
-        try:
-            # Get indicators from mixin's indicators dictionary
-            rsi = self.indicators[self.rsi_name]
-            bb = self.indicators[self.bb_name]
-            
-            # Check which condition triggered the exit
-            if rsi[0] >= self.get_param("rsi_overbought"):
-                if self.get_param("use_bb_touch") and self.strategy.data.close[0] >= bb.bb_upper[0] * 0.99:
-                    return "rsi_bb_overbought"
-                return "rsi_overbought"
-            elif self.get_param("use_bb_touch") and self.strategy.data.close[0] >= bb.bb_upper[0] * 0.99:
-                return "bb_upper_touch"
-                
-            return "unknown"
-        except Exception as e:
-            logger.error(f"Error in get_exit_reason: {e}", exc_info=e)
-            return "unknown" 

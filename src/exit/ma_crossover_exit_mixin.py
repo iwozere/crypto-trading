@@ -108,18 +108,9 @@ class MACrossoverExitMixin(BaseExitMixin):
                 logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
                            f"Fast MA: {fast_ma_current}, Slow MA: {slow_ma_current}, "
                            f"Position: {'long' if self.strategy.position.size > 0 else 'short'}")
+                ma_type = self.get_param("ma_type", "sma").lower()
+                self.strategy.current_exit_reason = f"{ma_type}_crossover"
             return return_value
         except Exception as e:
             logger.error(f"Error in should_exit: {e}", exc_info=e)
             return False
-
-    def get_exit_reason(self) -> str:
-        """Get the reason for exiting the position"""
-        if not self.strategy.position:
-            return "unknown"
-            
-        if not all(hasattr(self.strategy, name) for name in [self.fast_ma_name, self.slow_ma_name]):
-            return "unknown"
-            
-        ma_type = self.get_param("ma_type", "sma").lower()
-        return f"{ma_type}_crossover"

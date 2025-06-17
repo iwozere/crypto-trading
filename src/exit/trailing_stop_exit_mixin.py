@@ -113,6 +113,7 @@ class TrailingStopExitMixin(BaseExitMixin):
                     logger.debug(f"EXIT: Price: {price}, Entry: {entry_price}, "
                                f"Highest: {self.highest_price}, Stop: {stop_level}, "
                                f"Trail %: {self.get_param('trail_pct')}")
+                self.strategy.current_exit_reason = "trailing_stop"
             return return_value
         except Exception as e:
             logger.error(f"Error in should_exit: {e}", exc_info=e)

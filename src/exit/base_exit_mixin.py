@@ -55,11 +55,6 @@ class BaseExitMixin(ABC):
     def should_exit(self) -> bool:
         pass
 
-    @abstractmethod
-    def get_exit_reason(self) -> str:
-        """Get the reason for exiting the position"""
-        pass
-
     def get_param(self, key: str, default=None):
         return self.params.get(key, default)
 
@@ -104,3 +99,7 @@ class BaseExitMixin(ABC):
             return True
         except (IndexError, TypeError):
             return False
+        
+    def notify_trade(self, trade):
+        """Strategy will call this method when SELL order is executed (for long position)"""
+        pass        

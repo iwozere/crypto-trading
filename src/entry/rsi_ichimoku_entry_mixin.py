@@ -99,8 +99,8 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
 
             # Check Ichimoku Cloud
-            ichimoku_condition = current_price > ichimoku.senkou_span_a[0] and current_price > ichimoku.senkou_span_b[0]
-
+            #ichimoku_condition = current_price > ichimoku.senkou_span_a[0] and current_price > ichimoku.senkou_span_b[0]
+            ichimoku_condition = self.ichimoku.tenkan_sen[0] > self.ichimoku.kijun_sen[0] and self.ichimoku.tenkan_sen[-1] <= self.ichimoku.kijun_sen[-1] and current_price > max(self.ichimoku.senkou_span_a[0], self.ichimoku.senkou_span_b[0])
             return_value = rsi_condition and ichimoku_condition
             if return_value:
                 logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, Ichimoku Span A: {ichimoku.senkou_span_a[0]}, Ichimoku Span B: {ichimoku.senkou_span_b[0]}")

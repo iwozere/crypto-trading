@@ -139,8 +139,12 @@ class CustomStrategy(bt.Strategy):
                 duration_minutes = duration_days * 24 * 60  # Convert days to minutes
                 
                 # Calculate PnL
+                # trade.price is an average price of multiple BUY orders for the same position.
                 entry_value = self.current_trade['entry_price'] * self.current_trade['size']
-                exit_value = trade.price * self.current_trade['size']
+
+                # Instead of trade.price we should use the close price from the time when trade got closed
+                # TODO: in the future, if we need to support multiple SELL activities on the order, we should keep track of all of them.
+                exit_value = self.data.close[0] * self.current_trade['size']
                 gross_pnl = exit_value - entry_value
                 net_pnl = gross_pnl - (self.current_trade['commission'] + trade.commission)
                 

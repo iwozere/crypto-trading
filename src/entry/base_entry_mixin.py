@@ -299,3 +299,7 @@ class BaseEntryMixin(ABC):
             return True
         except (IndexError, TypeError):
             return False
+
+    def notify_trade(self, trade):
+        """Strategy will call this method when BUY order is executed (for long position)"""
+        pass
