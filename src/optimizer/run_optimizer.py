@@ -217,9 +217,20 @@ def save_results(result, data_file):
         raise
 
 
-def save_plot(cerebro, filename):
-    """Save plot using Backtrader's built-in functionality"""
-    cerebro.plot(iplot=False, savefig=True, filename=filename)
+def save_plot(cerebro, filename, vis_settings):
+    """Save plot using Backtrader's built-in functionality and apply visualization settings."""
+    plot_args = {}
+    if "plot_style" in vis_settings:
+        plot_args["style"] = vis_settings["plot_style"]
+    if "plot_size" in vis_settings:
+        plot_args["figsize"] = tuple(vis_settings["plot_size"])
+    if "plot_dpi" in vis_settings:
+        plot_args["dpi"] = vis_settings["plot_dpi"]
+    if "show_plot" in vis_settings:
+        plot_args["iplot"] = vis_settings["show_plot"]
+    plot_args["savefig"] = True
+    plot_args["filename"] = filename
+    cerebro.plot(**plot_args)
 
 
 if __name__ == "__main__":
@@ -247,13 +258,38 @@ if __name__ == "__main__":
                 with open(os.path.join("config", "optimizer", "exit", f"{exit_logic_name}.json"), "r", ) as f:
                     exit_logic_config = json.load(f)
 
-                print(f"Running optimization for {entry_logic_name} and {exit_logic_name}")
+                _logger.info(f"Running optimization for {entry_logic_name} and {exit_logic_name}")
 
                 # Create optimizer configuration
+                try:
 
-                def objective(trial):
-                    """Objective function for optimization"""
-                    # Create a new data feed for each trial (important for parallel jobs)
+                    def objective(trial):
+                        """Objective function for optimization"""
+                        # Create a new data feed for each trial (important for parallel jobs)
+                        data = prepare_data(data_file)
+                        _optimizer_config = {
+                            "data": data,
+                            "entry_logic": entry_logic_config,
+                            "exit_logic": exit_logic_config,
+                            "optimizer_settings": optimizer_config.get("optimizer_settings", {}),
+                            "visualization_settings": optimizer_config.get("visualization_settings", {})
+                        }
+                        optimizer = CustomOptimizer(_optimizer_config)
+                        _, _, result = optimizer.run_optimization(trial)
+                        return result["total_profit_with_commission"]
+                    
+
+                    # Create study
+                    study = optuna.create_study(direction="maximize")
+
+                    # Run optimization
+                    study.optimize(
+                        objective,
+                        n_trials=optimizer_config.get("optimizer_settings", {}).get("n_trials", 100),
+                        n_jobs=optimizer_config.get("optimizer_settings", {}).get("n_jobs", 1),
+                    )
+
+                    # Get best result
                     data = prepare_data(data_file)
                     _optimizer_config = {
                         "data": data,
@@ -262,48 +298,26 @@ if __name__ == "__main__":
                         "optimizer_settings": optimizer_config.get("optimizer_settings", {}),
                         "visualization_settings": optimizer_config.get("visualization_settings", {})
                     }
-                    optimizer = CustomOptimizer(_optimizer_config)
-                    _, result = optimizer.run_optimization(trial)
-                    return result["total_profit_with_commission"]
-                
+                    best_trial = study.best_trial
+                    best_optimizer = CustomOptimizer(_optimizer_config)
+                    
+                    # Run full backtest with best parameters
+                    _logger.info("Running full backtest with best parameters")
+                    strategy, cerebro, best_result = best_optimizer.run_optimization(best_trial)
+                    
+                    # Save results
+                    save_results(best_result, data_file)
 
-                # Create study
-                study = optuna.create_study(direction="maximize")
-
-                # Run optimization
-                study.optimize(
-                    objective,
-                    n_trials=optimizer_config.get("optimizer_settings", {}).get("n_trials", 100),
-                    n_jobs=optimizer_config.get("optimizer_settings", {}).get("n_jobs", 1),
-                )
-
-                # Get best result
-                data = prepare_data(data_file)
-                _optimizer_config = {
-                    "data": data,
-                    "entry_logic": entry_logic_config,
-                    "exit_logic": exit_logic_config,
-                    "optimizer_settings": optimizer_config.get("optimizer_settings", {}),
-                    "visualization_settings": optimizer_config.get("visualization_settings", {})
-                }
-                best_trial = study.best_trial
-                best_optimizer = CustomOptimizer(_optimizer_config)
-                
-                # Run full backtest with best parameters
-                _logger.info("Running full backtest with best parameters")
-                strategy, cerebro, best_result = best_optimizer.run_optimization(best_trial)
-                
-                # Save results
-                save_results(best_result, data_file)
-
-                # Create and save plot
-                if optimizer_config.get("optimizer_settings", {}).get("plot", True):
-                    plot_name = get_result_filename(
-                        data_file,
-                        entry_logic_name=strategy.entry_logic["name"],
-                        exit_logic_name=strategy.exit_logic["name"],
-                        suffix="_plot",
-                    )
-                    plot_path = os.path.join("results", f"{plot_name}.png")
-                    save_plot(cerebro, plot_path)
+                    # Create and save plot
+                    if optimizer_config.get("optimizer_settings", {}).get("plot", True):
+                        plot_name = get_result_filename(
+                            data_file,
+                            entry_logic_name=strategy.entry_logic["name"],
+                            exit_logic_name=strategy.exit_logic["name"],
+                            suffix="_plot",
+                        )
+                        plot_path = os.path.join("results", f"{plot_name}.png")
+                        save_plot(cerebro, plot_path, optimizer_config.get("visualization_settings", {}))
+                except Exception as e:
+                    _logger.error(f"Error for {entry_logic_name} + {exit_logic_name}: {e}", exc_info=e)
 
