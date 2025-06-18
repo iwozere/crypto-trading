@@ -74,10 +74,10 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
 
             if self.strategy.use_talib:
                 self.rsi = bt.talib.RSI(self.strategy.data.close, timeperiod=rsi_period)
-                self.sma = bt.talib.SMA(self.strategy.data.volume, sma_period)
+                self.sma = bt.talib.SMA(self.strategy.data.volume, timeperiod=sma_period)
             else:
                 self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
-                self.sma = bt.indicators.SMA(self.strategy.data.volume, sma_period)
+                self.sma = bt.indicators.SMA(self.strategy.data.volume, period=sma_period)
 
             self.register_indicator(self.rsi_name, self.rsi)
             self.register_indicator(self.vol_ma_name, self.sma)

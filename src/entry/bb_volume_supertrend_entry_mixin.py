@@ -85,15 +85,13 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
                 self.bb_top = self.bb.upperband
                 self.bb_mid = self.bb.middleband
                 self.bb_bot = self.bb.lowerband
-
-                self.sma = bt.talib.SMA(self.strategy.data.volume, sma_period)
+                self.sma = bt.talib.SMA(self.strategy.data.volume, timeperiod=sma_period)
             else:
                 self.bb = bt.indicators.BollingerBands(self.strategy.data.close, period=bb_period, devfactor=bb_dev_factor)
                 self.bb_top = self.bb.top
                 self.bb_mid = self.bb.mid
                 self.bb_bot = self.bb.bot
-
-                self.sma = bt.indicators.SMA(self.strategy.data.volume, sma_period)
+                self.sma = bt.indicators.SMA(self.strategy.data.volume, period=sma_period)
 
             self.register_indicator(self.bb_name, self.bb)
             self.register_indicator(self.volume_ma_name, self.sma)

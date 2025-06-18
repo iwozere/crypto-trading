@@ -116,7 +116,14 @@ class CustomStrategy(bt.Strategy):
 
         # Check for entry signals
         if self.current_trade is None and self.entry_mixin and self.entry_mixin.should_enter():
-            self.buy()
+            # Use position_size from config if available, else default to 0.10
+            position_size = 0.10
+            if self.p.strategy_config and "position_size" in self.p.strategy_config:
+                position_size = self.p.strategy_config["position_size"]
+            cash = self.broker.get_cash()
+            size = (cash * position_size) / self.data.close[0]
+            if size > 0:
+                self.buy(size=size)
 
         # Check for exit signals
         if self.current_trade is not None and self.exit_mixin and self.exit_mixin.should_exit():

@@ -17,7 +17,7 @@ class TestRSIIndicator(unittest.TestCase):
         }, index=idx)
 
     def test_rsi_all_types(self):
-        indicator_types = ['bt', 'bt-talib', 'pandas-ta', 'talib']
+        indicator_types = ['bt', 'bt-talib', 'talib']
         for ind_type in indicator_types:
             cerebro = bt.Cerebro()
             data = bt.feeds.PandasData(dataname=self._to_pandas())

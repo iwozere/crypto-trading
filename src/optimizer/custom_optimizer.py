@@ -130,6 +130,7 @@ class CustomOptimizer:
                 "params": exit_logic_params,
             },
             "use_talib": self.use_talib,
+            "position_size": self.optimizer_settings.get("position_size", 0.10),
         }
 
         # Add strategy with parameters

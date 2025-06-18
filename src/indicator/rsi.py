@@ -46,7 +46,7 @@ class RSI(bt.Indicator):
                 self.rsi = bt.talib.RSI(self.data.close, timeperiod=self.p.period)
             elif self.p.indicator_type == 'pandas-ta':
                 # For pandas-ta, we'll calculate in next()
-                self.close_values = []
+                raise ValueError("pandas-ta indicator type is not supported for RSI")
             elif self.p.indicator_type == 'talib':
                 import talib
                 self.rsi = talib.RSI(self.data.close, timeperiod=self.p.period)
@@ -58,21 +58,5 @@ class RSI(bt.Indicator):
         """Update the indicator values for the current bar"""
         if self.p.indicator_type in ['bt', 'bt-talib']:
             self.lines.rsi[0] = self.rsi[0]
-        elif self.p.indicator_type == 'pandas-ta':
-            # Accumulate close values
-            self.close_values.append(self.data.close[0])
-            # Only keep the last 2*period values to save memory
-            if len(self.close_values) > self.p.period * 2:
-                self.close_values = self.close_values[-self.p.period * 2:]
-            # Calculate RSI once we have enough data
-            if len(self.close_values) >= self.p.period:
-                close_series = pd.Series(self.close_values)
-                rsi_values = ta.momentum.rsi(close_series, length=self.p.period)
-                if not rsi_values.empty:
-                    self.lines.rsi[0] = rsi_values.iloc[-1]
-                else:
-                    self.lines.rsi[0] = 50  # Default value when not enough data
-            else:
-                self.lines.rsi[0] = 50  # Default value when not enough data
         elif self.p.indicator_type == 'talib':
             self.lines.rsi[0] = self.rsi[len(self.data) - 1] 
