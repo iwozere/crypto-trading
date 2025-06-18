@@ -65,6 +65,16 @@ class CustomOptimizer:
         self.output_dir = self.optimizer_settings.get("output_dir", "output")
         os.makedirs(self.output_dir, exist_ok=True)
 
+    def to_dict(self, obj):
+        if isinstance(obj, dict):
+            return {k: self.to_dict(v) for k, v in obj.items()}
+        elif hasattr(obj, 'items'):
+            return {k: self.to_dict(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [self.to_dict(v) for v in obj]
+        else:
+            return obj
+
     def run_optimization(self, trial=None):
         """
         Run optimization for a single trial or backtest with fixed parameters
@@ -145,7 +155,7 @@ class CustomOptimizer:
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
         cerebro.addanalyzer(bt.analyzers.SQN, _name="sqn")
         cerebro.addanalyzer(bt.analyzers.TimeDrawDown, _name="time_drawdown")
-        cerebro.addanalyzer(bt.analyzers.TimeReturn, _name="time_return")
+        #cerebro.addanalyzer(bt.analyzers.TimeReturn, _name="time_return")
         cerebro.addanalyzer(bt.analyzers.VWR, _name="vwr")
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trades")
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe", riskfreerate=self.risk_free_rate)
@@ -165,23 +175,11 @@ class CustomOptimizer:
         strategy = results[0]
         _logger.debug("Backtest completed")
 
-        analyzers = {
-            "sharpe": strategy.analyzers.sharpe.get_analysis(),
-            "drawdown": strategy.analyzers.drawdown.get_analysis(),
-            "returns": strategy.analyzers.returns.get_analysis(),
-            "trades_summary": strategy.analyzers.trades.get_analysis(),
-            "sqn": strategy.analyzers.sqn.get_analysis(),
-            "time_drawdown": strategy.analyzers.time_drawdown.get_analysis(),
-            #"time_return": strategy.analyzers.time_return.get_analysis(), - too many empty values
-            "vwr": strategy.analyzers.vwr.get_analysis(),
-            "profit_factor": strategy.analyzers.profit_factor.get_analysis(),
-            "calmar": strategy.analyzers.calmar.get_analysis(),
-            "cagr": strategy.analyzers.cagr.get_analysis(),
-            "sortino": strategy.analyzers.sortino.get_analysis(),
-            "winrate": strategy.analyzers.winrate.get_analysis(),
-            "portfoliovolatility": strategy.analyzers.portfoliovolatility.get_analysis(),
-            "consecutivewinslosses": strategy.analyzers.consecutivewinslosses.get_analysis(),
-        }
+        analyzers = {}
+        for name in strategy.analyzers._names:
+            analyzer = getattr(strategy.analyzers, name)
+            analysis = analyzer.get_analysis()
+            analyzers[name] = self.to_dict(analysis)
 
         # Get trade analysis
         trades_analysis = analyzers.get('trades', {})
@@ -199,5 +197,5 @@ class CustomOptimizer:
             "trades": strategy.trades
         }
 
-        return strategy, output
+        return strategy, cerebro, output
 

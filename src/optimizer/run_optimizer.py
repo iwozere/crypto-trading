@@ -217,82 +217,9 @@ def save_results(result, data_file):
         raise
 
 
-def save_plot(strategy, data_file, optimizer_config):
-    """Save plot to file"""
-    # Create plot with custom name
-    plot_name = get_result_filename(
-        data_file,
-        entry_logic_name=strategy.entry_logic["name"],
-        exit_logic_name=strategy.exit_logic["name"],
-        suffix="_plot",
-    )
-    plot_path = os.path.join("results", f"{plot_name}.png")
-    
-    # Get the plotter from the optimizer and plot
-    plotter = create_plotter(strategy, optimizer_config.get("visualization_settings", {}))
-    if plotter:
-        plotter.plot(plot_path)
-        print(f"Plot saved to: {plot_path}")
-
-
-def create_plotter(strategy, visualization_settings):
-    """Create appropriate plotter based on strategy configuration"""
-    _logger.info(f"Creating plotter for strategy: {strategy}")
-    
-    # Create base plotter
-    plotter = BasePlotter(
-        data=strategy.data,
-        trades=strategy.trades,
-        strategy=strategy,
-        vis_settings=visualization_settings
-    )
-    
-    # Create indicators dictionary from strategy attributes
-    indicators = {}
-    
-    # Add entry mixin indicators
-    if hasattr(strategy, 'entry_mixin'):
-        if hasattr(strategy.entry_mixin, 'indicators'):
-            indicators.update(strategy.entry_mixin.indicators)
-        else:
-            # Add individual indicators if not in indicators dict
-            if hasattr(strategy, 'entry_rsi'):
-                indicators['entry_rsi'] = strategy.entry_rsi
-            if hasattr(strategy, 'entry_bb'):
-                indicators['entry_bb'] = strategy.entry_bb
-            if hasattr(strategy, 'entry_volume_ma'):
-                indicators['entry_volume_ma'] = strategy.entry_volume_ma
-            if hasattr(strategy, 'entry_supertrend'):
-                indicators['entry_supertrend'] = strategy.entry_supertrend
-            if hasattr(strategy, 'entry_ichimoku'):
-                indicators['entry_ichimoku'] = strategy.entry_ichimoku
-    
-    # Add exit mixin indicators
-    if hasattr(strategy, 'exit_mixin'):
-        if hasattr(strategy.exit_mixin, 'indicators'):
-            indicators.update(strategy.exit_mixin.indicators)
-        else:
-            # Add individual indicators if not in indicators dict
-            if hasattr(strategy, 'exit_rsi'):
-                indicators['exit_rsi'] = strategy.exit_rsi
-            if hasattr(strategy, 'exit_bb'):
-                indicators['exit_bb'] = strategy.exit_bb
-    
-    # Update strategy's indicators dictionary
-    #if hasattr(strategy, 'entry_mixin'):
-    #    strategy.entry_mixin.indicators = indicators
-    
-    # Log available indicators for debugging
-    _logger.info(f"Available indicators: {list(indicators.keys())}")
-    for name, indicator in indicators.items():
-        if hasattr(indicator, 'array'):
-            _logger.info(f"Indicator {name} has array of length {len(indicator.array)}")
-        elif hasattr(indicator, 'lines'):
-            _logger.info(f"Indicator {name} has {len(indicator.lines)} lines")
-        else:
-            _logger.warning(f"Indicator {name} has no array or lines attribute")
-    
-    return plotter
+def save_plot(cerebro, filename):
+    """Save plot using Backtrader's built-in functionality"""
+    cerebro.plot(iplot=False, savefig=True, filename=filename)
 
 
 if __name__ == "__main__":
@@ -310,7 +237,6 @@ if __name__ == "__main__":
     for data_file in data_files:
         _logger.info(f"Running optimization for {data_file}")
 
-        data = prepare_data(data_file)
         for entry_logic_name in ENTRY_MIXIN_REGISTRY.keys():
             # Load entry logic configuration
             with open(os.path.join("config", "optimizer", "entry", f"{entry_logic_name}.json"), "r", ) as f:
@@ -324,17 +250,18 @@ if __name__ == "__main__":
                 print(f"Running optimization for {entry_logic_name} and {exit_logic_name}")
 
                 # Create optimizer configuration
-                _optimizer_config = {
-                    "data": data,
-                    "entry_logic": entry_logic_config,
-                    "exit_logic": exit_logic_config,
-                    "optimizer_settings": optimizer_config.get("optimizer_settings", {}),
-                    "visualization_settings": optimizer_config.get("visualization_settings", {})
-                }
 
                 def objective(trial):
                     """Objective function for optimization"""
-                    # Create optimizer instance
+                    # Create a new data feed for each trial (important for parallel jobs)
+                    data = prepare_data(data_file)
+                    _optimizer_config = {
+                        "data": data,
+                        "entry_logic": entry_logic_config,
+                        "exit_logic": exit_logic_config,
+                        "optimizer_settings": optimizer_config.get("optimizer_settings", {}),
+                        "visualization_settings": optimizer_config.get("visualization_settings", {})
+                    }
                     optimizer = CustomOptimizer(_optimizer_config)
                     _, result = optimizer.run_optimization(trial)
                     return result["total_profit_with_commission"]
@@ -351,17 +278,32 @@ if __name__ == "__main__":
                 )
 
                 # Get best result
+                data = prepare_data(data_file)
+                _optimizer_config = {
+                    "data": data,
+                    "entry_logic": entry_logic_config,
+                    "exit_logic": exit_logic_config,
+                    "optimizer_settings": optimizer_config.get("optimizer_settings", {}),
+                    "visualization_settings": optimizer_config.get("visualization_settings", {})
+                }
                 best_trial = study.best_trial
                 best_optimizer = CustomOptimizer(_optimizer_config)
                 
                 # Run full backtest with best parameters
                 _logger.info("Running full backtest with best parameters")
-                strategy, best_result = best_optimizer.run_optimization(best_trial)
+                strategy, cerebro, best_result = best_optimizer.run_optimization(best_trial)
                 
                 # Save results
                 save_results(best_result, data_file)
 
                 # Create and save plot
                 if optimizer_config.get("optimizer_settings", {}).get("plot", True):
-                    save_plot(strategy, data_file, optimizer_config)
+                    plot_name = get_result_filename(
+                        data_file,
+                        entry_logic_name=strategy.entry_logic["name"],
+                        exit_logic_name=strategy.exit_logic["name"],
+                        suffix="_plot",
+                    )
+                    plot_path = os.path.join("results", f"{plot_name}.png")
+                    save_plot(cerebro, plot_path)
 

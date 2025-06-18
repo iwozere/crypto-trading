@@ -127,7 +127,8 @@ class CustomStrategy(bt.Strategy):
 
         # Check for exit signals
         if self.current_trade is not None and self.exit_mixin and self.exit_mixin.should_exit():
-            self.sell()
+            self.sell(size=self.current_trade['size'])
+
 
     def notify_trade(self, trade):
         """Record trade information"""
@@ -154,7 +155,7 @@ class CustomStrategy(bt.Strategy):
                 net_pnl = gross_pnl - (self.current_trade['commission'] + trade.commission)
                 
                 # Convert Backtrader datetime to pandas datetime
-                exit_time = pd.to_datetime(trade.dtclose)
+                exit_time = self.data.num2date(trade.dtclose)
                 
                 # Update trade record with exit information
                 self.current_trade.update({
@@ -180,7 +181,7 @@ class CustomStrategy(bt.Strategy):
                 self.trade = None
             else:
                 # Convert Backtrader datetime to pandas datetime
-                entry_time = pd.to_datetime(trade.dtopen)
+                entry_time = self.data.num2date(trade.dtopen)
                 
                 # Trade is opened
                 self.current_trade = {

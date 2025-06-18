@@ -63,6 +63,7 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
             "bb_period": 20,
             "bb_stddev": 2.0,
             "volume_ma_period": 20,
+            "min_volume_ratio": 1.1,
             "supertrend_period": 10,
             "supertrend_multiplier": 3.0,
             "use_bb_touch": True,
