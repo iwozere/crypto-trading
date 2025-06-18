@@ -1,5 +1,5 @@
 {
-    "name": "RSIVolumeSuperTrendEntryMixin",
+    "name": "RSIVolumeSupertrendEntryMixin",
     "params": {
         "rsi_period": {
             "type": "int",

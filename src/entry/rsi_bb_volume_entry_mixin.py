@@ -63,6 +63,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             "bb_stddev": 2.0,
             "volume_ma_period": 20,
             "use_bb_touch": True,
+            "min_volume_ratio": 1.1,
         }
 
     def _init_indicators(self):
@@ -91,7 +92,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
                 self.bb_top = self.bb.top
                 self.bb_mid = self.bb.mid
                 self.bb_bot = self.bb.bot
-                self.sma = bt.indicators.SMA(self.strategy.data.volume, sma_period)
+                self.sma = bt.indicators.SMA(self.strategy.data.volume, period=sma_period)
 
             self.register_indicator(self.rsi_name, self.rsi)
             self.register_indicator(self.bb_name, self.bb)
