@@ -63,8 +63,10 @@ class FixedRatioExitMixin(BaseExitMixin):
         
         return_value = False
         if profit_ratio >= self.get_param("x_take_profit"):
+            self.strategy.current_exit_reason = "take_profit"
             return_value = True
         elif profit_ratio <= -self.get_param("x_stop_loss"):
+            self.strategy.current_exit_reason = "stop_loss"
             return_value = True
 
         if return_value:
