@@ -150,7 +150,7 @@ class CustomStrategy(bt.Strategy):
 
                 # Instead of trade.price we should use the close price from the time when trade got closed
                 # TODO: in the future, if we need to support multiple SELL activities on the order, we should keep track of all of them.
-                exit_value = self.data.close[0] #* self.current_trade['size']
+                exit_value = self.data.close[0] * self.current_trade['size']
                 gross_pnl = exit_value - entry_value
                 net_pnl = gross_pnl - (self.current_trade['commission'] + trade.commission)
                 
@@ -160,7 +160,8 @@ class CustomStrategy(bt.Strategy):
                 # Update trade record with exit information
                 self.current_trade.update({
                     'exit_time': exit_time,
-                    'exit_price': exit_value,
+                    'exit_price': self.data.close[0],  # Price per asset, not total value
+                    'exit_value': exit_value,
                     'exit_reason': self.current_exit_reason or 'unknown',
                     'commission': self.current_trade['commission'] + trade.commission,
                     'duration_minutes': duration_minutes,
@@ -187,11 +188,13 @@ class CustomStrategy(bt.Strategy):
                 self.current_trade = {
                     'entry_time': entry_time,
                     'entry_price': trade.price,
+                    'entry_value': trade.price * trade.size,
                     'size': trade.size,
                     'symbol': self.data._name,
                     'commission': trade.commission,
                     'exit_time': None,
                     'exit_price': None,
+                    'exit_value': None,
                     'exit_reason': None,
                     'status': 'open',
                     'trade_type': 'long' if trade.size > 0 else 'short'
