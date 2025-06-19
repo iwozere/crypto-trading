@@ -48,6 +48,7 @@ results/
 temp/
 
 #logs
+logs/
 *.zip
 *.log
 *.csv
