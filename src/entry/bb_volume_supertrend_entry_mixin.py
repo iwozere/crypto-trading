@@ -60,13 +60,13 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
     def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "bb_period": 20,
-            "bb_stddev": 2.0,
-            "volume_ma_period": 20,
-            "min_volume_ratio": 1.1,
-            "supertrend_period": 10,
-            "supertrend_multiplier": 3.0,
-            "use_bb_touch": True,
+            "e_bb_period": 20,
+            "e_bb_dev": 2.0,
+            "e_vol_ma_period": 20,
+            "e_min_volume_ratio": 1.1,
+            "e_st_period": 10,
+            "e_st_multiplier": 3.0,
+            "e_use_bb_touch": True,
         }
 
     def _init_indicators(self):
@@ -77,9 +77,9 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
             return
 
         try:
-            bb_period = self.get_param("bb_period")
-            bb_dev_factor=self.get_param("bb_stddev")
-            sma_period = self.get_param("volume_ma_period")
+            bb_period = self.get_param("e_bb_period")
+            bb_dev_factor=self.get_param("e_bb_dev")
+            sma_period = self.get_param("e_vol_ma_period")
 
             if self.strategy.use_talib:
                 self.bb = bt.talib.BBANDS(self.strategy.data.close, timeperiod=bb_period, nbdevup=bb_dev_factor, nbdevdn=bb_dev_factor)
@@ -100,8 +100,8 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
             # Create Supertrend indicator (same for both TA-Lib and Backtrader)
             supertrend = SuperTrend(
                 self.strategy.data,
-                period=self.get_param("supertrend_period"),
-                multiplier=self.get_param("supertrend_multiplier")
+                period=self.get_param("e_st_period"),
+                multiplier=self.get_param("e_st_multiplier")
             )
             self.register_indicator(self.supertrend_name, supertrend)
         except Exception as e:
@@ -124,19 +124,19 @@ class BBVolumeSupertrendEntryMixin(BaseEntryMixin):
             # Check Bollinger Bands
             if self.strategy.use_talib:
                 # For TA-Lib BB, use bb_lower
-                if self.get_param("use_bb_touch"):
+                if self.get_param("e_use_bb_touch"):
                     bb_condition = current_price <= bb.bb_lower[0]
                 else:
                     bb_condition = current_price < bb.bb_lower[0]
             else:
                 # For Backtrader's native BB, use lines.bot
-                if self.get_param("use_bb_touch"):
+                if self.get_param("e_use_bb_touch"):
                     bb_condition = current_price <= bb.lines.bot[0]
                 else:
                     bb_condition = current_price < bb.lines.bot[0]
 
             # Check Volume
-            volume_condition = current_volume > vol_ma[0] * self.get_param("min_volume_ratio")
+            volume_condition = current_volume > vol_ma[0] * self.get_param("e_min_volume_ratio")
 
             # Check Supertrend
             supertrend_condition = supertrend[0] == 1  # 1 means uptrend

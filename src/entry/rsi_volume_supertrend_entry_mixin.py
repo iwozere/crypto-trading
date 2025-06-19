@@ -53,12 +53,12 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
     def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "rsi_period": 14,
-            "rsi_oversold": 30,
-            "volume_ma_period": 20,
-            "min_volume_ratio": 1.5,
-            "supertrend_period": 10,
-            "supertrend_multiplier": 3.0,
+            "e_rsi_period": 14,
+            "e_rsi_oversold": 30,
+            "e_vol_ma_period": 20,
+            "e_min_volume_ratio": 1.5,
+            "e_st_period": 10,
+            "e_st_multiplier": 3.0,
         }
 
     def _init_indicators(self):
@@ -69,8 +69,8 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             return
 
         try:
-            rsi_period = self.get_param("rsi_period")
-            sma_period = self.get_param("volume_ma_period")
+            rsi_period = self.get_param("e_rsi_period")
+            sma_period = self.get_param("e_vol_ma_period")
 
             if self.strategy.use_talib:
                 self.rsi = bt.talib.RSI(self.strategy.data.close, timeperiod=rsi_period)
@@ -85,8 +85,8 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             # Create Supertrend indicator (same for both TA-Lib and Backtrader)
             supertrend = SuperTrend(
                 self.strategy.data,
-                period=self.get_param("supertrend_period"),
-                multiplier=self.get_param("supertrend_multiplier")
+                period=self.get_param("e_st_period"),
+                multiplier=self.get_param("e_st_multiplier")
             )
             self.register_indicator(self.supertrend_name, supertrend)
         except Exception as e:
@@ -107,10 +107,10 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             current_volume = self.strategy.data.volume[0]
 
             # Check RSI
-            rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
+            rsi_condition = rsi[0] <= self.get_param("e_rsi_oversold")
 
             # Check Volume
-            volume_condition = current_volume > vol_ma[0] * self.get_param("min_volume_ratio")
+            volume_condition = current_volume > vol_ma[0] * self.get_param("e_min_volume_ratio")
 
             # Check Supertrend
             supertrend_condition = supertrend[0] == 1  # 1 means uptrend

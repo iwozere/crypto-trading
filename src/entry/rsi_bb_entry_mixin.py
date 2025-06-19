@@ -48,11 +48,11 @@ class RSIBBEntryMixin(BaseEntryMixin):
     def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "rsi_period": 14,
-            "rsi_oversold": 30,
-            "bb_period": 20,
-            "bb_stddev": 2.0,
-            "use_bb_touch": True,
+            "e_rsi_period": 14,
+            "e_rsi_oversold": 30,
+            "e_bb_period": 20,
+            "e_bb_dev": 2.0,
+            "e_use_bb_touch": True,
         }
 
     def _init_indicators(self):
@@ -63,9 +63,9 @@ class RSIBBEntryMixin(BaseEntryMixin):
             return
 
         try:
-            rsi_period = self.get_param("rsi_period")
-            bb_period = self.get_param("bb_period")
-            bb_dev_factor = self.get_param("bb_stddev")
+            rsi_period = self.get_param("e_rsi_period")
+            bb_period = self.get_param("e_bb_period")
+            bb_dev_factor = self.get_param("e_bb_dev")
 
             if self.strategy.use_talib:
                 self.rsi = bt.talib.RSI(self.strategy.data.close, timeperiod=rsi_period)
@@ -131,7 +131,7 @@ class RSIBBEntryMixin(BaseEntryMixin):
             # Check RSI
             rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
 
-            if self.get_param("use_bb_touch"):
+            if self.get_param("e_use_bb_touch"):
                 bb_condition = current_price <= self.bb_bot[0]
             else:
                 bb_condition = current_price < self.bb_bot[0]

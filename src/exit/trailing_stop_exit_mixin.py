@@ -48,12 +48,12 @@ class TrailingStopExitMixin(BaseExitMixin):
     def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "trail_pct": 0.02,
-            "activation_pct": 0.0,
-            "use_atr": False,
-            "atr_multiplier": 2.0,
-            "atr_period": 14,
-            "use_talib": False,
+            "x_trail_pct": 0.02,
+            "x_activation_pct": 0.0,
+            "x_use_atr": False,
+            "x_atr_multiplier": 2.0,
+            "x_atr_period": 14,
+            "x_use_talib": False,
         }
 
     def _init_indicators(self):
@@ -64,7 +64,7 @@ class TrailingStopExitMixin(BaseExitMixin):
             return
 
         try:
-            atr_period = self.get_param("atr_period")
+            atr_period = self.get_param("x_atr_period")
             if self.strategy.use_talib:
                 self.atr = bt.talib.ATR(self.strategy.data.high, self.strategy.data.low, self.strategy.data.close, timeperiod=atr_period)
             else:
@@ -88,32 +88,32 @@ class TrailingStopExitMixin(BaseExitMixin):
                 self.highest_price = price
 
             # Calculate trailing stop level
-            if self.get_param("use_atr", False):
+            if self.get_param("x_use_atr", False):
                 if self.atr_name not in self.indicators:
                     return False
                 atr = self.indicators[self.atr_name]
                 atr_val = atr[0] if hasattr(atr, '__getitem__') else atr.lines.atr[0]
-                stop_level = self.highest_price - (atr_val * self.get_param("atr_multiplier"))
+                stop_level = self.highest_price - (atr_val * self.get_param("x_atr_multiplier"))
             else:
-                stop_level = self.highest_price * (1 - self.get_param("trail_pct"))
+                stop_level = self.highest_price * (1 - self.get_param("x_trail_pct"))
 
             # Check if trailing stop should be activated
-            if self.get_param("activation_pct", 0.0) > 0:
+            if self.get_param("x_activation_pct", 0.0) > 0:
                 profit_pct = (price - entry_price) / entry_price
-                if profit_pct < self.get_param("activation_pct"):
+                if profit_pct < self.get_param("x_activation_pct"):
                     return False
 
             # Exit if price falls below trailing stop
             return_value = price < stop_level
             if return_value:
-                if self.get_param("use_atr", False):
+                if self.get_param("x_use_atr", False):
                     logger.debug(f"EXIT: Price: {price}, Entry: {entry_price}, "
                                f"Highest: {self.highest_price}, Stop: {stop_level}, "
-                               f"ATR: {atr_val}, ATR Multiplier: {self.get_param('atr_multiplier')}")
+                               f"ATR: {atr_val}, ATR Multiplier: {self.get_param('x_atr_multiplier')}")
                 else:
                     logger.debug(f"EXIT: Price: {price}, Entry: {entry_price}, "
                                f"Highest: {self.highest_price}, Stop: {stop_level}, "
-                               f"Trail %: {self.get_param('trail_pct')}")
+                               f"Trail %: {self.get_param('x_trail_pct')}")
                 self.strategy.current_exit_reason = "trailing_stop"
             return return_value
         except Exception as e:
@@ -130,7 +130,7 @@ class TrailingStopExitMixin(BaseExitMixin):
         profit_pct = (price - entry_price) / entry_price
         
         # If trailing stop is not activated yet
-        if self.get_param("activation_pct", 0.0) > 0 and profit_pct < self.get_param("activation_pct"):
+        if self.get_param("x_activation_pct", 0.0) > 0 and profit_pct < self.get_param("x_activation_pct"):
             return "unknown"
             
         return "trailing_stop"

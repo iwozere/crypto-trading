@@ -77,9 +77,9 @@ class ATRExitMixin(BaseExitMixin):
     def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "atr_period": 14,
-            "tp_multiplier": 2.0,
-            "sl_multiplier": 1.0,
+            "x_atr_period": 14,
+            "x_tp_multiplier": 2.0,
+            "x_sl_multiplier": 1.0,
         }
 
     def _init_indicators(self):
@@ -90,7 +90,7 @@ class ATRExitMixin(BaseExitMixin):
             return
 
         try:
-            atr_period = self.get_param("atr_period")
+            atr_period = self.get_param("x_atr_period")
             if self.strategy.use_talib:
                 self.atr = bt.talib.ATR(self.strategy.data.high, self.strategy.data.low, self.strategy.data.close, timeperiod=atr_period)
             else:
@@ -113,7 +113,7 @@ class ATRExitMixin(BaseExitMixin):
             current_high = self.strategy.data.high[0]
 
             # Calculate stop loss from highest price
-            stop_loss = current_high - (atr_val * self.get_param("sl_multiplier"))
+            stop_loss = current_high - (atr_val * self.get_param("x_sl_multiplier"))
             
             if self.stop_loss is None:
                 self.stop_loss = stop_loss
@@ -121,7 +121,7 @@ class ATRExitMixin(BaseExitMixin):
                 self.stop_loss = stop_loss
                 
             if current_price < stop_loss:
-                logger.debug(f"EXIT: Current Price: {current_price}, Stop Loss: {stop_loss}, ATR: {atr_val}, ATR Multiplier: {self.get_param('sl_multiplier')}")
+                logger.debug(f"EXIT: Current Price: {current_price}, Stop Loss: {stop_loss}, ATR: {atr_val}, ATR Multiplier: {self.get_param('x_sl_multiplier')}")
                 # Set the exit reason in the strategy
                 self.strategy.current_exit_reason = "stop_loss"
                 self.stop_loss = None
@@ -130,10 +130,10 @@ class ATRExitMixin(BaseExitMixin):
 
             if self.take_profit is None and self.strategy.current_trade is not None:
                 entry_price = self.strategy.current_trade['entry_price']
-                take_profit = entry_price + (entry_price * self.get_param("tp_multiplier"))
+                take_profit = entry_price + (entry_price * self.get_param("x_tp_multiplier"))
 
             if current_price > take_profit:
-                logger.debug(f"EXIT: Current Price: {current_price}, Take Profit: {take_profit}, ATR: {atr_val}, ATR Multiplier: {self.get_param('tp_multiplier')}")
+                logger.debug(f"EXIT: Current Price: {current_price}, Take Profit: {take_profit}, ATR: {atr_val}, ATR Multiplier: {self.get_param('x_tp_multiplier')}")
                 # Set the exit reason in the strategy
                 self.strategy.current_exit_reason = "take_profit"
                 self.stop_loss = None

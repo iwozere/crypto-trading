@@ -1,31 +1,31 @@
 {
     "name": "RSIBBExitMixin",
     "params": {
-        "rsi_period": {
+        "x_rsi_period": {
             "type": "int",
             "low": 5,
             "high": 30,
             "default": 14
         },
-        "rsi_overbought": {
+        "x_rsi_overbought": {
             "type": "float",
             "low": 60,
             "high": 90,
             "default": 70
         },
-        "bb_period": {
+        "x_bb_period": {
             "type": "int",
             "low": 10,
             "high": 50,
             "default": 20
         },
-        "bb_stddev": {
+        "x_bb_dev": {
             "type": "float",
             "low": 1.0,
             "high": 3.0,
             "default": 2.0
         },
-        "use_bb_touch": {
+        "x_use_bb_touch": {
             "type": "bool",
             "default": true
         }

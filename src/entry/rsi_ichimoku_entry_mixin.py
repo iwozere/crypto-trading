@@ -46,13 +46,13 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
     def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "rsi_period": 14,
-            "rsi_oversold": 30,
-            "tenkan": 9,
-            "kijun": 26,
-            "senkou": 52,
-            "senkou_lead": 26,
-            "chikou": 26
+            "e_rsi_period": 14,
+            "e_rsi_oversold": 30,
+            "e_tenkan": 9,
+            "e_kijun": 26,
+            "e_senkou": 52,
+            "e_senkou_lead": 26,
+            "e_chikou": 26
         }
 
     def _init_indicators(self):
@@ -63,7 +63,7 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             return
 
         try:
-            rsi_period = self.get_param("rsi_period")
+            rsi_period = self.get_param("e_rsi_period")
             if self.strategy.use_talib:
                 self.rsi = bt.talib.RSI(self.strategy.data.close, timeperiod=rsi_period)
             else:
@@ -73,11 +73,11 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
 
             self.ichimoku = bt.indicators.Ichimoku(
                 self.strategy.data,
-                tenkan=self.get_param("tenkan"),
-                kijun=self.get_param("kijun"),
-                senkou=self.get_param("senkou"),
-                senkou_lead=self.get_param("senkou_lead"),
-                chikou=self.get_param("chikou")
+                tenkan=self.get_param("e_tenkan"),
+                kijun=self.get_param("e_kijun"),
+                senkou=self.get_param("e_senkou"),
+                senkou_lead=self.get_param("e_senkou_lead"),
+                chikou=self.get_param("e_chikou")
             )
             self.register_indicator(self.ichimoku_name, self.ichimoku)
         except Exception as e:
@@ -96,7 +96,7 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             current_price = self.strategy.data.close[0]
 
             # Check RSI
-            rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
+            rsi_condition = rsi[0] <= self.get_param("e_rsi_oversold")
 
             # Check Ichimoku Cloud - Tenkan-sen crosses above Kijun-sen
             ichimoku_condition = ichimoku.tenkan_sen[0] > ichimoku.kijun_sen[0] and ichimoku.tenkan_sen[-1] <= ichimoku.kijun_sen[-1]

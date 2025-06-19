@@ -42,10 +42,10 @@ class FixedRatioExitMixin(BaseExitMixin):
     def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "profit_ratio": 0.1,
-            "loss_ratio": 0.05,
-            "use_trailing_stop": False,
-            "trail_percent": 0.5,
+            "x_take_profit": 0.1,
+            "x_stop_loss": 0.05,
+            "x_use_trailing_stop": False,
+            "x_trail_percent": 0.5,
         }
 
     def _init_indicators(self):
@@ -62,15 +62,15 @@ class FixedRatioExitMixin(BaseExitMixin):
         profit_ratio = (current_price - entry_price) / entry_price
         
         return_value = False
-        if profit_ratio >= self.get_param("profit_ratio"):
+        if profit_ratio >= self.get_param("x_take_profit"):
             return_value = True
-        elif profit_ratio <= -self.get_param("loss_ratio"):
+        elif profit_ratio <= -self.get_param("x_stop_loss"):
             return_value = True
 
         if return_value:
             logger.debug(f"EXIT: Price: {current_price}, Entry: {entry_price}, "
                        f"Profit %: {profit_ratio*100:.2f}%, "
-                       f"Take Profit: {self.get_param('profit_ratio')*100:.2f}%, "
-                       f"Stop Loss: {self.get_param('loss_ratio')*100:.2f}%")
+                       f"Take Profit: {self.get_param('x_take_profit')*100:.2f}%, "
+                       f"Stop Loss: {self.get_param('x_stop_loss')*100:.2f}%")
         return return_value
 

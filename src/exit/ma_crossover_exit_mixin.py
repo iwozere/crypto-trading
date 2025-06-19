@@ -47,11 +47,11 @@ class MACrossoverExitMixin(BaseExitMixin):
     def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "fast_period": 10,
-            "slow_period": 20,
-            "ma_type": "sma",
-            "require_confirmation": False,
-            "use_talib": True,
+            "x_fast_period": 10,
+            "x_slow_period": 20,
+            "x_ma_type": "sma",
+            "x_require_confirmation": False,
+            "x_use_talib": True,
         }
 
     def _init_indicators(self):
@@ -62,8 +62,8 @@ class MACrossoverExitMixin(BaseExitMixin):
             return
 
         try:
-            fast_period = self.get_param("fast_period")
-            slow_period = self.get_param("slow_period")
+            fast_period = self.get_param("x_fast_period")
+            slow_period = self.get_param("x_slow_period")
 
             if self.strategy.use_talib:
                 self.fast_ma = bt.talib.SMA(self.strategy.data.volume, fast_period)
@@ -108,7 +108,7 @@ class MACrossoverExitMixin(BaseExitMixin):
                 logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
                            f"Fast MA: {fast_ma_current}, Slow MA: {slow_ma_current}, "
                            f"Position: {'long' if self.strategy.position.size > 0 else 'short'}")
-                ma_type = self.get_param("ma_type", "sma").lower()
+                ma_type = self.get_param("x_ma_type", "sma").lower()
                 self.strategy.current_exit_reason = f"{ma_type}_crossover"
             return return_value
         except Exception as e:

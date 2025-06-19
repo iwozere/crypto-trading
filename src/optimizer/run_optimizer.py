@@ -278,7 +278,6 @@ if __name__ == "__main__":
                         _, _, result = optimizer.run_optimization(trial)
                         return result["total_profit_with_commission"]
                     
-
                     # Create study
                     study = optuna.create_study(direction="maximize")
 
@@ -309,15 +308,15 @@ if __name__ == "__main__":
                     save_results(best_result, data_file)
 
                     # Create and save plot
-                    if optimizer_config.get("optimizer_settings", {}).get("plot", True):
-                        plot_name = get_result_filename(
-                            data_file,
-                            entry_logic_name=strategy.entry_logic["name"],
-                            exit_logic_name=strategy.exit_logic["name"],
-                            suffix="_plot",
-                        )
-                        plot_path = os.path.join("results", f"{plot_name}.png")
-                        save_plot(cerebro, plot_path, optimizer_config.get("visualization_settings", {}))
+                    #if optimizer_config.get("optimizer_settings", {}).get("plot", True):
+                    #    plot_name = get_result_filename(
+                    #        data_file,
+                    #        entry_logic_name=strategy.entry_logic["name"],
+                    #        exit_logic_name=strategy.exit_logic["name"],
+                    #        suffix="_plot",
+                    #    )
+                    #    plot_path = os.path.join("results", f"{plot_name}.png")
+                    #    save_plot(cerebro, plot_path, optimizer_config.get("visualization_settings", {}))
                 except Exception as e:
                     _logger.error(f"Error for {entry_logic_name} + {exit_logic_name}: {e}", exc_info=e)
 

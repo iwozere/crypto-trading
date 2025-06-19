@@ -57,13 +57,13 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
     def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "rsi_period": 14,
-            "rsi_oversold": 30,
-            "bb_period": 20,
-            "bb_stddev": 2.0,
-            "volume_ma_period": 20,
-            "use_bb_touch": True,
-            "min_volume_ratio": 1.1,
+            "e_rsi_period": 14,
+            "e_rsi_oversold": 30,
+            "e_bb_period": 20,
+            "e_bb_dev": 2.0,
+            "e_vol_ma_period": 20,
+            "e_use_bb_touch": True,
+            "e_min_volume_ratio": 1.1,
         }
 
     def _init_indicators(self):
@@ -74,10 +74,10 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             return
 
         try:
-            rsi_period = self.get_param("rsi_period")
-            bb_period = self.get_param("bb_period")
-            bb_dev_factor = self.get_param("bb_stddev")
-            sma_period = self.get_param("volume_ma_period")
+            rsi_period = self.get_param("e_rsi_period")
+            bb_period = self.get_param("e_bb_period")
+            bb_dev_factor = self.get_param("e_bb_dev")
+            sma_period = self.get_param("e_vol_ma_period")
 
             if self.strategy.use_talib:
                 self.rsi = bt.talib.RSI(self.strategy.data.close, timeperiod=rsi_period)
@@ -120,19 +120,19 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             # Check Bollinger Bands
             if self.strategy.use_talib:
                 # For TA-Lib BB, use bb_lower
-                if self.get_param("use_bb_touch"):
+                if self.get_param("e_use_bb_touch"):
                     bb_condition = current_price <= bb.bb_lower[0]
                 else:
                     bb_condition = current_price < bb.bb_lower[0]
             else:
                 # For Backtrader's native BB, use lines.bot
-                if self.get_param("use_bb_touch"):
+                if self.get_param("e_use_bb_touch"):
                     bb_condition = current_price <= bb.lines.bot[0]
                 else:
                     bb_condition = current_price < bb.lines.bot[0]
 
             # Check Volume
-            volume_condition = current_volume > vol_ma[0] * self.get_param("min_volume_ratio")
+            volume_condition = current_volume > vol_ma[0] * self.get_param("e_min_volume_ratio")
 
             return_value = rsi_condition and bb_condition and volume_condition
             if return_value:
