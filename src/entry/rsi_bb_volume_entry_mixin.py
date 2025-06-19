@@ -115,7 +115,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
             current_volume = self.strategy.data.volume[0]
 
             # Check RSI
-            rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
+            rsi_condition = rsi[0] <= self.get_param("e_rsi_oversold")
 
             # Check Bollinger Bands
             if self.strategy.use_talib:

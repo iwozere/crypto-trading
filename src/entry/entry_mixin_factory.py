@@ -17,7 +17,6 @@ ENTRY_MIXIN_REGISTRY = {
     "RSIBBVolumeEntryMixin": RSIBBVolumeEntryMixin,
     "RSIVolumeSupertrendEntryMixin": RSIVolumeSupertrendEntryMixin,
     "BBVolumeSuperTrendEntryMixin": BBVolumeSupertrendEntryMixin,
-    # Add other mixins...
 }
 
 

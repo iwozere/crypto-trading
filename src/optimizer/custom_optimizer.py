@@ -185,14 +185,24 @@ class CustomOptimizer:
         trades_analysis = analyzers.get('trades', {})
         
         # Calculate metrics
-        total_profit = trades_analysis.get("pnl", {}).get("net", {}).get("total", 0.0)
+        # Backtrader TradeAnalyzer provides:
+        # - "pnl.net.total": Net profit (after commission)
+        # - "pnl.comm.total": Total commission paid
+        # - "pnl.gross.total": Gross profit (before commission)
+        
+        net_profit = trades_analysis.get("pnl", {}).get("net", {}).get("total", 0.0)
         total_commission = trades_analysis.get("pnl", {}).get("comm", {}).get("total", 0.0)
-        total_profit_with_comm = total_profit - total_commission
+        gross_profit = trades_analysis.get("pnl", {}).get("gross", {}).get("total", 0.0)
+        
+        # If gross profit is not available, calculate it from net profit + commission
+        if gross_profit == 0.0 and net_profit != 0.0:
+            gross_profit = net_profit + total_commission
 
         output = {
             "best_params": strategy_params,
-            "total_profit": float(total_profit),
-            "total_profit_with_commission": float(total_profit_with_comm),
+            "total_profit": float(gross_profit),  # Gross profit (before commission)
+            "total_profit_with_commission": float(net_profit),  # Net profit (after commission)
+            "total_commission": float(total_commission),  # Total commission paid
             "analyzers": analyzers,
             "trades": strategy.trades
         }

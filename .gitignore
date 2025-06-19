@@ -59,6 +59,7 @@ temp/
 *.jsonl.gz.part.tmp.tmp
 
 !config/trading/*.json
+!config/plotter/*.json
 !config/optimizer/*.json
 !config/optimizer/entry/*.json
 !config/optimizer/exit/*.json

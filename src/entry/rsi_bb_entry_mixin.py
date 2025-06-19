@@ -97,7 +97,7 @@ class RSIBBEntryMixin(BaseEntryMixin):
             
         try:
             # Check if we have enough data points
-            if len(self.strategy.data) < max(self.get_param("rsi_period"), self.get_param("bb_period")):
+            if len(self.strategy.data) < max(self.get_param("e_rsi_period"), self.get_param("e_bb_period")):
                 return False
                 
             # Check if indicators are registered and have values
@@ -129,7 +129,7 @@ class RSIBBEntryMixin(BaseEntryMixin):
             current_price = self.strategy.data.close[0]
 
             # Check RSI
-            rsi_condition = rsi[0] <= self.get_param("rsi_oversold")
+            rsi_condition = rsi[0] <= self.get_param("e_rsi_oversold")
 
             if self.get_param("e_use_bb_touch"):
                 bb_condition = current_price <= self.bb_bot[0]

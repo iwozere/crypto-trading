@@ -198,8 +198,9 @@ def save_results(result, data_file):
         result_dict = {
             "data_file": str(data_file),
             "total_trades": len(trades),
-            "total_profit": float(result.get("total_profit", 0)),
-            "total_profit_with_commission": float(result.get("total_profit_with_commission", 0)),
+            "total_profit": float(result.get("total_profit", 0)),  # Gross profit (before commission)
+            "total_profit_with_commission": float(result.get("total_profit_with_commission", 0)),  # Net profit (after commission)
+            "total_commission": float(result.get("total_commission", 0)),  # Total commission paid
             "best_params": result.get("best_params", {}),
             "analyzers": analyzers,
             "trades": trades
