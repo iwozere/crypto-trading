@@ -19,8 +19,9 @@ calendar day calculations based on the data feed's timeframe.
 """
 
 from typing import Any, Dict, Optional
-from src.notification.logger import setup_logger
+
 from src.exit.base_exit_mixin import BaseExitMixin
+from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
 
@@ -49,7 +50,7 @@ class TimeBasedExitMixin(BaseExitMixin):
 
     def _init_indicators(self):
         """Initialize time-based exit indicators"""
-        if not hasattr(self, 'strategy'):
+        if not hasattr(self, "strategy"):
             return
 
     def should_exit(self) -> bool:
@@ -58,7 +59,7 @@ class TimeBasedExitMixin(BaseExitMixin):
             return False
 
         current_time = self.strategy.data.datetime.datetime(0)
-        entry_time = self.strategy.current_trade.get('entry_time')
+        entry_time = self.strategy.current_trade.get("entry_time")
         if self.get_param("x_use_time", False):
             time_diff = (current_time - entry_time).total_seconds() / 60
             return_value = time_diff >= self.get_param("x_max_minutes")
@@ -68,15 +69,19 @@ class TimeBasedExitMixin(BaseExitMixin):
 
         if return_value:
             if self.get_param("x_use_time", False):
-                logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
-                           f"Time held: {time_diff:.2f} minutes, "
-                           f"Max time: {self.get_param('x_max_minutes')} minutes")
+                logger.debug(
+                    f"EXIT: Price: {self.strategy.data.close[0]}, "
+                    f"Time held: {time_diff:.2f} minutes, "
+                    f"Max time: {self.get_param('x_max_minutes')} minutes"
+                )
                 self.strategy.current_exit_reason = "time_limit_minutes"
                 self.entry_time = current_time
             else:
-                logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
-                           f"Bars held: {bars_held}, "
-                           f"Max bars: {self.get_param('x_max_bars')}")
+                logger.debug(
+                    f"EXIT: Price: {self.strategy.data.close[0]}, "
+                    f"Bars held: {bars_held}, "
+                    f"Max bars: {self.get_param('x_max_bars')}"
+                )
                 self.strategy.current_exit_reason = "time_limit_bars"
                 self.entry_bar = 0
         return return_value

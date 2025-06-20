@@ -10,13 +10,13 @@ import tempfile
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import FSInputFile, Message
-from src.screener.telegram.combine import analyze_ticker
 from src.notification.logger import setup_logger
+from src.screener.telegram.combine import analyze_ticker
 
 from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
 
 # Set up logger using the telegram_bot configuration
-logger = setup_logger('telegram_bot')
+logger = setup_logger("telegram_bot")
 
 if not TELEGRAM_BOT_TOKEN:
     logger.error("TELEGRAM_BOT_TOKEN environment variable is not set")
@@ -36,7 +36,10 @@ async def send_welcome(message: Message):
     )
 
 
-@dp.message(lambda message: message.text and message.text.strip().replace('.', '').replace('-', '').isalnum())
+@dp.message(
+    lambda message: message.text
+    and message.text.strip().replace(".", "").replace("-", "").isalnum()
+)
 async def handle_ticker(message: Message):
     ticker = message.text.strip().upper()
     logger.info(f"User {message.from_user.id} requested analysis for {ticker}")

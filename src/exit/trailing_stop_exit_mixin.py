@@ -29,6 +29,7 @@ from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 class TrailingStopExitMixin(BaseExitMixin):
     """Exit mixin based on trailing stop"""
 
@@ -36,9 +37,8 @@ class TrailingStopExitMixin(BaseExitMixin):
         """Initialize the mixin with parameters"""
         super().__init__(params)
         self.highest_price = 0
-        self.atr_name = 'exit_atr'
+        self.atr_name = "exit_atr"
         self.atr = None
-
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -59,16 +59,23 @@ class TrailingStopExitMixin(BaseExitMixin):
     def _init_indicators(self):
         """Initialize indicators"""
         logger.debug("TrailingStopExitMixin._init_indicators called")
-        if not hasattr(self, 'strategy'):
+        if not hasattr(self, "strategy"):
             logger.error("No strategy available in _init_indicators")
             return
 
         try:
             atr_period = self.get_param("x_atr_period")
             if self.strategy.use_talib:
-                self.atr = bt.talib.ATR(self.strategy.data.high, self.strategy.data.low, self.strategy.data.close, timeperiod=atr_period)
+                self.atr = bt.talib.ATR(
+                    self.strategy.data.high,
+                    self.strategy.data.low,
+                    self.strategy.data.close,
+                    timeperiod=atr_period,
+                )
             else:
-                self.atr = bt.indicators.AverageTrueRange(self.strategy.data, period=atr_period)
+                self.atr = bt.indicators.AverageTrueRange(
+                    self.strategy.data, period=atr_period
+                )
             self.register_indicator(self.atr_name, self.atr)
         except Exception as e:
             logger.error(f"Error initializing indicators: {e}", exc_info=e)
@@ -92,8 +99,10 @@ class TrailingStopExitMixin(BaseExitMixin):
                 if self.atr_name not in self.indicators:
                     return False
                 atr = self.indicators[self.atr_name]
-                atr_val = atr[0] if hasattr(atr, '__getitem__') else atr.lines.atr[0]
-                stop_level = self.highest_price - (atr_val * self.get_param("x_atr_multiplier"))
+                atr_val = atr[0] if hasattr(atr, "__getitem__") else atr.lines.atr[0]
+                stop_level = self.highest_price - (
+                    atr_val * self.get_param("x_atr_multiplier")
+                )
             else:
                 stop_level = self.highest_price * (1 - self.get_param("x_trail_pct"))
 
@@ -107,13 +116,17 @@ class TrailingStopExitMixin(BaseExitMixin):
             return_value = price < stop_level
             if return_value:
                 if self.get_param("x_use_atr", False):
-                    logger.debug(f"EXIT: Price: {price}, Entry: {entry_price}, "
-                               f"Highest: {self.highest_price}, Stop: {stop_level}, "
-                               f"ATR: {atr_val}, ATR Multiplier: {self.get_param('x_atr_multiplier')}")
+                    logger.debug(
+                        f"EXIT: Price: {price}, Entry: {entry_price}, "
+                        f"Highest: {self.highest_price}, Stop: {stop_level}, "
+                        f"ATR: {atr_val}, ATR Multiplier: {self.get_param('x_atr_multiplier')}"
+                    )
                 else:
-                    logger.debug(f"EXIT: Price: {price}, Entry: {entry_price}, "
-                               f"Highest: {self.highest_price}, Stop: {stop_level}, "
-                               f"Trail %: {self.get_param('x_trail_pct')}")
+                    logger.debug(
+                        f"EXIT: Price: {price}, Entry: {entry_price}, "
+                        f"Highest: {self.highest_price}, Stop: {stop_level}, "
+                        f"Trail %: {self.get_param('x_trail_pct')}"
+                    )
                 self.strategy.current_exit_reason = "trailing_stop"
             return return_value
         except Exception as e:
@@ -124,13 +137,15 @@ class TrailingStopExitMixin(BaseExitMixin):
         """Get the reason for exiting the position"""
         if not self.strategy.position:
             return "unknown"
-        
+
         price = self.strategy.data.close[0]
         entry_price = self.strategy.position.price
         profit_pct = (price - entry_price) / entry_price
-        
+
         # If trailing stop is not activated yet
-        if self.get_param("x_activation_pct", 0.0) > 0 and profit_pct < self.get_param("x_activation_pct"):
+        if self.get_param("x_activation_pct", 0.0) > 0 and profit_pct < self.get_param(
+            "x_activation_pct"
+        ):
             return "unknown"
-            
+
         return "trailing_stop"

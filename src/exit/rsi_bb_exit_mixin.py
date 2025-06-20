@@ -35,8 +35,8 @@ class RSIBBExitMixin(BaseExitMixin):
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
         super().__init__(params)
-        self.rsi_name = 'exit_rsi'
-        self.bb_name = 'exit_bb'
+        self.rsi_name = "exit_rsi"
+        self.bb_name = "exit_bb"
         self.rsi = None
         self.bb = None
         self.bb_bot = None
@@ -61,7 +61,7 @@ class RSIBBExitMixin(BaseExitMixin):
     def _init_indicators(self):
         """Initialize indicators"""
         logger.debug("RSIBBExitMixin._init_indicators called")
-        if not hasattr(self, 'strategy'):
+        if not hasattr(self, "strategy"):
             logger.error("No strategy available in _init_indicators")
             return
 
@@ -72,13 +72,22 @@ class RSIBBExitMixin(BaseExitMixin):
 
             if self.strategy.use_talib:
                 self.rsi = bt.talib.RSI(self.strategy.data.close, period=rsi_period)
-                self.bb = bt.talib.BBANDS(self.strategy.data.close, timeperiod=bb_period, nbdevup=bb_dev_factor, nbdevdn=bb_dev_factor)
+                self.bb = bt.talib.BBANDS(
+                    self.strategy.data.close,
+                    timeperiod=bb_period,
+                    nbdevup=bb_dev_factor,
+                    nbdevdn=bb_dev_factor,
+                )
                 self.bb_top = self.bb.upperband
                 self.bb_mid = self.bb.middleband
                 self.bb_bot = self.bb.lowerband
             else:
-                self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
-                self.bb = bt.indicators.BollingerBands(self.strategy.data.close, period=bb_period, devfactor=bb_dev_factor)
+                self.rsi = bt.indicators.RSI(
+                    self.strategy.data.close, period=rsi_period
+                )
+                self.bb = bt.indicators.BollingerBands(
+                    self.strategy.data.close, period=bb_period, devfactor=bb_dev_factor
+                )
                 self.bb_top = self.bb.top
                 self.bb_mid = self.bb.mid
                 self.bb_bot = self.bb.bot
@@ -113,7 +122,9 @@ class RSIBBExitMixin(BaseExitMixin):
 
             return_value = rsi_condition or bb_condition
             if return_value:
-                logger.debug(f"EXIT: Price: {current_price}, RSI: {self.rsi[0]}, BB Upper: {self.bb_top[0]}, RSI Overbought: {self.get_param('x_rsi_overbought')}")
+                logger.debug(
+                    f"EXIT: Price: {current_price}, RSI: {self.rsi[0]}, BB Upper: {self.bb_top[0]}, RSI Overbought: {self.get_param('x_rsi_overbought')}"
+                )
                 self.strategy.current_exit_reason = "rsi_bb_overbought"
             return return_value
         except Exception as e:

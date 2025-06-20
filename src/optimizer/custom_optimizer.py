@@ -29,6 +29,7 @@ from datetime import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import json
+
 import backtrader as bt
 from src.analyzer.bt_analyzers import (CAGR, CalmarRatio,
                                        ConsecutiveWinsLosses,
@@ -68,7 +69,7 @@ class CustomOptimizer:
     def to_dict(self, obj):
         if isinstance(obj, dict):
             return {k: self.to_dict(v) for k, v in obj.items()}
-        elif hasattr(obj, 'items'):
+        elif hasattr(obj, "items"):
             return {k: self.to_dict(v) for k, v in obj.items()}
         elif isinstance(obj, (list, tuple)):
             return [self.to_dict(v) for v in obj]
@@ -155,17 +156,23 @@ class CustomOptimizer:
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
         cerebro.addanalyzer(bt.analyzers.SQN, _name="sqn")
         cerebro.addanalyzer(bt.analyzers.TimeDrawDown, _name="time_drawdown")
-        #cerebro.addanalyzer(bt.analyzers.TimeReturn, _name="time_return")
+        # cerebro.addanalyzer(bt.analyzers.TimeReturn, _name="time_return")
         cerebro.addanalyzer(bt.analyzers.VWR, _name="vwr")
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trades")
-        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe", riskfreerate=self.risk_free_rate)
+        cerebro.addanalyzer(
+            bt.analyzers.SharpeRatio, _name="sharpe", riskfreerate=self.risk_free_rate
+        )
 
         # Add custom analyzers
         cerebro.addanalyzer(ProfitFactor, _name="profit_factor")
         cerebro.addanalyzer(WinRate, _name="winrate")
-        cerebro.addanalyzer(CalmarRatio, _name="calmar", riskfreerate=self.risk_free_rate)
+        cerebro.addanalyzer(
+            CalmarRatio, _name="calmar", riskfreerate=self.risk_free_rate
+        )
         cerebro.addanalyzer(CAGR, _name="cagr", timeframe=bt.TimeFrame.Years)
-        cerebro.addanalyzer(SortinoRatio, _name="sortino", riskfreerate=self.risk_free_rate)
+        cerebro.addanalyzer(
+            SortinoRatio, _name="sortino", riskfreerate=self.risk_free_rate
+        )
         cerebro.addanalyzer(ConsecutiveWinsLosses, _name="consecutivewinslosses")
         cerebro.addanalyzer(PortfolioVolatility, _name="portfoliovolatility")
 
@@ -182,18 +189,20 @@ class CustomOptimizer:
             analyzers[name] = self.to_dict(analysis)
 
         # Get trade analysis
-        trades_analysis = analyzers.get('trades', {})
-        
+        trades_analysis = analyzers.get("trades", {})
+
         # Calculate metrics
         # Backtrader TradeAnalyzer provides:
         # - "pnl.net.total": Net profit (after commission)
         # - "pnl.comm.total": Total commission paid
         # - "pnl.gross.total": Gross profit (before commission)
-        
+
         net_profit = trades_analysis.get("pnl", {}).get("net", {}).get("total", 0.0)
-        total_commission = trades_analysis.get("pnl", {}).get("comm", {}).get("total", 0.0)
+        total_commission = (
+            trades_analysis.get("pnl", {}).get("comm", {}).get("total", 0.0)
+        )
         gross_profit = trades_analysis.get("pnl", {}).get("gross", {}).get("total", 0.0)
-        
+
         # If gross profit is not available, calculate it from net profit + commission
         if gross_profit == 0.0 and net_profit != 0.0:
             gross_profit = net_profit + total_commission
@@ -201,11 +210,12 @@ class CustomOptimizer:
         output = {
             "best_params": strategy_params,
             "total_profit": float(gross_profit),  # Gross profit (before commission)
-            "total_profit_with_commission": float(net_profit),  # Net profit (after commission)
+            "total_profit_with_commission": float(
+                net_profit
+            ),  # Net profit (after commission)
             "total_commission": float(total_commission),  # Total commission paid
             "analyzers": analyzers,
-            "trades": strategy.trades
+            "trades": strategy.trades,
         }
 
         return strategy, cerebro, output
-

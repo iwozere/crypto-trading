@@ -28,13 +28,14 @@ from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 class RSIIchimokuEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI and Ichimoku Cloud"""
 
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         super().__init__(params)
-        self.rsi_name = 'entry_rsi'
-        self.ichimoku_name = 'entry_ichimoku'
+        self.rsi_name = "entry_rsi"
+        self.ichimoku_name = "entry_ichimoku"
         self.rsi = None
         self.ichimoku = None
 
@@ -52,13 +53,13 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             "e_kijun": 26,
             "e_senkou": 52,
             "e_senkou_lead": 26,
-            "e_chikou": 26
+            "e_chikou": 26,
         }
 
     def _init_indicators(self):
         """Initialize indicators"""
         logger.debug("RSIIchimokuEntryMixin._init_indicators called")
-        if not hasattr(self, 'strategy'):
+        if not hasattr(self, "strategy"):
             logger.error("No strategy available in _init_indicators")
             return
 
@@ -67,7 +68,9 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             if self.strategy.use_talib:
                 self.rsi = bt.talib.RSI(self.strategy.data.close, timeperiod=rsi_period)
             else:
-                self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
+                self.rsi = bt.indicators.RSI(
+                    self.strategy.data.close, period=rsi_period
+                )
 
             self.register_indicator(self.rsi_name, self.rsi)
 
@@ -77,7 +80,7 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
                 kijun=self.get_param("e_kijun"),
                 senkou=self.get_param("e_senkou"),
                 senkou_lead=self.get_param("e_senkou_lead"),
-                chikou=self.get_param("e_chikou")
+                chikou=self.get_param("e_chikou"),
             )
             self.register_indicator(self.ichimoku_name, self.ichimoku)
         except Exception as e:
@@ -86,7 +89,10 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
 
     def should_enter(self) -> bool:
         """Check if we should enter a position"""
-        if self.rsi_name not in self.indicators or self.ichimoku_name not in self.indicators:
+        if (
+            self.rsi_name not in self.indicators
+            or self.ichimoku_name not in self.indicators
+        ):
             return False
 
         try:
@@ -99,12 +105,17 @@ class RSIIchimokuEntryMixin(BaseEntryMixin):
             rsi_condition = rsi[0] <= self.get_param("e_rsi_oversold")
 
             # Check Ichimoku Cloud - Tenkan-sen crosses above Kijun-sen
-            ichimoku_condition = ichimoku.tenkan_sen[0] > ichimoku.kijun_sen[0] and ichimoku.tenkan_sen[-1] <= ichimoku.kijun_sen[-1]
+            ichimoku_condition = (
+                ichimoku.tenkan_sen[0] > ichimoku.kijun_sen[0]
+                and ichimoku.tenkan_sen[-1] <= ichimoku.kijun_sen[-1]
+            )
 
             return_value = rsi_condition and ichimoku_condition
             if return_value:
-                logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, "
-                           f"Tenkan-sen: {ichimoku.tenkan_sen[0]}, Kijun-sen: {ichimoku.kijun_sen[0]}")
+                logger.debug(
+                    f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, "
+                    f"Tenkan-sen: {ichimoku.tenkan_sen[0]}, Kijun-sen: {ichimoku.kijun_sen[0]}"
+                )
             return return_value
         except Exception as e:
             logger.error(f"Error in should_enter: {e}", exc_info=e)

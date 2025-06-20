@@ -31,15 +31,16 @@ from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 class RSIBBVolumeEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI, Bollinger Bands, and Volume"""
 
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
         super().__init__(params)
-        self.rsi_name = 'entry_rsi'
-        self.bb_name = 'entry_bb'
-        self.vol_ma_name = 'entry_volume_ma'
+        self.rsi_name = "entry_rsi"
+        self.bb_name = "entry_bb"
+        self.vol_ma_name = "entry_volume_ma"
 
         self.rsi = None
         self.bb = None
@@ -47,7 +48,6 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
         self.bb_mid = None
         self.bb_top = None
         self.sma = None
-
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -69,7 +69,7 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
     def _init_indicators(self):
         """Initialize indicators"""
         logger.debug("RSIBBVolumeEntryMixin._init_indicators called")
-        if not hasattr(self, 'strategy'):
+        if not hasattr(self, "strategy"):
             logger.error("No strategy available in _init_indicators")
             return
 
@@ -81,18 +81,29 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
 
             if self.strategy.use_talib:
                 self.rsi = bt.talib.RSI(self.strategy.data.close, timeperiod=rsi_period)
-                self.bb = bt.talib.BBANDS(self.strategy.data.close, timeperiod=bb_period, nbdevup=bb_dev_factor, nbdevdn=bb_dev_factor)
+                self.bb = bt.talib.BBANDS(
+                    self.strategy.data.close,
+                    timeperiod=bb_period,
+                    nbdevup=bb_dev_factor,
+                    nbdevdn=bb_dev_factor,
+                )
                 self.bb_top = self.bb.upperband
                 self.bb_mid = self.bb.middleband
                 self.bb_bot = self.bb.lowerband
                 self.sma = bt.talib.SMA(self.strategy.data.volume, sma_period)
             else:
-                self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
-                self.bb = bt.indicators.BollingerBands(self.strategy.data.close, period=bb_period, devfactor=bb_dev_factor)
+                self.rsi = bt.indicators.RSI(
+                    self.strategy.data.close, period=rsi_period
+                )
+                self.bb = bt.indicators.BollingerBands(
+                    self.strategy.data.close, period=bb_period, devfactor=bb_dev_factor
+                )
                 self.bb_top = self.bb.top
                 self.bb_mid = self.bb.mid
                 self.bb_bot = self.bb.bot
-                self.sma = bt.indicators.SMA(self.strategy.data.volume, period=sma_period)
+                self.sma = bt.indicators.SMA(
+                    self.strategy.data.volume, period=sma_period
+                )
 
             self.register_indicator(self.rsi_name, self.rsi)
             self.register_indicator(self.bb_name, self.bb)
@@ -103,7 +114,11 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
 
     def should_enter(self) -> bool:
         """Check if we should enter a position"""
-        if self.rsi_name not in self.indicators or self.bb_name not in self.indicators or self.vol_ma_name not in self.indicators:
+        if (
+            self.rsi_name not in self.indicators
+            or self.bb_name not in self.indicators
+            or self.vol_ma_name not in self.indicators
+        ):
             return False
 
         try:
@@ -132,11 +147,15 @@ class RSIBBVolumeEntryMixin(BaseEntryMixin):
                     bb_condition = current_price < bb.lines.bot[0]
 
             # Check Volume
-            volume_condition = current_volume > vol_ma[0] * self.get_param("e_min_volume_ratio")
+            volume_condition = current_volume > vol_ma[0] * self.get_param(
+                "e_min_volume_ratio"
+            )
 
             return_value = rsi_condition and bb_condition and volume_condition
             if return_value:
-                logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, BB Lower: {bb.bb_lower[0] if self.strategy.use_talib else bb.lines.bot[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}")
+                logger.debug(
+                    f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, BB Lower: {bb.bb_lower[0] if self.strategy.use_talib else bb.lines.bot[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}"
+                )
             return return_value
         except Exception as e:
             logger.error(f"Error in should_enter: {e}", exc_info=e)

@@ -34,37 +34,39 @@ Exit Reasons:
 - "take_profit": When price rises above the take profit level
 """
 
+from typing import Any, Dict, Optional
+
 import backtrader as bt
 from src.exit.base_exit_mixin import BaseExitMixin
-from typing import Dict, Any, Optional
 from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 class ATRExitMixin(BaseExitMixin):
     """
     Exit mixin that implements a trailing stop loss and fixed take profit strategy using ATR.
-    
+
     The strategy uses ATR to dynamically adjust the stop loss level based on market volatility,
     while maintaining a fixed take profit level based on the entry price.
-    
+
     Stop Loss:
     - Trailing stop loss that only moves up
     - Distance from current high is determined by ATR * sl_multiplier
     - Once triggered, resets for next trade
-    
+
     Take Profit:
     - Fixed level set at entry
     - Level is entry_price * (1 + tp_multiplier)
     - Once triggered, resets for next trade
-    
+
     Both stop loss and take profit levels are reset when a position is closed.
     """
 
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
         super().__init__(params)
-        self.atr_name = 'exit_atr'
+        self.atr_name = "exit_atr"
         self.atr = None
         self.stop_loss = None
         self.take_profit = None
@@ -85,16 +87,23 @@ class ATRExitMixin(BaseExitMixin):
     def _init_indicators(self):
         """Initialize indicators"""
         logger.debug("ATRExitMixin._init_indicators called")
-        if not hasattr(self, 'strategy'):
+        if not hasattr(self, "strategy"):
             logger.error("No strategy available in _init_indicators")
             return
 
         try:
             atr_period = self.get_param("x_atr_period")
             if self.strategy.use_talib:
-                self.atr = bt.talib.ATR(self.strategy.data.high, self.strategy.data.low, self.strategy.data.close, timeperiod=atr_period)
+                self.atr = bt.talib.ATR(
+                    self.strategy.data.high,
+                    self.strategy.data.low,
+                    self.strategy.data.close,
+                    timeperiod=atr_period,
+                )
             else:
-                self.atr = bt.indicators.AverageTrueRange(self.strategy.data, period=atr_period)
+                self.atr = bt.indicators.AverageTrueRange(
+                    self.strategy.data, period=atr_period
+                )
             self.register_indicator(self.atr_name, self.atr)
         except Exception as e:
             logger.error(f"Error initializing indicators: {e}", exc_info=e)
@@ -108,20 +117,22 @@ class ATRExitMixin(BaseExitMixin):
         try:
             # Get indicator from mixin's indicators dictionary
             atr = self.indicators[self.atr_name]
-            atr_val = atr[0] if hasattr(atr, '__getitem__') else atr.lines.atr[0]
+            atr_val = atr[0] if hasattr(atr, "__getitem__") else atr.lines.atr[0]
             current_price = self.strategy.data.close[0]
             current_high = self.strategy.data.high[0]
 
             # Calculate stop loss from highest price
             stop_loss = current_high - (atr_val * self.get_param("x_sl_multiplier"))
-            
+
             if self.stop_loss is None:
                 self.stop_loss = stop_loss
             elif self.stop_loss < stop_loss:
                 self.stop_loss = stop_loss
-                
+
             if current_price < stop_loss:
-                logger.debug(f"EXIT: Current Price: {current_price}, Stop Loss: {stop_loss}, ATR: {atr_val}, ATR Multiplier: {self.get_param('x_sl_multiplier')}")
+                logger.debug(
+                    f"EXIT: Current Price: {current_price}, Stop Loss: {stop_loss}, ATR: {atr_val}, ATR Multiplier: {self.get_param('x_sl_multiplier')}"
+                )
                 # Set the exit reason in the strategy
                 self.strategy.current_exit_reason = "stop_loss"
                 self.stop_loss = None
@@ -129,17 +140,21 @@ class ATRExitMixin(BaseExitMixin):
                 return True
 
             if self.take_profit is None and self.strategy.current_trade is not None:
-                entry_price = self.strategy.current_trade['entry_price']
-                take_profit = entry_price + (entry_price * self.get_param("x_tp_multiplier"))
+                entry_price = self.strategy.current_trade["entry_price"]
+                take_profit = entry_price + (
+                    entry_price * self.get_param("x_tp_multiplier")
+                )
 
             if current_price > take_profit:
-                logger.debug(f"EXIT: Current Price: {current_price}, Take Profit: {take_profit}, ATR: {atr_val}, ATR Multiplier: {self.get_param('x_tp_multiplier')}")
+                logger.debug(
+                    f"EXIT: Current Price: {current_price}, Take Profit: {take_profit}, ATR: {atr_val}, ATR Multiplier: {self.get_param('x_tp_multiplier')}"
+                )
                 # Set the exit reason in the strategy
                 self.strategy.current_exit_reason = "take_profit"
                 self.stop_loss = None
                 self.take_profit = None
                 return True
-                
+
             return False
         except Exception as e:
             logger.error(f"Error in should_exit: {e}", exc_info=e)

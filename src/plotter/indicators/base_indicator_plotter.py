@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
+
 import matplotlib.pyplot as plt
 from src.notification.logger import setup_logger
+
 
 class BaseIndicatorPlotter(ABC):
     def __init__(self, data, indicators, vis_settings):
@@ -28,8 +30,11 @@ class BaseIndicatorPlotter(ABC):
         try:
             if self.vis_settings.get("show_grid", True):
                 ax.grid(True, alpha=0.3)
-            ax.tick_params(axis='both', which='major', 
-                          labelsize=self.vis_settings.get("font_size", 10))
+            ax.tick_params(
+                axis="both",
+                which="major",
+                labelsize=self.vis_settings.get("font_size", 10),
+            )
             ax.legend(loc=self.vis_settings.get("legend_loc", "upper left"))
         except Exception as e:
-            self.logger.error(f"Error applying style to axis: {str(e)}") 
+            self.logger.error(f"Error applying style to axis: {str(e)}")

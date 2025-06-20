@@ -28,14 +28,15 @@ from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 class MACrossoverExitMixin(BaseExitMixin):
     """Exit mixin based on Moving Average crossovers"""
 
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
         super().__init__(params)
-        self.fast_ma_name = 'exit_fast_ma'
-        self.slow_ma_name = 'exit_slow_ma'
+        self.fast_ma_name = "exit_fast_ma"
+        self.slow_ma_name = "exit_slow_ma"
         self.fast_ma = None
         self.slow_ma = None
 
@@ -57,7 +58,7 @@ class MACrossoverExitMixin(BaseExitMixin):
     def _init_indicators(self):
         """Initialize indicators"""
         logger.debug("MACrossoverExitMixin._init_indicators called")
-        if not hasattr(self, 'strategy'):
+        if not hasattr(self, "strategy"):
             logger.error("No strategy available in _init_indicators")
             return
 
@@ -69,8 +70,12 @@ class MACrossoverExitMixin(BaseExitMixin):
                 self.fast_ma = bt.talib.SMA(self.strategy.data.volume, fast_period)
                 self.slow_ma = bt.talib.SMA(self.strategy.data.volume, slow_period)
             else:
-                self.fast_ma = bt.indicators.SMA(self.strategy.data.volume, period=fast_period)
-                self.slow_ma = bt.indicators.SMA(self.strategy.data.volume, period=slow_period)
+                self.fast_ma = bt.indicators.SMA(
+                    self.strategy.data.volume, period=fast_period
+                )
+                self.slow_ma = bt.indicators.SMA(
+                    self.strategy.data.volume, period=slow_period
+                )
 
             self.register_indicator(self.fast_ma_name, self.fast_ma)
             self.register_indicator(self.slow_ma_name, self.slow_ma)
@@ -84,7 +89,10 @@ class MACrossoverExitMixin(BaseExitMixin):
         if not self.strategy.position:
             return False
 
-        if self.fast_ma_name not in self.indicators or self.slow_ma_name not in self.indicators:
+        if (
+            self.fast_ma_name not in self.indicators
+            or self.slow_ma_name not in self.indicators
+        ):
             return False
 
         try:
@@ -100,14 +108,20 @@ class MACrossoverExitMixin(BaseExitMixin):
 
             # Check for crossover based on position
             if self.strategy.position.size > 0:  # Long position
-                return_value = fast_ma_prev > slow_ma_prev and fast_ma_current < slow_ma_current
+                return_value = (
+                    fast_ma_prev > slow_ma_prev and fast_ma_current < slow_ma_current
+                )
             else:  # Short position
-                return_value = fast_ma_prev < slow_ma_prev and fast_ma_current > slow_ma_current
+                return_value = (
+                    fast_ma_prev < slow_ma_prev and fast_ma_current > slow_ma_current
+                )
 
             if return_value:
-                logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
-                           f"Fast MA: {fast_ma_current}, Slow MA: {slow_ma_current}, "
-                           f"Position: {'long' if self.strategy.position.size > 0 else 'short'}")
+                logger.debug(
+                    f"EXIT: Price: {self.strategy.data.close[0]}, "
+                    f"Fast MA: {fast_ma_current}, Slow MA: {slow_ma_current}, "
+                    f"Position: {'long' if self.strategy.position.size > 0 else 'short'}"
+                )
                 ma_type = self.get_param("x_ma_type", "sma").lower()
                 self.strategy.current_exit_reason = f"{ma_type}_crossover"
             return return_value

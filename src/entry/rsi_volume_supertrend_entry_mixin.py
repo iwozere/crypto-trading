@@ -31,16 +31,17 @@ from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
     """Entry mixin based on RSI, Volume, and Supertrend"""
 
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the mixin with parameters"""
         super().__init__(params)
-        self.rsi_name = 'entry_rsi'
-        self.vol_ma_name = 'entry_volume_ma'
-        self.supertrend_name = 'entry_supertrend'
-        self.direction_name = 'entry_direction'
+        self.rsi_name = "entry_rsi"
+        self.vol_ma_name = "entry_volume_ma"
+        self.supertrend_name = "entry_supertrend"
+        self.direction_name = "entry_direction"
 
         self.rsi = None
         self.sma = None
@@ -64,7 +65,7 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
     def _init_indicators(self):
         """Initialize indicators"""
         logger.debug("RSIVolumeSupertrendEntryMixin._init_indicators called")
-        if not hasattr(self, 'strategy'):
+        if not hasattr(self, "strategy"):
             logger.error("No strategy available in _init_indicators")
             return
 
@@ -74,10 +75,16 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
 
             if self.strategy.use_talib:
                 self.rsi = bt.talib.RSI(self.strategy.data.close, timeperiod=rsi_period)
-                self.sma = bt.talib.SMA(self.strategy.data.volume, timeperiod=sma_period)
+                self.sma = bt.talib.SMA(
+                    self.strategy.data.volume, timeperiod=sma_period
+                )
             else:
-                self.rsi = bt.indicators.RSI(self.strategy.data.close, period=rsi_period)
-                self.sma = bt.indicators.SMA(self.strategy.data.volume, period=sma_period)
+                self.rsi = bt.indicators.RSI(
+                    self.strategy.data.close, period=rsi_period
+                )
+                self.sma = bt.indicators.SMA(
+                    self.strategy.data.volume, period=sma_period
+                )
 
             self.register_indicator(self.rsi_name, self.rsi)
             self.register_indicator(self.vol_ma_name, self.sma)
@@ -86,7 +93,7 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             supertrend = SuperTrend(
                 self.strategy.data,
                 period=self.get_param("e_st_period"),
-                multiplier=self.get_param("e_st_multiplier")
+                multiplier=self.get_param("e_st_multiplier"),
             )
             self.register_indicator(self.supertrend_name, supertrend)
         except Exception as e:
@@ -95,7 +102,11 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
 
     def should_enter(self) -> bool:
         """Check if we should enter a position"""
-        if self.rsi_name not in self.indicators or self.vol_ma_name not in self.indicators or self.supertrend_name not in self.indicators:
+        if (
+            self.rsi_name not in self.indicators
+            or self.vol_ma_name not in self.indicators
+            or self.supertrend_name not in self.indicators
+        ):
             return False
 
         try:
@@ -110,14 +121,18 @@ class RSIVolumeSupertrendEntryMixin(BaseEntryMixin):
             rsi_condition = rsi[0] <= self.get_param("e_rsi_oversold")
 
             # Check Volume
-            volume_condition = current_volume > vol_ma[0] * self.get_param("e_min_volume_ratio")
+            volume_condition = current_volume > vol_ma[0] * self.get_param(
+                "e_min_volume_ratio"
+            )
 
             # Check Supertrend
             supertrend_condition = supertrend[0] == 1  # 1 means uptrend
 
             return_value = rsi_condition and volume_condition and supertrend_condition
             if return_value:
-                logger.debug(f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}, Supertrend: {supertrend[0]}")
+                logger.debug(
+                    f"ENTRY: Price: {current_price}, RSI: {rsi[0]}, Volume: {current_volume}, Volume MA: {vol_ma[0]}, Supertrend: {supertrend[0]}"
+                )
             return return_value
         except Exception as e:
             logger.error(f"Error in should_enter: {e}", exc_info=e)

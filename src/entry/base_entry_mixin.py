@@ -4,9 +4,10 @@ Base Entry Mixin Module
 This module provides the base class for all entry mixins.
 """
 
-from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, get_type_hints, get_origin, get_args
 import inspect
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional, get_args, get_origin, get_type_hints
+
 from src.notification.logger import setup_logger
 
 _logger = setup_logger(__name__)
@@ -38,13 +39,13 @@ class BaseEntryMixin(ABC):
     def _validate_class_methods(self):
         """Validate that required methods are implemented correctly"""
         # Check get_default_params
-        default_params_method = getattr(self.__class__, 'get_default_params', None)
+        default_params_method = getattr(self.__class__, "get_default_params", None)
         if default_params_method is None:
             raise NotImplementedError(
                 f"{self.__class__.__name__} must implement get_default_params method. "
                 "This method should return a dictionary of default parameters."
             )
-        
+
         # Check if method can be called on the class
         try:
             self.__class__.get_default_params()
@@ -55,48 +56,48 @@ class BaseEntryMixin(ABC):
             )
 
         # Check get_required_params
-        required_params_method = getattr(self.__class__, 'get_required_params', None)
+        required_params_method = getattr(self.__class__, "get_required_params", None)
         if required_params_method is None:
             raise NotImplementedError(
                 f"{self.__class__.__name__} must implement get_required_params method. "
                 "This method should return a list of required parameter names."
             )
-        
+
         # Check method signature
         sig = inspect.signature(required_params_method)
-        if 'self' not in sig.parameters:
+        if "self" not in sig.parameters:
             raise TypeError(
                 f"{self.__class__.__name__}.get_required_params must be an instance method. "
                 "Use 'self' parameter."
             )
 
         # Check _init_indicators
-        init_indicators_method = getattr(self.__class__, '_init_indicators', None)
+        init_indicators_method = getattr(self.__class__, "_init_indicators", None)
         if init_indicators_method is None:
             raise NotImplementedError(
                 f"{self.__class__.__name__} must implement _init_indicators method. "
                 "This method should initialize all required technical indicators."
             )
-        
+
         # Check method signature
         sig = inspect.signature(init_indicators_method)
-        if 'self' not in sig.parameters:
+        if "self" not in sig.parameters:
             raise TypeError(
                 f"{self.__class__.__name__}._init_indicators must be an instance method. "
                 "Use 'self' parameter."
             )
 
         # Check should_enter
-        should_enter_method = getattr(self.__class__, 'should_enter', None)
+        should_enter_method = getattr(self.__class__, "should_enter", None)
         if should_enter_method is None:
             raise NotImplementedError(
                 f"{self.__class__.__name__} must implement should_enter method. "
                 "This method should return a boolean indicating whether to enter a position."
             )
-        
+
         # Check method signature
         sig = inspect.signature(should_enter_method)
-        if 'self' not in sig.parameters:
+        if "self" not in sig.parameters:
             raise TypeError(
                 f"{self.__class__.__name__}.should_enter must be an instance method. "
                 "Use 'self' parameter."
@@ -113,9 +114,9 @@ class BaseEntryMixin(ABC):
                 f"{self.__class__.__name__}.get_default_params must be a class method. "
                 "Use @classmethod decorator and 'cls' parameter."
             )
-        
+
         # Validate return type of get_default_params
-        return_type = get_type_hints(self.__class__.get_default_params).get('return')
+        return_type = get_type_hints(self.__class__.get_default_params).get("return")
         if return_type != Dict[str, Any]:
             raise TypeError(
                 f"{self.__class__.__name__}.get_default_params must return Dict[str, Any]. "
@@ -124,14 +125,14 @@ class BaseEntryMixin(ABC):
 
         # Validate get_required_params
         required_params_sig = inspect.signature(self.__class__.get_required_params)
-        if 'self' not in required_params_sig.parameters:
+        if "self" not in required_params_sig.parameters:
             raise TypeError(
                 f"{self.__class__.__name__}.get_required_params must have 'self' parameter. "
                 "Example: def get_required_params(self) -> list:"
             )
-        
+
         # Validate return type of get_required_params
-        return_type = get_type_hints(self.__class__.get_required_params).get('return')
+        return_type = get_type_hints(self.__class__.get_required_params).get("return")
         if return_type != list:
             raise TypeError(
                 f"{self.__class__.__name__}.get_required_params must return list. "
@@ -140,14 +141,14 @@ class BaseEntryMixin(ABC):
 
         # Validate _init_indicators
         init_indicators_sig = inspect.signature(self.__class__._init_indicators)
-        if 'self' not in init_indicators_sig.parameters:
+        if "self" not in init_indicators_sig.parameters:
             raise TypeError(
                 f"{self.__class__.__name__}._init_indicators must have 'self' parameter. "
                 "Example: def _init_indicators(self):"
             )
-        
+
         # Validate return type of _init_indicators
-        return_type = get_type_hints(self.__class__._init_indicators).get('return')
+        return_type = get_type_hints(self.__class__._init_indicators).get("return")
         if return_type is not None and return_type != type(None):
             raise TypeError(
                 f"{self.__class__.__name__}._init_indicators should not return anything. "
@@ -156,14 +157,14 @@ class BaseEntryMixin(ABC):
 
         # Validate should_enter
         should_enter_sig = inspect.signature(self.__class__.should_enter)
-        if 'self' not in should_enter_sig.parameters:
+        if "self" not in should_enter_sig.parameters:
             raise TypeError(
                 f"{self.__class__.__name__}.should_enter must have 'self' parameter. "
                 "Example: def should_enter(self) -> bool:"
             )
-        
+
         # Validate return type of should_enter
-        return_type = get_type_hints(self.__class__.should_enter).get('return')
+        return_type = get_type_hints(self.__class__.should_enter).get("return")
         if return_type != bool:
             raise TypeError(
                 f"{self.__class__.__name__}.should_enter must return bool. "
@@ -253,41 +254,45 @@ class BaseEntryMixin(ABC):
     def register_indicator(self, name: str, indicator: Any):
         """
         Register an indicator in the indicators dictionary and set it as a strategy attribute
-        
+
         Args:
             name: Name of the indicator
             indicator: Indicator instance
         """
         _logger.debug(f"Registering indicator: {name}")
-        if not hasattr(self, 'indicators'):
+        if not hasattr(self, "indicators"):
             self.indicators = {}
         self.indicators[name] = indicator
-        
+
         # Set as strategy attribute if strategy exists
-        if hasattr(self, 'strategy') and self.strategy is not None:
+        if hasattr(self, "strategy") and self.strategy is not None:
             # Set the indicator as a strategy attribute
             setattr(self.strategy, name, indicator)
             _logger.debug(f"Set indicator '{name}' as strategy attribute")
-            
+
             # Also set it in the strategy's indicators dictionary if it exists
-            if not hasattr(self.strategy, 'indicators'):
+            if not hasattr(self.strategy, "indicators"):
                 self.strategy.indicators = {}
             self.strategy.indicators[name] = indicator
-            _logger.debug(f"Added indicator '{name}' to strategy's indicators dictionary")
+            _logger.debug(
+                f"Added indicator '{name}' to strategy's indicators dictionary"
+            )
         else:
-            _logger.warning(f"Strategy not set, indicator '{name}' only stored in indicators dictionary")
+            _logger.warning(
+                f"Strategy not set, indicator '{name}' only stored in indicators dictionary"
+            )
 
     def are_indicators_ready(self) -> bool:
         """Check if indicators are ready to be used"""
         if not self.indicators:
             return False
-            
+
         try:
             # Try to access the first value of each indicator
             for indicator in self.indicators.values():
-                if hasattr(indicator, '__getitem__'):
+                if hasattr(indicator, "__getitem__"):
                     _ = indicator[0]
-                elif hasattr(indicator, 'lines'):
+                elif hasattr(indicator, "lines"):
                     for line in indicator.lines:
                         _ = line[0]
             return True

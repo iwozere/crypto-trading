@@ -23,6 +23,7 @@ os.makedirs(log_dir, exist_ok=True)
 MAX_BYTES = 10 * 1024 * 1024  # 10MB
 BACKUP_COUNT = 50  # Keep 5 backup files
 
+
 ####################################################################
 # Simple logger, which logs to console
 ####################################################################
@@ -105,12 +106,8 @@ LOG_CONFIG = {
         },
         # Add telegram_bot_file and error_file handlers to relevant loggers as needed
     },
-    "root": {
-        "handlers": ["console", "file"],
-        "level": "DEBUG"
-    }
+    "root": {"handlers": ["console", "file"], "level": "DEBUG"},
 }
-
 
 
 logging.config.dictConfig(LOG_CONFIG)
@@ -128,7 +125,9 @@ def log_exception(logger, exc_info=None):
 #
 # Set up the logger for the application
 # Usage: setup_logger('live_trader')
-def setup_logger(name: str, log_file: str = None, level: int = logging.DEBUG) -> logging.Logger:
+def setup_logger(
+    name: str, log_file: str = None, level: int = logging.DEBUG
+) -> logging.Logger:
     """
     Set up the logger with custom configuration.
 
@@ -152,9 +151,7 @@ def setup_logger(name: str, log_file: str = None, level: int = logging.DEBUG) ->
 
         # Create file handler
         file_handler = RotatingFileHandler(
-            log_file,
-            maxBytes=MAX_BYTES,
-            backupCount=BACKUP_COUNT
+            log_file, maxBytes=MAX_BYTES, backupCount=BACKUP_COUNT
         )
         file_handler.setLevel(level)
         file_formatter = logging.Formatter(
