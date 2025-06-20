@@ -639,4 +639,183 @@ class RSIBBMixin(BaseEntryMixin):
         
         return (rsi < self.get_param("rsi_threshold") and 
                 price <= bb_lower * 1.01)
+```
+
+## Optimizer JSON Configuration Reference
+
+### 1. optimizer.json
+**Purpose:**  
+Main configuration for the optimizer and visualization settings.
+
+**Structure:**
+```json
+{
+  "optimizer_settings": {
+    "optimizer_type": "optuna",         // Optimization algorithm (e.g., optuna)
+    "initial_capital": 1000.0,          // Starting capital for backtests
+    "commission": 0.001,                // Commission per trade
+    "risk_free_rate": 0.01,             // Risk-free rate for metrics
+    "omega_threshold": 0.0,             // Omega ratio threshold
+    "use_talib": false,                 // Use TA-Lib for indicators
+    "n_trials": 100,                    // Number of optimization trials
+    "n_jobs": 1,                        // Number of parallel jobs
+    "n_random_trials": 10,              // Number of random trials before optimization
+    "plot": true,                       // Whether to plot results
+    "save_trades": true,                // Save trade logs
+    "report_metrics": [],               // Metrics to report
+    "trades_csv_path": null,            // Path to save trades as CSV
+    "save_metrics": true,               // Save metrics to file
+    "metrics_format": "json",           // Format for metrics output
+    "print_summary": true,              // Print summary to console
+    "report_params": true,              // Include parameters in report
+    "report_filename_pattern": null,    // Custom filename pattern for reports
+    "include_plots_in_report": true,    // Include plots in report
+    "output_dir": "results",            // Output directory for results
+    "position_size": 0.10               // Fraction of capital to use per trade (NEW, configurable)
+  },
+  "visualization_settings": {
+    "plot_size": [60, 30],              // Plot size in characters
+    "plot_style": "default",            // Plot style
+    "font_size": 10,                    // Font size for plots
+    "plot_dpi": 300,                    // DPI for plots
+    "show_grid": true,                  // Show grid on plots
+    "legend_loc": "upper left",         // Legend location
+    "save_plot": true,                  // Save plot to file
+    "show_plot": false,                 // Show plot interactively
+    "plot_format": "png",               // Plot file format
+    "show_equity_curve": true,          // Show equity curve
+    "show_indicators": true,            // Show indicators on plot
+    "color_scheme": {}                  // Custom color scheme
+  }
+}
+```
+
+---
+
+### 2. Entry Mixins (`config/optimizer/entry/*.json`)
+Each file defines an entry strategy and its tunable parameters.
+
+#### Example: RSIVolumeSupertrendEntryMixin.json
+```json
+{
+  "name": "RSIVolumeSupertrendEntryMixin",
+  "params": {
+    "rsi_period": { "type": "int", "low": 5, "high": 30, "default": 14 },
+    "vol_ma_period": { "type": "int", "low": 5, "high": 50, "default": 20 },
+    "st_period": { "type": "int", "low": 5, "high": 30, "default": 10 },
+    "st_multiplier": { "type": "float", "low": 1.0, "high": 5.0, "default": 3.0 },
+    "rsi_oversold": { "type": "int", "low": 20, "high": 40, "default": 30 }
+  }
+}
+```
+- **name**: The entry mixin class to use.
+- **params**: Dictionary of tunable parameters, each with type, range, and default.
+
+**Other entry mixins:**
+- RSIBBVolumeEntryMixin.json: Adds Bollinger Bands and volume filter.
+- RSIIchimokuEntryMixin.json: Combines RSI and Ichimoku Cloud.
+- BBVolumeSuperTrendEntryMixin.json: Uses Bollinger Bands, volume, and SuperTrend.
+- RSIBBEntryMixin.json: Combines RSI and Bollinger Bands.
+
+---
+
+### 3. Exit Mixins (`config/optimizer/exit/*.json`)
+Each file defines an exit strategy and its tunable parameters.
+
+#### Example: TrailingStopExitMixin.json
+```json
+{
+  "name": "TrailingStopExitMixin",
+  "params": {
+    "trail_pct": { "type": "float", "low": 0.01, "high": 0.05, "default": 0.02 },
+    "atr_period": { "type": "int", "low": 5, "high": 30, "default": 14 }
+  }
+}
+```
+- **name**: The exit mixin class to use.
+- **params**: Dictionary of tunable parameters.
+
+**Other exit mixins:**
+- RSIBBExitMixin.json: Exits on RSI overbought and Bollinger Band touch.
+- ATRExitMixin.json: Uses ATR for stop loss/take profit.
+- MACrossoverExitMixin.json: Exits on moving average crossover.
+- FixedRatioExitMixin.json: Uses fixed take profit and stop loss.
+- TimeBasedExitMixin.json: Exits after a fixed number of bars.
+
+#### Example: FixedRatioExitMixin.json
+```json
+{
+  "name": "FixedRatioExitMixin",
+  "params": {
+    "take_profit": { "type": "float", "low": 0.01, "high": 0.1, "default": 0.03 },
+    "stop_loss": { "type": "float", "low": 0.005, "high": 0.05, "default": 0.02 }
+  }
+}
+```
+
+---
+
+**Parameter Types:**
+- `"type": "int"`: Integer parameter, with `"low"` and `"high"` bounds.
+- `"type": "float"`: Float parameter, with `"low"` and `"high"` bounds.
+- `"type": "categorical"`: Categorical parameter, with `"choices"` array.
+- `"type": "bool"`: Boolean parameter, with `"default"` value.
+
+---
+
+**How to Add/Modify Parameters:**
+- To add a new parameter, add a new key to the `"params"` dictionary with its type, range, and default.
+- To change the optimization range, adjust `"low"` and `"high"` values.
+- To change the default, update the `"default"` value.
+
+### Example: RSI and Bollinger Bands Mixin
+
+Here's a complete example of creating a new mixin:
+
+```python
+"""
+RSI and Bollinger Bands Mixin
+
+This module implements a strategy based on RSI and Bollinger Bands.
+The strategy enters/exits when:
+1. RSI is in the oversold/overbought zone
+2. Price touches the lower/upper Bollinger Band
+
+Parameters:
+    rsi_period (int): Period for RSI calculation
+    rsi_threshold (float): RSI threshold for signals
+    bb_period (int): Period for Bollinger Bands
+    bb_stddev (float): Standard deviation multiplier
+"""
+
+class RSIBBMixin(BaseEntryMixin):
+    def get_default_params(self) -> Dict[str, Any]:
+        return {
+            "rsi_period": 14,
+            "rsi_threshold": 30,
+            "bb_period": 20,
+            "bb_stddev": 2.0,
+        }
+    
+    def _init_indicators(self):
+        self.indicators["rsi"] = bt.indicators.RSI(
+            self.strategy.data.close,
+            period=self.get_param("rsi_period")
+        )
+        
+        bb = bt.indicators.BollingerBands(
+            self.strategy.data.close,
+            period=self.get_param("bb_period"),
+            devfactor=self.get_param("bb_stddev")
+        )
+        self.indicators["bb_upper"] = bb.lines.top
+        self.indicators["bb_lower"] = bb.lines.bot
+    
+    def should_enter(self) -> bool:
+        rsi = self.indicators["rsi"][0]
+        price = self.strategy.data.close[0]
+        bb_lower = self.indicators["bb_lower"][0]
+        
+        return (rsi < self.get_param("rsi_threshold") and 
+                price <= bb_lower * 1.01)
 ``` 

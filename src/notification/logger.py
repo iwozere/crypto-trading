@@ -23,6 +23,7 @@ os.makedirs(log_dir, exist_ok=True)
 MAX_BYTES = 10 * 1024 * 1024  # 10MB
 BACKUP_COUNT = 50  # Keep 5 backup files
 
+
 ####################################################################
 # Simple logger, which logs to console
 ####################################################################
@@ -70,6 +71,14 @@ LOG_CONFIG = {
             "level": "DEBUG",
             "formatter": "detailed",
         },
+        "telegram_bot_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "logs/log/telegram_bot.log",
+            "maxBytes": MAX_BYTES,
+            "backupCount": BACKUP_COUNT,
+            "level": "DEBUG",
+            "formatter": "detailed",
+        },
         "error_file": {
             "class": "logging.handlers.RotatingFileHandler",
             "filename": "logs/log/app_errors.log",
@@ -91,18 +100,14 @@ LOG_CONFIG = {
             "propagate": False,
         },
         "telegram_bot": {
-            "handlers": ["console", "file"],
+            "handlers": ["console", "telegram_bot_file"],
             "level": "DEBUG",
             "propagate": False,
         },
-        # Add trade_file and error_file handlers to relevant loggers as needed
+        # Add telegram_bot_file and error_file handlers to relevant loggers as needed
     },
-    "root": {
-        "handlers": ["console", "file"],
-        "level": "DEBUG"
-    }
+    "root": {"handlers": ["console", "file"], "level": "DEBUG"},
 }
-
 
 
 logging.config.dictConfig(LOG_CONFIG)
@@ -120,40 +125,39 @@ def log_exception(logger, exc_info=None):
 #
 # Set up the logger for the application
 # Usage: setup_logger('live_trader')
-def setup_logger(name: str):
+def setup_logger(
+    name: str, log_file: str = None, level: int = logging.DEBUG
+) -> logging.Logger:
     """
-    Set up the logger using the global configuration.
-    
+    Set up the logger with custom configuration.
+
     Args:
         name (str): Name of the logger.
-        
+        log_file (str, optional): Path to the log file. If None, uses default handlers.
+        level (int, optional): Logging level. Defaults to logging.DEBUG.
+
     Returns:
-        logging.Logger: Configured logger instance
+        logging.Logger: Configured logger instance.
     """
-    # Get logger with the specified name
     logger = logging.getLogger(name)
-    
-    # If the logger is not configured yet, use the default configuration
-    if not logger.handlers:
-        logger.setLevel(logging.DEBUG)
-        # Use the default handlers from LOG_CONFIG
-        for handler in logging.getLogger('default').handlers:
-            # Create a new handler instance to avoid sharing the same handler
-            if isinstance(handler, logging.StreamHandler):
-                new_handler = logging.StreamHandler(handler.stream)
-            elif isinstance(handler, RotatingFileHandler):
-                new_handler = RotatingFileHandler(
-                    handler.baseFilename,
-                    maxBytes=handler.maxBytes,
-                    backupCount=handler.backupCount,
-                    mode=handler.mode
-                )
-            else:
-                new_handler = handler
-            
-            # Copy the formatter and level
-            new_handler.setFormatter(handler.formatter)
-            new_handler.setLevel(handler.level)
-            logger.addHandler(new_handler)
-    
+    logger.setLevel(level)
+
+    # Only add custom handlers if logger has no handlers and log_file is specified
+    if not logger.hasHandlers() and log_file:
+        # Ensure the log directory exists
+        log_dir = os.path.dirname(os.path.abspath(log_file))
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir, exist_ok=True)
+
+        # Create file handler
+        file_handler = RotatingFileHandler(
+            log_file, maxBytes=MAX_BYTES, backupCount=BACKUP_COUNT
+        )
+        file_handler.setLevel(level)
+        file_formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s"
+        )
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+
     return logger

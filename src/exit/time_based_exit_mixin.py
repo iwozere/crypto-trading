@@ -19,8 +19,9 @@ calendar day calculations based on the data feed's timeframe.
 """
 
 from typing import Any, Dict, Optional
-from src.notification.logger import setup_logger
+
 from src.exit.base_exit_mixin import BaseExitMixin
+from src.notification.logger import setup_logger
 
 logger = setup_logger(__name__)
 
@@ -42,14 +43,14 @@ class TimeBasedExitMixin(BaseExitMixin):
     def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "max_bars": 20,
-            "use_time": False,
-            "max_minutes": 60,
+            "x_max_bars": 20,
+            "x_use_time": False,
+            "x_max_minutes": 60,
         }
 
     def _init_indicators(self):
         """Initialize time-based exit indicators"""
-        if not hasattr(self, 'strategy'):
+        if not hasattr(self, "strategy"):
             return
 
     def should_exit(self) -> bool:
@@ -58,25 +59,29 @@ class TimeBasedExitMixin(BaseExitMixin):
             return False
 
         current_time = self.strategy.data.datetime.datetime(0)
-        entry_time = self.strategy.current_trade.get('entry_time')
-        if self.get_param("use_time", False):
+        entry_time = self.strategy.current_trade.get("entry_time")
+        if self.get_param("x_use_time", False):
             time_diff = (current_time - entry_time).total_seconds() / 60
-            return_value = time_diff >= self.get_param("max_minutes")
+            return_value = time_diff >= self.get_param("x_max_minutes")
         else:
             bars_held = len(self.strategy.data) - self.strategy.trade.dtopen
-            return_value = bars_held >= self.get_param("max_bars")
+            return_value = bars_held >= self.get_param("x_max_bars")
 
         if return_value:
-            if self.get_param("use_time", False):
-                logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
-                           f"Time held: {time_diff:.2f} minutes, "
-                           f"Max time: {self.get_param('max_minutes')} minutes")
+            if self.get_param("x_use_time", False):
+                logger.debug(
+                    f"EXIT: Price: {self.strategy.data.close[0]}, "
+                    f"Time held: {time_diff:.2f} minutes, "
+                    f"Max time: {self.get_param('x_max_minutes')} minutes"
+                )
                 self.strategy.current_exit_reason = "time_limit_minutes"
                 self.entry_time = current_time
             else:
-                logger.debug(f"EXIT: Price: {self.strategy.data.close[0]}, "
-                           f"Bars held: {bars_held}, "
-                           f"Max bars: {self.get_param('max_bars')}")
+                logger.debug(
+                    f"EXIT: Price: {self.strategy.data.close[0]}, "
+                    f"Bars held: {bars_held}, "
+                    f"Max bars: {self.get_param('x_max_bars')}"
+                )
                 self.strategy.current_exit_reason = "time_limit_bars"
                 self.entry_bar = 0
         return return_value
@@ -84,7 +89,7 @@ class TimeBasedExitMixin(BaseExitMixin):
     def next(self):
         """Called for each new bar"""
         super().next()
-        if self.get_param("use_time", False) == False and self.entry_bar is not None:
+        if self.get_param("x_use_time", False) == False and self.entry_bar is not None:
             self.entry_bar += 1
 
     def notify_trade(self, trade):

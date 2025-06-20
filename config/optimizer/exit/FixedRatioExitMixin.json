@@ -1,13 +1,13 @@
 {
     "name": "FixedRatioExitMixin",
     "params": {
-        "take_profit": {
+        "x_take_profit": {
             "type": "float",
             "low": 0.01,
             "high": 0.1,
             "default": 0.03
         },
-        "stop_loss": {
+        "x_stop_loss": {
             "type": "float",
             "low": 0.005,
             "high": 0.05,

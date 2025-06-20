@@ -5,19 +5,18 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 import asyncio
-import logging
 import tempfile
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import FSInputFile, Message
-from src.screener.telegram.combine import analyze_ticker
 from src.notification.logger import setup_logger
+from src.screener.telegram.combine import analyze_ticker
 
 from config.donotshare.donotshare import TELEGRAM_BOT_TOKEN
 
-# Set up logger
-logger = setup_logger()
+# Set up logger using the telegram_bot configuration
+logger = setup_logger("telegram_bot")
 
 if not TELEGRAM_BOT_TOKEN:
     logger.error("TELEGRAM_BOT_TOKEN environment variable is not set")
@@ -37,7 +36,10 @@ async def send_welcome(message: Message):
     )
 
 
-@dp.message(lambda message: message.text and message.text.strip().isalnum())
+@dp.message(
+    lambda message: message.text
+    and message.text.strip().replace(".", "").replace("-", "").isalnum()
+)
 async def handle_ticker(message: Message):
     ticker = message.text.strip().upper()
     logger.info(f"User {message.from_user.id} requested analysis for {ticker}")
@@ -84,7 +86,7 @@ async def handle_ticker(message: Message):
         os.unlink(temp_file.name)
 
     except Exception as e:
-        logger.exception(f"Error analyzing {ticker}")
+        logger.error(f"Error analyzing {ticker}", exc_info=e)
         await message.reply(
             f"⚠️ Error analyzing {ticker}:\n"
             f"Please check if the ticker symbol is correct and try again."

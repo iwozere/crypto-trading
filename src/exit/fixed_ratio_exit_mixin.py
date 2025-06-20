@@ -19,6 +19,7 @@ This strategy is particularly effective for:
 """
 
 from typing import Any, Dict, Optional
+
 from src.exit.base_exit_mixin import BaseExitMixin
 from src.notification.logger import setup_logger
 
@@ -32,7 +33,7 @@ class FixedRatioExitMixin(BaseExitMixin):
         """Initialize the mixin with parameters"""
         super().__init__(params)
         self.highest_price = 0
-        self.lowest_price = float('inf')
+        self.lowest_price = float("inf")
 
     def get_required_params(self) -> list:
         """There are no required parameters - all have default values"""
@@ -42,15 +43,15 @@ class FixedRatioExitMixin(BaseExitMixin):
     def get_default_params(cls) -> Dict[str, Any]:
         """Default parameters"""
         return {
-            "profit_ratio": 0.1,
-            "loss_ratio": 0.05,
-            "use_trailing_stop": False,
-            "trail_percent": 0.5,
+            "x_take_profit": 0.1,
+            "x_stop_loss": 0.05,
+            "x_use_trailing_stop": False,
+            "x_trail_percent": 0.5,
         }
 
     def _init_indicators(self):
         """Initialize any required indicators"""
-        if not hasattr(self, 'strategy'):
+        if not hasattr(self, "strategy"):
             return
 
     def should_exit(self) -> bool:
@@ -60,17 +61,20 @@ class FixedRatioExitMixin(BaseExitMixin):
         entry_price = self.strategy.position.price
         current_price = self.strategy.data.close[0]
         profit_ratio = (current_price - entry_price) / entry_price
-        
+
         return_value = False
-        if profit_ratio >= self.get_param("profit_ratio"):
+        if profit_ratio >= self.get_param("x_take_profit"):
+            self.strategy.current_exit_reason = "take_profit"
             return_value = True
-        elif profit_ratio <= -self.get_param("loss_ratio"):
+        elif profit_ratio <= -self.get_param("x_stop_loss"):
+            self.strategy.current_exit_reason = "stop_loss"
             return_value = True
 
         if return_value:
-            logger.debug(f"EXIT: Price: {current_price}, Entry: {entry_price}, "
-                       f"Profit %: {profit_ratio*100:.2f}%, "
-                       f"Take Profit: {self.get_param('profit_ratio')*100:.2f}%, "
-                       f"Stop Loss: {self.get_param('loss_ratio')*100:.2f}%")
+            logger.debug(
+                f"EXIT: Price: {current_price}, Entry: {entry_price}, "
+                f"Profit %: {profit_ratio*100:.2f}%, "
+                f"Take Profit: {self.get_param('x_take_profit')*100:.2f}%, "
+                f"Stop Loss: {self.get_param('x_stop_loss')*100:.2f}%"
+            )
         return return_value
-
