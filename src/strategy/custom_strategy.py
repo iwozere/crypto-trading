@@ -162,17 +162,13 @@ class CustomStrategy(bt.Strategy):
 
                 # Calculate PnL
                 # trade.price is an average price of multiple BUY orders for the same position.
-                entry_value = (
-                    self.current_trade["entry_price"] * self.current_trade["size"]
-                )
+                entry_value = self.current_trade["entry_price"] * self.current_trade["size"]
 
                 # Instead of trade.price we should use the close price from the time when trade got closed
                 # TODO: in the future, if we need to support multiple SELL activities on the order, we should keep track of all of them.
                 exit_value = self.data.close[0] * self.current_trade["size"]
                 gross_pnl = exit_value - entry_value
-                net_pnl = gross_pnl - (
-                    self.current_trade["commission"] + trade.commission
-                )
+                net_pnl = gross_pnl - (self.current_trade["commission"] + trade.commission)
 
                 # Convert Backtrader datetime to pandas datetime
                 exit_time = self.data.num2date(trade.dtclose)
@@ -181,22 +177,15 @@ class CustomStrategy(bt.Strategy):
                 self.current_trade.update(
                     {
                         "exit_time": exit_time,
-                        "exit_price": self.data.close[
-                            0
-                        ],  # Price per asset, not total value
+                        "exit_price": self.data.close[0],  # Price per asset, not total value
                         "exit_value": exit_value,
                         "exit_reason": self.current_exit_reason or "unknown",
-                        "commission": self.current_trade["commission"]
-                        + trade.commission,
+                        "commission": trade.commission,
                         "duration_minutes": duration_minutes,
                         "gross_pnl": gross_pnl,
                         "net_pnl": net_pnl,
-                        "pnl_percentage": (
-                            (net_pnl / entry_value) * 100 if entry_value != 0 else 0
-                        ),
-                        "trade_type": (
-                            "long" if self.current_trade["size"] > 0 else "short"
-                        ),
+                        "pnl_percentage": ((net_pnl / entry_value) * 100 if entry_value != 0 else 0),
+                        "trade_type": ("long" if self.current_trade["size"] > 0 else "short"),
                         "status": "closed",
                     }
                 )

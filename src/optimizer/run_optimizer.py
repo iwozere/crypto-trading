@@ -99,12 +99,8 @@ def save_results(result, data_file):
         # Generate filename based on data file
         filename = get_result_filename(
             data_file,
-            entry_logic_name=result.get("best_params", {})
-            .get("entry_logic", {})
-            .get("name", ""),
-            exit_logic_name=result.get("best_params", {})
-            .get("exit_logic", {})
-            .get("name", ""),
+            entry_logic_name=result.get("best_params", {}).get("entry_logic", {}).get("name", ""),
+            exit_logic_name=result.get("best_params", {}).get("exit_logic", {}).get("name", ""),
             suffix="",
         )
 
@@ -142,6 +138,8 @@ def save_results(result, data_file):
                     "exit_time": exit_time,
                     "entry_price": float(trade["entry_price"]),
                     "exit_price": float(trade["exit_price"]),
+                    "entry_value": float(trade.get("entry_value", 0.0)),
+                    "exit_value": float(trade.get("exit_value", 0.0)),
                     "size": float(trade["size"]),
                     "symbol": str(trade["symbol"]),
                     "trade_type": str(trade["trade_type"]),
@@ -211,15 +209,9 @@ def save_results(result, data_file):
         result_dict = {
             "data_file": str(data_file),
             "total_trades": len(trades),
-            "total_profit": float(
-                result.get("total_profit", 0)
-            ),  # Gross profit (before commission)
-            "total_profit_with_commission": float(
-                result.get("total_profit_with_commission", 0)
-            ),  # Net profit (after commission)
-            "total_commission": float(
-                result.get("total_commission", 0)
-            ),  # Total commission paid
+            "total_profit": float(result.get("total_profit", 0)),  # Gross profit (before commission)
+            "total_profit_with_commission": float(result.get("total_profit_with_commission", 0)),  # Net profit (after commission)
+            "total_commission": float(result.get("total_commission", 0)),  # Total commission paid
             "best_params": result.get("best_params", {}),
             "analyzers": analyzers,
             "trades": trades,
@@ -256,46 +248,29 @@ def save_plot(cerebro, filename, vis_settings):
 if __name__ == "__main__":
     """Run all optimizers with their respective configurations."""
 
-    with open(
-        os.path.join("config", "optimizer", "optimizer.json"),
-        "r",
-    ) as f:
+    with open(os.path.join("config", "optimizer", "optimizer.json"), "r",) as f:
         optimizer_config = json.load(f)
 
     start_time = dt.now()
     _logger.info(f"Starting optimization at {start_time}")
 
     # Get the data files
-    data_files = [
-        f for f in os.listdir("data/") if f.endswith(".csv") and not f.startswith(".")
-    ]
+    data_files = [f for f in os.listdir("data/") if f.endswith(".csv") and not f.startswith(".")]
 
     for data_file in data_files:
         _logger.info(f"Running optimization for {data_file}")
 
         for entry_logic_name in ENTRY_MIXIN_REGISTRY.keys():
             # Load entry logic configuration
-            with open(
-                os.path.join(
-                    "config", "optimizer", "entry", f"{entry_logic_name}.json"
-                ),
-                "r",
-            ) as f:
+            with open(os.path.join("config", "optimizer", "entry", f"{entry_logic_name}.json"), "r") as f:
                 entry_logic_config = json.load(f)
 
             for exit_logic_name in EXIT_MIXIN_REGISTRY.keys():
                 # Load exit logic configuration
-                with open(
-                    os.path.join(
-                        "config", "optimizer", "exit", f"{exit_logic_name}.json"
-                    ),
-                    "r",
-                ) as f:
+                with open(os.path.join("config", "optimizer", "exit", f"{exit_logic_name}.json"), "r") as f:
                     exit_logic_config = json.load(f)
 
-                _logger.info(
-                    f"Running optimization for {entry_logic_name} and {exit_logic_name}"
-                )
+                _logger.info(f"Running optimization for {entry_logic_name} and {exit_logic_name}")
 
                 # Create optimizer configuration
                 try:
@@ -308,12 +283,8 @@ if __name__ == "__main__":
                             "data": data,
                             "entry_logic": entry_logic_config,
                             "exit_logic": exit_logic_config,
-                            "optimizer_settings": optimizer_config.get(
-                                "optimizer_settings", {}
-                            ),
-                            "visualization_settings": optimizer_config.get(
-                                "visualization_settings", {}
-                            ),
+                            "optimizer_settings": optimizer_config.get("optimizer_settings", {}),
+                            "visualization_settings": optimizer_config.get("visualization_settings", {}),
                         }
                         optimizer = CustomOptimizer(_optimizer_config)
                         _, _, result = optimizer.run_optimization(trial)
@@ -325,12 +296,8 @@ if __name__ == "__main__":
                     # Run optimization
                     study.optimize(
                         objective,
-                        n_trials=optimizer_config.get("optimizer_settings", {}).get(
-                            "n_trials", 100
-                        ),
-                        n_jobs=optimizer_config.get("optimizer_settings", {}).get(
-                            "n_jobs", 1
-                        ),
+                        n_trials=optimizer_config.get("optimizer_settings", {}).get("n_trials", 100),
+                        n_jobs=optimizer_config.get("optimizer_settings", {}).get("n_jobs", -1),
                     )
 
                     # Get best result
@@ -339,21 +306,15 @@ if __name__ == "__main__":
                         "data": data,
                         "entry_logic": entry_logic_config,
                         "exit_logic": exit_logic_config,
-                        "optimizer_settings": optimizer_config.get(
-                            "optimizer_settings", {}
-                        ),
-                        "visualization_settings": optimizer_config.get(
-                            "visualization_settings", {}
-                        ),
+                        "optimizer_settings": optimizer_config.get("optimizer_settings", {}),
+                        "visualization_settings": optimizer_config.get("visualization_settings", {}),
                     }
                     best_trial = study.best_trial
                     best_optimizer = CustomOptimizer(_optimizer_config)
 
                     # Run full backtest with best parameters
                     _logger.info("Running full backtest with best parameters")
-                    strategy, cerebro, best_result = best_optimizer.run_optimization(
-                        best_trial
-                    )
+                    strategy, cerebro, best_result = best_optimizer.run_optimization(best_trial)
 
                     # Save results
                     save_results(best_result, data_file)
@@ -369,7 +330,4 @@ if __name__ == "__main__":
                     #    plot_path = os.path.join("results", f"{plot_name}.png")
                     #    save_plot(cerebro, plot_path, optimizer_config.get("visualization_settings", {}))
                 except Exception as e:
-                    _logger.error(
-                        f"Error for {entry_logic_name} + {exit_logic_name}: {e}",
-                        exc_info=e,
-                    )
+                    _logger.error(f"Error for {entry_logic_name} + {exit_logic_name}: {e}", exc_info=e)
