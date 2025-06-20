@@ -48,7 +48,14 @@ def prepare_data(data_file):
     df.ffill(inplace=True)
     df.bfill(inplace=True)
 
-    # Create Backtrader data feed
+    # Extract symbol from data file name
+    symbol = "UNKNOWN"
+    if "_" in data_file:
+        parts = data_file.replace(".csv", "").split("_")
+        if len(parts) >= 1:
+            symbol = parts[0]
+
+    # Create Backtrader data feed with symbol name
     data = bt.feeds.PandasData(
         dataname=df,
         datetime=None,
@@ -58,6 +65,7 @@ def prepare_data(data_file):
         close=df.columns.get_loc("close"),
         volume=df.columns.get_loc("volume"),
         openinterest=None,
+        name=symbol,  # Set the symbol as the data feed name
     )
     return data
 

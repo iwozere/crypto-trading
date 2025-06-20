@@ -159,20 +159,14 @@ class CustomOptimizer:
         # cerebro.addanalyzer(bt.analyzers.TimeReturn, _name="time_return")
         cerebro.addanalyzer(bt.analyzers.VWR, _name="vwr")
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trades")
-        cerebro.addanalyzer(
-            bt.analyzers.SharpeRatio, _name="sharpe", riskfreerate=self.risk_free_rate
-        )
+        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe", riskfreerate=self.risk_free_rate)
 
         # Add custom analyzers
         cerebro.addanalyzer(ProfitFactor, _name="profit_factor")
         cerebro.addanalyzer(WinRate, _name="winrate")
-        cerebro.addanalyzer(
-            CalmarRatio, _name="calmar", riskfreerate=self.risk_free_rate
-        )
+        cerebro.addanalyzer(CalmarRatio, _name="calmar", riskfreerate=self.risk_free_rate)
         cerebro.addanalyzer(CAGR, _name="cagr", timeframe=bt.TimeFrame.Years)
-        cerebro.addanalyzer(
-            SortinoRatio, _name="sortino", riskfreerate=self.risk_free_rate
-        )
+        cerebro.addanalyzer(SortinoRatio, _name="sortino", riskfreerate=self.risk_free_rate)
         cerebro.addanalyzer(ConsecutiveWinsLosses, _name="consecutivewinslosses")
         cerebro.addanalyzer(PortfolioVolatility, _name="portfoliovolatility")
 
@@ -197,11 +191,9 @@ class CustomOptimizer:
         # - "pnl.comm.total": Total commission paid
         # - "pnl.gross.total": Gross profit (before commission)
 
-        net_profit = trades_analysis.get("pnl", {}).get("net", {}).get("total", 0.0)
-        total_commission = (
-            trades_analysis.get("pnl", {}).get("comm", {}).get("total", 0.0)
-        )
         gross_profit = trades_analysis.get("pnl", {}).get("gross", {}).get("total", 0.0)
+        net_profit = trades_analysis.get("pnl", {}).get("net", {}).get("total", 0.0)
+        total_commission = gross_profit - net_profit
 
         # If gross profit is not available, calculate it from net profit + commission
         if gross_profit == 0.0 and net_profit != 0.0:
@@ -210,9 +202,7 @@ class CustomOptimizer:
         output = {
             "best_params": strategy_params,
             "total_profit": float(gross_profit),  # Gross profit (before commission)
-            "total_profit_with_commission": float(
-                net_profit
-            ),  # Net profit (after commission)
+            "total_profit_with_commission": float(net_profit),  # Net profit (after commission)
             "total_commission": float(total_commission),  # Total commission paid
             "analyzers": analyzers,
             "trades": strategy.trades,
