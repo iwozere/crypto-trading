@@ -83,7 +83,8 @@ class LiveTradingBot(BaseTradingBot):
             strategy_class=strategy_class,
             parameters=parameters,
             broker=broker,
-            paper_trading=self.config["broker"].get("type") == "binance_paper"
+            paper_trading=self.config["broker"].get("type") == "binance_paper",
+            bot_id=self.config_file  # Use config filename as bot_id
         )
         
         # LiveTradingBot specific attributes

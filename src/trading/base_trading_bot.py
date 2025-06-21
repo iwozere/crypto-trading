@@ -7,7 +7,7 @@ This module defines the BaseTradingBot class, which provides a framework for imp
 Main Features:
 - Signal processing and trade execution logic
 - Position and balance management
-- Trade history tracking
+- Trade history tracking with database integration
 - Notification via Telegram and email
 - Designed for extension by concrete strategy bots
 
@@ -19,6 +19,7 @@ import asyncio
 import json
 import os
 import time
+import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -26,6 +27,7 @@ from src.notification.emailer import EmailNotifier
 from src.notification.logger import _logger
 from src.notification.telegram_notifier import \
     create_notifier as create_telegram_notifier
+from src.data.trade_repository import TradeRepository
 
 from config.donotshare.donotshare import SENDGRID_API_KEY as sgkey
 
@@ -43,6 +45,7 @@ class BaseTradingBot:
         parameters: Dict[str, Any],
         broker: Any = None,
         paper_trading: bool = True,
+        bot_id: str = None,
     ) -> None:
         """
         Initialize the trading bot with config, strategy, broker, and mode.
@@ -52,6 +55,7 @@ class BaseTradingBot:
             parameters: Strategy parameters
             broker: Broker instance (optional)
             paper_trading: Whether to use paper trading mode
+            bot_id: Bot identifier (config filename or optimization result filename)
         """
         self.config = config
         self.trading_pair = config.get("trading_pair", "BTCUSDT")
@@ -65,9 +69,17 @@ class BaseTradingBot:
         self.total_pnl = 0.0
         self.broker = broker
         self.paper_trading = paper_trading
+        
+        # Database integration
+        self.bot_id = bot_id or f"bot_{uuid.uuid4().hex[:8]}"
+        self.trade_type = "paper" if paper_trading else "live"
+        self.trade_repository = TradeRepository()
+        
+        # Legacy state file (for backward compatibility)
         self.state_file = os.path.join(
             "logs", "json", f"{self.trading_pair}_bot_state.json"
         )
+        
         # Notification setup
         self.telegram_notifier = create_telegram_notifier()
         try:
@@ -75,12 +87,55 @@ class BaseTradingBot:
         except Exception as e:
             self.email_notifier = None
             self.log_message(f"Email notifier not initialized: {e}", level="error")
+        
         self.max_drawdown_pct = config.get("max_drawdown_pct", 20.0)
         self.max_exposure = config.get("max_exposure", 1.0)  # 1.0 = 100% of balance
         self.position_sizing_pct = config.get(
             "position_sizing_pct", 0.1
         )  # 10% of balance per trade
+        
+        # Initialize bot instance in database
+        self._initialize_bot_instance()
+        
+        # Load state (including open positions from database)
         self.load_state()
+
+    def _initialize_bot_instance(self):
+        """Initialize bot instance in database."""
+        try:
+            bot_data = {
+                'id': self.bot_id,
+                'type': self.trade_type,
+                'config_file': getattr(self.config, 'get', lambda x, y=None: y)('config_file', None),
+                'status': 'stopped',
+                'current_balance': self.current_balance,
+                'total_pnl': self.total_pnl,
+                'extra_metadata': {
+                    'trading_pair': self.trading_pair,
+                    'initial_balance': self.initial_balance,
+                    'strategy_class': self.strategy_class.__name__ if hasattr(self.strategy_class, '__name__') else str(self.strategy_class),
+                    'parameters': self.parameters
+                }
+            }
+            
+            # Check if bot instance already exists
+            existing_bot = self.trade_repository.get_bot_instance(self.bot_id)
+            if existing_bot:
+                # Update existing bot instance
+                self.trade_repository.update_bot_instance(self.bot_id, {
+                    'status': 'stopped',
+                    'current_balance': self.current_balance,
+                    'total_pnl': self.total_pnl,
+                    'last_heartbeat': datetime.utcnow()
+                })
+            else:
+                # Create new bot instance
+                self.trade_repository.create_bot_instance(bot_data)
+                
+            _logger.info(f"Initialized bot instance: {self.bot_id}")
+            
+        except Exception as e:
+            _logger.error(f"Error initializing bot instance: {e}")
 
     def run(self) -> None:
         """
@@ -88,12 +143,34 @@ class BaseTradingBot:
         """
         self.is_running = True
         self.log_message(f"Starting bot for {self.trading_pair}")
+        
+        # Update bot status to running
+        try:
+            self.trade_repository.update_bot_instance(self.bot_id, {
+                'status': 'running',
+                'started_at': datetime.utcnow(),
+                'last_heartbeat': datetime.utcnow()
+            })
+        except Exception as e:
+            _logger.error(f"Error updating bot status: {e}")
+        
         while self.is_running:
             try:
                 signals = self.get_signals()
                 self.process_signals(signals)
                 self.update_positions()
                 self.save_state()
+                
+                # Update heartbeat
+                try:
+                    self.trade_repository.update_bot_instance(self.bot_id, {
+                        'last_heartbeat': datetime.utcnow(),
+                        'current_balance': self.current_balance,
+                        'total_pnl': self.total_pnl
+                    })
+                except Exception as e:
+                    _logger.error(f"Error updating heartbeat: {e}")
+                
                 time.sleep(1)
             except Exception as e:
                 self.log_message(f"Error in bot loop: {str(e)}", level="error")
@@ -127,31 +204,89 @@ class BaseTradingBot:
 
     def execute_trade(self, trade_type: str, price: float, size: float) -> None:
         """
-        Generic trade execution logic for buy/sell. Subclasses can override for custom behavior.
+        Generic trade execution logic for buy/sell with database integration.
         """
-        timestamp = datetime.datetime.now()
+        timestamp = datetime.utcnow()
         order = None
+        
         try:
             if not self.paper_trading and self.broker:
                 order = self.broker.place_order(
                     self.trading_pair, trade_type.upper(), size, price=price
                 )
                 self.log_order(order)
+            
             if trade_type == "buy":
+                # Create new trade record in database
+                trade_data = {
+                    'bot_id': self.bot_id,
+                    'trade_type': self.trade_type,
+                    'strategy_name': self.strategy_class.__name__ if hasattr(self.strategy_class, '__name__') else 'Unknown',
+                    'entry_logic_name': self.parameters.get('strategy_config', {}).get('entry_logic', {}).get('name', 'Unknown'),
+                    'exit_logic_name': self.parameters.get('strategy_config', {}).get('exit_logic', {}).get('name', 'Unknown'),
+                    'symbol': self.trading_pair,
+                    'interval': self.config.get('data', {}).get('interval', '1h'),
+                    'entry_time': timestamp,
+                    'buy_order_created': timestamp,
+                    'entry_price': price,
+                    'entry_value': price * size,
+                    'size': size,
+                    'direction': 'long',
+                    'status': 'open',
+                    'extra_metadata': {
+                        'order_id': str(order) if order else None,
+                        'paper_trading': self.paper_trading
+                    }
+                }
+                
+                # Create trade in database
+                trade = self.trade_repository.create_trade(trade_data)
+                
+                # Update local state
                 self.active_positions[self.trading_pair] = {
                     "entry_price": price,
                     "size": size,
                     "entry_time": timestamp,
+                    "trade_id": str(trade.id) if trade else None
                 }
+                
                 self.notify_trade_event("BUY", price, size, timestamp)
+                
             else:  # sell
                 if self.trading_pair in self.active_positions:
                     position = self.active_positions[self.trading_pair]
-                    pnl = (
-                        (price - position["entry_price"]) / position["entry_price"]
-                    ) * 100
-                    trade = {
-                        "bot_id": id(self),
+                    trade_id = position.get("trade_id")
+                    
+                    # Calculate PnL
+                    pnl = ((price - position["entry_price"]) / position["entry_price"]) * 100
+                    gross_pnl = (price - position["entry_price"]) * position["size"]
+                    commission = gross_pnl * 0.001  # 0.1% commission
+                    net_pnl = gross_pnl - commission
+                    
+                    # Update trade in database
+                    if trade_id:
+                        update_data = {
+                            'exit_time': timestamp,
+                            'sell_order_created': timestamp,
+                            'sell_order_closed': timestamp,
+                            'exit_price': price,
+                            'exit_value': price * position["size"],
+                            'commission': commission,
+                            'gross_pnl': gross_pnl,
+                            'net_pnl': net_pnl,
+                            'pnl_percentage': pnl,
+                            'exit_reason': 'signal',
+                            'status': 'closed',
+                            'extra_metadata': {
+                                'order_id': str(order) if order else None,
+                                'paper_trading': self.paper_trading
+                            }
+                        }
+                        self.trade_repository.update_trade(trade_id, update_data)
+                    
+                    # Update local state
+                    trade_record = {
+                        "bot_id": self.bot_id,
                         "pair": self.trading_pair,
                         "type": "long",
                         "entry_price": position["entry_price"],
@@ -160,11 +295,18 @@ class BaseTradingBot:
                         "pl": pnl,
                         "time": timestamp.isoformat(),
                     }
-                    self.trade_history.append(trade)
-                    self.log_trade(trade)
+                    self.trade_history.append(trade_record)
+                    
+                    # Legacy JSON logging (for backward compatibility)
+                    self.log_trade(trade_record)
+                    
+                    # Update balance
                     self.current_balance *= 1 + pnl / 100
                     self.total_pnl += pnl
+                    
+                    # Remove from active positions
                     del self.active_positions[self.trading_pair]
+                    
                     self.notify_trade_event(
                         "SELL",
                         price,
@@ -173,6 +315,7 @@ class BaseTradingBot:
                         entry_price=position["entry_price"],
                         pnl=pnl,
                     )
+                    
         except Exception as e:
             self.log_message(f"Error executing trade: {e}", level="error")
             self.notify_error(str(e))
@@ -249,20 +392,50 @@ class BaseTradingBot:
 
     def load_state(self) -> None:
         """
-        Load open positions and bot state from disk if available.
+        Load open positions and bot state from database and legacy files.
         """
+        # First try to load from database
+        self._load_open_positions_from_db()
+        
+        # Then load from legacy state file (for backward compatibility)
         if os.path.exists(self.state_file):
             try:
                 with open(self.state_file, "r", encoding="utf-8") as f:
                     state = json.load(f)
-                    self.active_positions = state.get("active_positions", {})
+                    # Only load trade history and balance from legacy file
+                    # Active positions should come from database
                     self.trade_history = state.get("trade_history", [])
                     self.current_balance = state.get(
                         "current_balance", self.initial_balance
                     )
                     self.total_pnl = state.get("total_pnl", 0.0)
             except Exception as e:
-                self.log_message(f"Failed to load bot state: {e}", level="error")
+                self.log_message(f"Failed to load legacy bot state: {e}", level="error")
+
+    def _load_open_positions_from_db(self) -> None:
+        """
+        Load open positions from database for this bot.
+        """
+        try:
+            open_trades = self.trade_repository.get_open_trades(
+                bot_id=self.bot_id, 
+                symbol=self.trading_pair
+            )
+            
+            for trade in open_trades:
+                self.active_positions[trade.symbol] = {
+                    "entry_price": float(trade.entry_price) if trade.entry_price else 0.0,
+                    "size": float(trade.size) if trade.size else 0.0,
+                    "entry_time": trade.entry_time,
+                    "trade_id": str(trade.id)
+                }
+            
+            _logger.info(f"Loaded {len(open_trades)} open positions from database for {self.bot_id}")
+            
+        except Exception as e:
+            _logger.error(f"Error loading open positions from database: {e}")
+            # Fall back to empty active positions
+            self.active_positions = {}
 
     def notify_error(self, error_msg: str) -> None:
         """
@@ -378,6 +551,19 @@ class BaseTradingBot:
         """
         self.is_running = False
         self.log_message(f"Stopping bot for {self.trading_pair}")
+        
+        # Update bot status in database
+        try:
+            self.trade_repository.update_bot_instance(self.bot_id, {
+                'status': 'stopped',
+                'last_heartbeat': datetime.utcnow(),
+                'current_balance': self.current_balance,
+                'total_pnl': self.total_pnl
+            })
+        except Exception as e:
+            _logger.error(f"Error updating bot status on stop: {e}")
+        
+        # Close all open positions
         for pair in list(self.active_positions.keys()):
             current_price = None
             if (

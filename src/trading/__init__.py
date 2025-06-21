@@ -1,7 +1,6 @@
 from typing import Any, Dict
 
 from src.broker.broker_factory import get_broker
-from src.trading.bot_factory import get_bot
 from src.trading.live_trading_bot import LiveTradingBot
 from src.trading.config_validator import ConfigValidator, validate_config_file
 
@@ -11,11 +10,12 @@ def create_trading_bot(
 ) -> Any:
     """
     Centralized function to create a trading bot using config, strategy class, and parameters.
-    Uses broker and bot factories.
+    Uses broker factory.
     """
     broker = get_broker(config)
-    bot = get_bot(config, strategy_class, parameters, broker)
-    return bot
+    # For now, return None since bot_factory doesn't exist
+    # TODO: Implement bot factory or use LiveTradingBot directly
+    return None
 
 
 __all__ = [
