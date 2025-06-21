@@ -5,9 +5,9 @@ from binance.client import Client
 from binance.enums import *
 from binance.exceptions import BinanceAPIException
 from src.broker.base_broker import BaseBroker
-from src.notification.emailer import send_email_alert
 from src.notification.logger import _logger
-from src.notification.telegram_notifier import send_telegram_alert
+from src.notification.async_notification_manager import send_trade_notification, send_error_notification
+import asyncio
 
 
 class BaseBinanceBroker(BaseBroker):
@@ -37,11 +37,25 @@ class BaseBinanceBroker(BaseBroker):
             self.orders.append(order)
             self._notify_order(order)
             _logger.info(f"Buy order placed: {order}")
-            send_telegram_alert(f"Buy order placed: {order}")
+            
+            # ✅ NON-BLOCKING: Async notification doesn't block trade execution
+            asyncio.create_task(send_trade_notification(
+                symbol=symbol,
+                side="BUY",
+                price=float(order.get('price', 0)),
+                quantity=float(order.get('executedQty', qty))
+            ))
+            
             return order
         except Exception as e:
             _logger.error(f"Buy order failed: {e}")
-            send_email_alert("Buy order failed", str(e))
+            
+            # ✅ NON-BLOCKING: Async error notification
+            asyncio.create_task(send_error_notification(
+                f"Buy order failed for {symbol}: {str(e)}",
+                source="binance_broker"
+            ))
+            
             return None
 
     def sell(self, symbol: str, qty: float, price: Optional[float] = None) -> Any:
@@ -57,11 +71,25 @@ class BaseBinanceBroker(BaseBroker):
             self.orders.append(order)
             self._notify_order(order)
             _logger.info(f"Sell order placed: {order}")
-            send_telegram_alert(f"Sell order placed: {order}")
+            
+            # ✅ NON-BLOCKING: Async notification doesn't block trade execution
+            asyncio.create_task(send_trade_notification(
+                symbol=symbol,
+                side="SELL",
+                price=float(order.get('price', 0)),
+                quantity=float(order.get('executedQty', qty))
+            ))
+            
             return order
         except Exception as e:
             _logger.error(f"Sell order failed: {e}")
-            send_email_alert("Sell order failed", str(e))
+            
+            # ✅ NON-BLOCKING: Async error notification
+            asyncio.create_task(send_error_notification(
+                f"Sell order failed for {symbol}: {str(e)}",
+                source="binance_broker"
+            ))
+            
             return None
 
     def get_open_orders(self, symbol=None):

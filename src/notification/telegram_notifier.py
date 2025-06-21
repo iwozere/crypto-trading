@@ -247,9 +247,9 @@ class TelegramNotifier:
             self.logger.error(f"Failed to send error notification (async): {e}")
             return False
 
-    def send_message(self, message: str, parse_mode: str = "HTML") -> bool:
+    async def send_message_async(self, message: str, parse_mode: str = "HTML") -> bool:
         """
-        Send a message to the configured chat.
+        Asynchronously send a message to the configured chat.
 
         Args:
             message: The message to send
@@ -264,26 +264,20 @@ class TelegramNotifier:
                 return False
 
             # Add timestamp to message
-            message_data = {
-                "message": message,
-                "timestamp": datetime.datetime.now(),
-                "bot_name": self.bot_name,
-            }
-
-            # Format message with timestamp
+            timestamp = datetime.now()
             formatted_message = (
-                f"🤖 {message_data['bot_name']}\n"
-                f"⏰ {message_data['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
-                f"{message_data['message']}"
+                f"🤖 Trading Bot\n"
+                f"⏰ {timestamp.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"{message}"
             )
 
-            self.bot.send_message(
+            await self.bot.send_message(
                 chat_id=self.chat_id, text=formatted_message, parse_mode=parse_mode
             )
             return True
 
         except Exception as e:
-            self.logger.error(f"Error sending Telegram message: {str(e)}")
+            self.logger.error(f"Error sending Telegram message (async): {str(e)}")
             return False
 
 
