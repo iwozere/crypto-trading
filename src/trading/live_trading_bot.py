@@ -36,25 +36,28 @@ import backtrader as bt
 from src.broker.broker_factory import get_broker
 from src.data.data_feed_factory import DataFeedFactory
 from src.notification.logger import setup_logger
-from src.notification.telegram_notifier import create_notifier as create_telegram_notifier
-from src.notification.emailer import EmailNotifier
 from src.strategy.custom_strategy import CustomStrategy
 from src.trading.base_trading_bot import BaseTradingBot
 
 _logger = setup_logger(__name__)
 
 
-class LiveTradingBot:
+class LiveTradingBot(BaseTradingBot):
     """
     Comprehensive live trading bot that orchestrates all components.
     
-    This bot reads configuration from a JSON file and manages:
-    - Data feed initialization and monitoring
-    - Strategy execution with Backtrader
-    - Broker integration and order management
-    - Position tracking and persistence
-    - Error handling and recovery
-    - Notifications and logging
+    This bot inherits from BaseTradingBot and extends it with:
+    - Live data feed management
+    - Backtrader integration
+    - Real-time strategy execution
+    - Enhanced error handling and recovery
+    
+    It leverages BaseTradingBot's:
+    - Position management
+    - Trade history tracking
+    - Notification system
+    - State persistence
+    - Balance management
     """
     
     def __init__(self, config_file: str):
@@ -64,58 +67,54 @@ class LiveTradingBot:
         Args:
             config_file: Path to configuration file (e.g., '0001.json')
         """
+        # Load configuration first
         self.config_file = config_file
-        self.config = None
+        self.config = self._load_configuration()
+        self._validate_configuration()
+        
+        # Extract components for BaseTradingBot
+        broker = self._create_broker()
+        strategy_class = CustomStrategy
+        parameters = self._create_strategy_parameters()
+        
+        # Initialize BaseTradingBot
+        super().__init__(
+            config=self.config,
+            strategy_class=strategy_class,
+            parameters=parameters,
+            broker=broker,
+            paper_trading=self.config["broker"].get("type") == "binance_paper"
+        )
+        
+        # LiveTradingBot specific attributes
         self.data_feed = None
-        self.broker = None
         self.cerebro = None
-        self.strategy = None
-        self.is_running = False
         self.should_stop = False
         self.error_count = 0
         self.max_errors = 5
         self.error_retry_interval = 60  # seconds
         
-        # Notification setup
-        self.telegram_notifier = None
-        self.email_notifier = None
-        
         # Threading
         self.main_thread = None
         self.monitor_thread = None
         
-        # Load configuration
-        self._load_configuration()
-        self._setup_notifications()
-        self._validate_configuration()
+        # Override trading pair from config
+        self.trading_pair = self.config["trading"]["symbol"]
+        
+        # Load open positions
+        self._load_open_positions()
     
-    def _load_configuration(self):
+    def _load_configuration(self) -> Dict[str, Any]:
         """Load configuration from JSON file."""
         try:
             config_path = f"config/trading/{self.config_file}"
             with open(config_path, 'r') as f:
-                self.config = json.load(f)
+                config = json.load(f)
             _logger.info(f"Loaded configuration from {config_path}")
+            return config
         except Exception as e:
             _logger.error(f"Failed to load configuration: {e}")
             raise
-    
-    def _setup_notifications(self):
-        """Setup notification systems."""
-        try:
-            # Setup Telegram notifications
-            if self.config.get("notifications", {}).get("telegram", {}).get("enabled", False):
-                self.telegram_notifier = create_telegram_notifier()
-                _logger.info("Telegram notifications enabled")
-            
-            # Setup Email notifications
-            if self.config.get("notifications", {}).get("email", {}).get("enabled", False):
-                from config.donotshare.donotshare import SENDGRID_API_KEY
-                self.email_notifier = EmailNotifier(SENDGRID_API_KEY)
-                _logger.info("Email notifications enabled")
-                
-        except Exception as e:
-            _logger.warning(f"Failed to setup notifications: {e}")
     
     def _validate_configuration(self):
         """Validate configuration parameters."""
@@ -142,16 +141,49 @@ class LiveTradingBot:
         
         _logger.info("Configuration validation passed")
     
+    def _create_broker(self):
+        """Create and initialize the broker."""
+        try:
+            broker_config = self.config["broker"]
+            broker = get_broker(broker_config)
+            _logger.info(f"Created broker: {broker_config.get('type', 'unknown')}")
+            return broker
+        except Exception as e:
+            _logger.error(f"Error creating broker: {e}")
+            raise
+    
+    def _create_strategy_parameters(self) -> Dict[str, Any]:
+        """Create the strategy parameters for BaseTradingBot."""
+        try:
+            strategy_config = self.config["strategy"]
+            trading_config = self.config["trading"]
+            
+            # Build strategy parameters
+            parameters = {
+                "strategy_config": {
+                    "entry_logic": strategy_config["entry_logic"],
+                    "exit_logic": strategy_config["exit_logic"],
+                    "position_size": trading_config.get("position_size", 0.1),
+                    "use_talib": strategy_config.get("use_talib", False)
+                }
+            }
+            
+            _logger.info(f"Created strategy parameters for: {strategy_config.get('type', 'custom')}")
+            return parameters
+            
+        except Exception as e:
+            _logger.error(f"Error creating strategy parameters: {e}")
+            raise
+    
     def _create_data_feed(self):
         """Create and initialize the data feed."""
         try:
             data_config = self.config["data"]
             
             # Add callback for new data notifications
-            if self.telegram_notifier:
-                def on_new_bar(symbol, timestamp, data):
-                    self._notify_new_bar(symbol, timestamp, data)
-                data_config["on_new_bar"] = on_new_bar
+            def on_new_bar(symbol, timestamp, data):
+                self._notify_new_bar(symbol, timestamp, data)
+            data_config["on_new_bar"] = on_new_bar
             
             self.data_feed = DataFeedFactory.create_data_feed(data_config)
             
@@ -165,44 +197,6 @@ class LiveTradingBot:
             _logger.error(f"Error creating data feed: {e}")
             return False
     
-    def _create_broker(self):
-        """Create and initialize the broker."""
-        try:
-            broker_config = self.config["broker"]
-            self.broker = get_broker(broker_config)
-            _logger.info(f"Created broker: {broker_config.get('type', 'unknown')}")
-            return True
-            
-        except Exception as e:
-            _logger.error(f"Error creating broker: {e}")
-            return False
-    
-    def _create_strategy(self):
-        """Create the strategy configuration for Backtrader."""
-        try:
-            strategy_config = self.config["strategy"]
-            trading_config = self.config["trading"]
-            
-            # Build strategy configuration
-            strategy_params = {
-                "strategy_config": {
-                    "entry_logic": strategy_config["entry_logic"],
-                    "exit_logic": strategy_config["exit_logic"],
-                    "position_size": trading_config.get("position_size", 0.1),
-                    "use_talib": strategy_config.get("use_talib", False)
-                }
-            }
-            
-            self.strategy = CustomStrategy
-            self.strategy_params = strategy_params
-            
-            _logger.info(f"Created strategy: {strategy_config.get('type', 'custom')}")
-            return True
-            
-        except Exception as e:
-            _logger.error(f"Error creating strategy: {e}")
-            return False
-    
     def _setup_backtrader(self):
         """Setup Backtrader engine."""
         try:
@@ -212,7 +206,7 @@ class LiveTradingBot:
             self.cerebro.adddata(self.data_feed)
             
             # Add strategy
-            self.cerebro.addstrategy(self.strategy, **self.strategy_params)
+            self.cerebro.addstrategy(self.strategy_class, **self.parameters)
             
             # Setup broker
             if self.broker:
@@ -236,24 +230,13 @@ class LiveTradingBot:
     def _load_open_positions(self):
         """Load open positions from database or state file."""
         try:
-            # TODO: Implement database loading of open positions
-            # For now, we'll start fresh
-            _logger.info("No open positions to load")
+            # Use BaseTradingBot's load_state method
+            self.load_state()
+            _logger.info(f"Loaded {len(self.active_positions)} open positions")
             return True
             
         except Exception as e:
             _logger.error(f"Error loading open positions: {e}")
-            return False
-    
-    def _save_open_positions(self):
-        """Save open positions to database or state file."""
-        try:
-            # TODO: Implement database saving of open positions
-            _logger.info("Open positions saved")
-            return True
-            
-        except Exception as e:
-            _logger.error(f"Error saving open positions: {e}")
             return False
     
     def _notify_new_bar(self, symbol: str, timestamp, data: Dict[str, Any]):
@@ -261,50 +244,10 @@ class LiveTradingBot:
         try:
             if self.telegram_notifier:
                 message = f"📊 New {symbol} bar: O={data['open']:.4f} H={data['high']:.4f} L={data['low']:.4f} C={data['close']:.4f}"
-                self.telegram_notifier.send_message(message)
+                # Use BaseTradingBot's notification method
+                self.log_message(message)
         except Exception as e:
             _logger.error(f"Error notifying new bar: {e}")
-    
-    def _notify_trade(self, trade_type: str, symbol: str, price: float, size: float, pnl: Optional[float] = None):
-        """Notify about trade execution."""
-        try:
-            message = f"💰 {trade_type} {symbol}: {size:.4f} @ {price:.4f}"
-            if pnl is not None:
-                message += f" (PnL: {pnl:.2f}%)"
-            
-            if self.telegram_notifier:
-                self.telegram_notifier.send_message(message)
-            
-            if self.email_notifier:
-                self.email_notifier.send_trade_notification(trade_type, symbol, price, size, pnl)
-                
-        except Exception as e:
-            _logger.error(f"Error notifying trade: {e}")
-    
-    def _notify_error(self, error: str):
-        """Notify about errors."""
-        try:
-            message = f"❌ Bot Error: {error}"
-            
-            if self.telegram_notifier:
-                self.telegram_notifier.send_message(message)
-            
-            if self.email_notifier:
-                self.email_notifier.send_error_notification(error)
-                
-        except Exception as e:
-            _logger.error(f"Error notifying error: {e}")
-    
-    def _notify_status(self, status: str):
-        """Notify about bot status changes."""
-        try:
-            message = f"🤖 Bot Status: {status}"
-            
-            if self.telegram_notifier:
-                self.telegram_notifier.send_message(message)
-                
-        except Exception as e:
-            _logger.error(f"Error notifying status: {e}")
     
     def _monitor_data_feed(self):
         """Monitor data feed health and reconnect if needed."""
@@ -332,10 +275,11 @@ class LiveTradingBot:
             if self._create_data_feed():
                 self._setup_backtrader()
                 _logger.info("Data feed reconnected successfully")
-                self._notify_status("Data feed reconnected")
+                # Use BaseTradingBot's notification method
+                self.notify_bot_event("data_feed_reconnected", "🔌")
             else:
                 _logger.error("Failed to reconnect data feed")
-                self._notify_error("Failed to reconnect data feed")
+                self.notify_error("Failed to reconnect data feed")
                 
         except Exception as e:
             _logger.error(f"Error reconnecting data feed: {e}")
@@ -344,7 +288,7 @@ class LiveTradingBot:
         """Run Backtrader engine."""
         try:
             _logger.info("Starting Backtrader engine...")
-            self._notify_status("Starting Backtrader engine")
+            self.notify_bot_event("backtrader_started", "🚀")
             
             # Run Backtrader
             results = self.cerebro.run()
@@ -354,30 +298,21 @@ class LiveTradingBot:
             
         except Exception as e:
             _logger.error(f"Error in Backtrader engine: {e}")
-            self._notify_error(f"Backtrader error: {str(e)}")
+            self.notify_error(f"Backtrader error: {str(e)}")
             return False
     
     def start(self):
         """Start the live trading bot."""
         try:
             _logger.info(f"Starting live trading bot: {self.config_file}")
-            self._notify_status("Starting live trading bot")
+            self.notify_bot_event("started", "🤖")
             
             # Initialize components
             if not self._create_data_feed():
                 raise RuntimeError("Failed to create data feed")
             
-            if not self._create_broker():
-                raise RuntimeError("Failed to create broker")
-            
-            if not self._create_strategy():
-                raise RuntimeError("Failed to create strategy")
-            
             if not self._setup_backtrader():
                 raise RuntimeError("Failed to setup Backtrader")
-            
-            if not self._load_open_positions():
-                raise RuntimeError("Failed to load open positions")
             
             # Start monitoring thread
             self.monitor_thread = threading.Thread(target=self._monitor_data_feed, daemon=True)
@@ -391,14 +326,14 @@ class LiveTradingBot:
             
         except Exception as e:
             _logger.error(f"Error starting bot: {e}")
-            self._notify_error(f"Failed to start bot: {str(e)}")
+            self.notify_error(f"Failed to start bot: {str(e)}")
             raise
     
     def stop(self):
         """Stop the live trading bot."""
         try:
             _logger.info("Stopping live trading bot...")
-            self._notify_status("Stopping live trading bot")
+            self.notify_bot_event("stopping", "🛑")
             
             self.should_stop = True
             self.is_running = False
@@ -407,11 +342,14 @@ class LiveTradingBot:
             if self.data_feed:
                 self.data_feed.stop()
             
-            # Save open positions
-            self._save_open_positions()
+            # Use BaseTradingBot's stop method
+            super().stop()
+            
+            # Save state using BaseTradingBot's method
+            self.save_state()
             
             _logger.info("Live trading bot stopped")
-            self._notify_status("Live trading bot stopped")
+            self.notify_bot_event("stopped", "🛑")
             
         except Exception as e:
             _logger.error(f"Error stopping bot: {e}")
@@ -419,11 +357,17 @@ class LiveTradingBot:
     def get_status(self) -> Dict[str, Any]:
         """Get current bot status."""
         try:
+            # Get base status from BaseTradingBot
             status = {
                 "config_file": self.config_file,
                 "is_running": self.is_running,
                 "should_stop": self.should_stop,
                 "error_count": self.error_count,
+                "trading_pair": self.trading_pair,
+                "current_balance": self.current_balance,
+                "total_pnl": self.total_pnl,
+                "active_positions": len(self.active_positions),
+                "trade_history_count": len(self.trade_history),
                 "data_feed_status": None,
                 "broker_status": None,
                 "strategy_status": None
@@ -438,11 +382,12 @@ class LiveTradingBot:
                     "cash": getattr(self.cerebro.broker, 'cash', 0) if self.cerebro else 0
                 }
             
-            if self.strategy:
+            if hasattr(self, 'parameters') and self.parameters:
+                strategy_config = self.parameters.get("strategy_config", {})
                 status["strategy_status"] = {
-                    "type": self.config["strategy"].get("type"),
-                    "entry_logic": self.config["strategy"]["entry_logic"]["name"],
-                    "exit_logic": self.config["strategy"]["exit_logic"]["name"]
+                    "type": "custom",
+                    "entry_logic": strategy_config.get("entry_logic", {}).get("name", "unknown"),
+                    "exit_logic": strategy_config.get("exit_logic", {}).get("name", "unknown")
                 }
             
             return status
@@ -455,7 +400,7 @@ class LiveTradingBot:
         """Restart the live trading bot."""
         try:
             _logger.info("Restarting live trading bot...")
-            self._notify_status("Restarting live trading bot")
+            self.notify_bot_event("restarting", "🔄")
             
             self.stop()
             time.sleep(5)  # Wait for cleanup
@@ -469,7 +414,24 @@ class LiveTradingBot:
             
         except Exception as e:
             _logger.error(f"Error restarting bot: {e}")
-            self._notify_error(f"Failed to restart bot: {str(e)}")
+            self.notify_error(f"Failed to restart bot: {str(e)}")
+    
+    def execute_trade(self, trade_type: str, price: float, size: float) -> None:
+        """
+        Override BaseTradingBot's execute_trade to integrate with Backtrader.
+        """
+        try:
+            # Use BaseTradingBot's trade execution logic
+            super().execute_trade(trade_type, price, size)
+            
+            # Additional live trading specific logic
+            if self.data_feed:
+                # Update data feed status if needed
+                pass
+                
+        except Exception as e:
+            _logger.error(f"Error executing trade: {e}")
+            self.notify_error(f"Trade execution error: {str(e)}")
 
 
 def main():

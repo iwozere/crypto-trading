@@ -7,6 +7,7 @@ It handles:
 2. Running optimizations for different entry/exit strategy combinations
 3. Saving results and plots
 4. Managing visualization settings
+5. Resume functionality to skip already processed combinations
 """
 
 import os
@@ -27,6 +28,60 @@ from src.optimizer.custom_optimizer import CustomOptimizer
 from src.plotter.base_plotter import BasePlotter
 
 _logger = setup_logger(__name__)
+
+
+def check_if_already_processed(data_file, entry_logic_name, exit_logic_name):
+    """
+    Check if this combination has already been processed.
+    
+    Args:
+        data_file: Name of the data file
+        entry_logic_name: Name of the entry logic mixin
+        exit_logic_name: Name of the exit logic mixin
+        
+    Returns:
+        bool: True if already processed, False otherwise
+    """
+    # Generate the base filename (without timestamp)
+    base_filename = get_result_filename(
+        data_file, 
+        entry_logic_name=entry_logic_name, 
+        exit_logic_name=exit_logic_name, 
+        suffix=""
+    )
+    
+    # Look for existing files in results directory
+    results_dir = "results"
+    if not os.path.exists(results_dir):
+        return False
+    
+    # Check if any file matches the pattern
+    for filename in os.listdir(results_dir):
+        if filename.startswith(base_filename) and filename.endswith('.json'):
+            # Found a matching file, check if it's valid
+            filepath = os.path.join(results_dir, filename)
+            try:
+                with open(filepath, 'r') as f:
+                    result_data = json.load(f)
+                
+                # Check if the file has complete results
+                if (result_data.get('trades') is not None and 
+                    result_data.get('analyzers') is not None and 
+                    result_data.get('best_params') is not None and
+                    len(result_data.get('trades', [])) > 0):
+                    
+                    _logger.info(f"✅ Skipping {data_file} + {entry_logic_name} + {exit_logic_name} - already processed")
+                    _logger.info(f"   Found existing file: {filename}")
+                    return True
+                else:
+                    _logger.warning(f"⚠️  Found existing file {filename} but it appears incomplete, will reprocess")
+                    return False
+                    
+            except Exception as e:
+                _logger.warning(f"⚠️  Found existing file {filename} but it appears corrupted: {e}")
+                continue
+    
+    return False
 
 
 def prepare_data(data_file):
@@ -265,8 +320,18 @@ if __name__ == "__main__":
     # Get the data files
     data_files = [f for f in os.listdir("data/") if f.endswith(".csv") and not f.startswith(".")]
 
+    # Count total combinations for progress tracking
+    total_combinations = len(data_files) * len(ENTRY_MIXIN_REGISTRY) * len(EXIT_MIXIN_REGISTRY)
+    processed_combinations = 0
+    skipped_combinations = 0
+
+    _logger.info(f"Found {len(data_files)} data files")
+    _logger.info(f"Found {len(ENTRY_MIXIN_REGISTRY)} entry mixins")
+    _logger.info(f"Found {len(EXIT_MIXIN_REGISTRY)} exit mixins")
+    _logger.info(f"Total combinations to process: {total_combinations}")
+
     for data_file in data_files:
-        _logger.info(f"Running optimization for {data_file}")
+        _logger.info(f"Processing data file: {data_file}")
 
         for entry_logic_name in ENTRY_MIXIN_REGISTRY.keys():
             # Load entry logic configuration
@@ -274,11 +339,19 @@ if __name__ == "__main__":
                 entry_logic_config = json.load(f)
 
             for exit_logic_name in EXIT_MIXIN_REGISTRY.keys():
+                processed_combinations += 1
+                
+                # Check if already processed
+                if check_if_already_processed(data_file, entry_logic_name, exit_logic_name):
+                    skipped_combinations += 1
+                    _logger.info(f"Progress: {processed_combinations}/{total_combinations} (Skipped: {skipped_combinations})")
+                    continue
+
                 # Load exit logic configuration
                 with open(os.path.join("config", "optimizer", "exit", f"{exit_logic_name}.json"), "r") as f:
                     exit_logic_config = json.load(f)
 
-                _logger.info(f"Running optimization for {entry_logic_name} and {exit_logic_name}")
+                _logger.info(f"🔄 Running optimization {processed_combinations}/{total_combinations}: {data_file} + {entry_logic_name} + {exit_logic_name}")
 
                 # Create optimizer configuration
                 try:
@@ -337,5 +410,19 @@ if __name__ == "__main__":
                     #    )
                     #    plot_path = os.path.join("results", f"{plot_name}.png")
                     #    save_plot(cerebro, plot_path, optimizer_config.get("visualization_settings", {}))
+                    
+                    _logger.info(f"✅ Completed optimization {processed_combinations}/{total_combinations}")
+                    
                 except Exception as e:
-                    _logger.error(f"Error for {entry_logic_name} + {exit_logic_name}: {e}", exc_info=e)
+                    _logger.error(f"❌ Error for {entry_logic_name} + {exit_logic_name}: {e}", exc_info=e)
+
+    end_time = dt.now()
+    duration = end_time - start_time
+    
+    _logger.info(f"🎉 Optimization completed at {end_time}")
+    _logger.info(f"⏱️  Total duration: {duration}")
+    _logger.info(f"📊 Summary:")
+    _logger.info(f"   - Total combinations: {total_combinations}")
+    _logger.info(f"   - Processed: {processed_combinations - skipped_combinations}")
+    _logger.info(f"   - Skipped (already processed): {skipped_combinations}")
+    _logger.info(f"   - Time saved by resume: {skipped_combinations * 5} minutes (estimated)")
