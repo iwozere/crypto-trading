@@ -117,7 +117,7 @@ For easier analysis and Excel import:
 
 ### a. Generate Summary CSV
 ```bash
-python src/data/process_results.py
+python src/optimizer/run_json2csv.py
 ```
 
 This will:
