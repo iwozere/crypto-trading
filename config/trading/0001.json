@@ -17,10 +17,11 @@
     },
     
     "data": {
-        "candle_interval": "1h",
-        "polling_interval": "1m",
-        "lookback_periods": 100,
-        "data_source": "binance"
+        "data_source": "binance",
+        "symbol": "BTCUSDT",
+        "interval": "1h",
+        "lookback_bars": 1000,
+        "retry_interval": 60
     },
     
     "strategy": {
@@ -46,14 +47,15 @@
                 "x_bb_dev": 2.0,
                 "x_use_bb_touch": true
             }
-        }
+        },
+        "position_size": 0.1
     },
     
     "notifications": {
         "enabled": true,
         "telegram": {
             "enabled": true,
-            "notify_on": ["trade_entry", "trade_exit", "error", "daily_summary"]
+            "notify_on": ["trade_entry", "trade_exit", "error", "daily_summary", "status"]
         },
         "email": {
             "enabled": false,

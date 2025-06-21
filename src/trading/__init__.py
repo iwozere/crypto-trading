@@ -2,6 +2,8 @@ from typing import Any, Dict
 
 from src.broker.broker_factory import get_broker
 from src.trading.bot_factory import get_bot
+from src.trading.live_trading_bot import LiveTradingBot
+from src.trading.config_validator import ConfigValidator, validate_config_file
 
 
 def create_trading_bot(
@@ -14,3 +16,11 @@ def create_trading_bot(
     broker = get_broker(config)
     bot = get_bot(config, strategy_class, parameters, broker)
     return bot
+
+
+__all__ = [
+    'create_trading_bot',
+    'LiveTradingBot',
+    'ConfigValidator',
+    'validate_config_file'
+]
