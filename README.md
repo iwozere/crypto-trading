@@ -327,4 +327,15 @@ def create_new_indicator(self, name: str, **params) -> Any:
     
     self.indicators[name] = indicator
     return indicator
-``` 
+```
+
+## Documentation
+
+- **User Guide**: `docs/USER_GUIDE.md` - Complete user guide for the platform
+- **API Documentation**: `docs/API.md` - API reference and examples
+- **Configuration Guide**: `docs/CONFIGURATION_GUIDE.md` - Configuration management system
+- **Error Handling**: `docs/ERROR_HANDLING_GUIDE.md` - Error handling and resilience system
+- **Database Documentation**: `docs/DATABASE.md` - Complete database schema and operations
+- **Database Quick Reference**: `docs/DATABASE_QUICK_REFERENCE.md` - Quick reference for database operations
+- **Developer Guide**: `docs/DEVELOPER_GUIDE.md` - Development guidelines and architecture
+- **Roadmap**: `docs/ROADMAP.md` - Project roadmap and future plans 
