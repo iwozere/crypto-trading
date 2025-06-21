@@ -24,11 +24,8 @@ Parameters:
 
 import os
 import sys
-from datetime import datetime
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
-import json
 
 import backtrader as bt
 from src.analyzer.bt_analyzers import (CAGR, CalmarRatio,
