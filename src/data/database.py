@@ -17,10 +17,9 @@ Features:
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
-    CheckConstraint, Column, DateTime, Index, Integer, String, Text, text, Numeric
+    CheckConstraint, Column, DateTime, Index, Integer, String, Numeric
 )
 from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.ext.declarative import declarative_base
