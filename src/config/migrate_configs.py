@@ -17,12 +17,11 @@ import json
 import yaml
 import shutil
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from datetime import datetime
 import logging
 
 from .config_manager import ConfigManager
-from .schemas import TradingConfig, OptimizerConfig, DataConfig
 
 
 class ConfigMigrator:

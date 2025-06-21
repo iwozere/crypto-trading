@@ -55,18 +55,18 @@ Successful trading strategies are evaluated using a set of key metrics that meas
 
 These metrics, when combined, provide a comprehensive view of a trading strategy’s effectiveness and robustness[4][1][5].
 
-[1] https://tradewiththepros.com/trading-performance-metrics/
-[2] https://blog.ultratrader.app/trading-metrics-every-trader-should-track-a-comprehensive-guide/
-[3] https://tradefundrr.com/trading-performance-tracking/
-[4] https://www.luxalgo.com/blog/top-5-metrics-for-evaluating-trading-strategies/
-[5] https://www.quantifiedstrategies.com/trading-performance/
-[6] https://www.linkedin.com/pulse/evaluating-trading-strategy-key-metrics-you-need-know-teak-finance-x4xfc
-[7] https://electronictradinghub.com/the-top-17-trading-metrics-and-why-you-should-care/
-[8] https://www.pineconnector.com/blogs/pico-blog/what-are-the-most-popular-metrics-for-trading-performance
-[9] https://gainium.io/academy/strategy-performance-metrics
-[10] https://gov.capital/12-essential-kpis-for-evaluating-quantitative-trading-strategies-master-your-model-performance/
-[11] https://justmarketsmy.com/trading-articles/learning/key-metrics-to-evaluate-trading
-[12] https://www.investopedia.com/articles/fundamental-analysis/09/five-must-have-metrics-value-investors.asp
-[13] https://edgewonk.com/blog/the-ultimate-guide-to-the-10-most-important-trading-metrics
-[14] https://www.reddit.com/r/quant/comments/1fe27in/what_metrics_do_you_use_to_testoptimize_and/
-[15] https://ninjatrader.com/futures/blogs/foundations-of-strategy-trading-and-development-part-2-performance-evaluation-techniques/
+[1] https://tradewiththepros.com/trading-performance-metrics/  
+[2] https://blog.ultratrader.app/trading-metrics-every-trader-should-track-a-comprehensive-guide/  
+[3] https://tradefundrr.com/trading-performance-tracking/  
+[4] https://www.luxalgo.com/blog/top-5-metrics-for-evaluating-trading-strategies/  
+[5] https://www.quantifiedstrategies.com/trading-performance/  
+[6] https://www.linkedin.com/pulse/evaluating-trading-strategy-key-metrics-you-need-know-teak-finance-x4xfc  
+[7] https://electronictradinghub.com/the-top-17-trading-metrics-and-why-you-should-care/  
+[8] https://www.pineconnector.com/blogs/pico-blog/what-are-the-most-popular-metrics-for-trading-performance  
+[9] https://gainium.io/academy/strategy-performance-metrics  
+[10] https://gov.capital/12-essential-kpis-for-evaluating-quantitative-trading-strategies-master-your-model-performance/  
+[11] https://justmarketsmy.com/trading-articles/learning/key-metrics-to-evaluate-trading  
+[12] https://www.investopedia.com/articles/fundamental-analysis/09/five-must-have-metrics-value-investors.asp  
+[13] https://edgewonk.com/blog/the-ultimate-guide-to-the-10-most-important-trading-metrics  
+[14] https://www.reddit.com/r/quant/comments/1fe27in/what_metrics_do_you_use_to_testoptimize_and/  
+[15] https://ninjatrader.com/futures/blogs/foundations-of-strategy-trading-and-development-part-2-performance-evaluation-techniques/  

@@ -8,7 +8,7 @@ documentation, and environment-specific defaults.
 
 from typing import Dict, List, Optional, Union, Any
 from enum import Enum
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from datetime import time
 import os
 
@@ -60,6 +60,11 @@ class NotificationType(str, Enum):
 class ConfigSchema(BaseModel):
     """Base configuration schema with common fields"""
     
+    model_config = ConfigDict(
+        use_enum_values=True,
+        validate_assignment=True
+    )
+    
     environment: Environment = Field(
         default=Environment.DEVELOPMENT,
         description="Environment (development/staging/production/testing)"
@@ -84,10 +89,6 @@ class ConfigSchema(BaseModel):
         default=None,
         description="Configuration last update timestamp"
     )
-    
-    class Config:
-        use_enum_values = True
-        validate_assignment = True
 
 
 class RiskManagementConfig(ConfigSchema):
@@ -144,12 +145,20 @@ class RiskManagementConfig(ConfigSchema):
         description="Trailing stop configuration"
     )
     
-    @validator('take_profit_pct')
-    def validate_take_profit(cls, v, values):
+    @field_validator('take_profit_pct')
+    @classmethod
+    def validate_take_profit(cls, v):
         """Ensure take profit is greater than stop loss"""
-        if 'stop_loss_pct' in values and v <= values['stop_loss_pct']:
-            raise ValueError("Take profit must be greater than stop loss")
+        if v <= 0:
+            raise ValueError("Take profit must be positive")
         return v
+    
+    @model_validator(mode='after')
+    def validate_risk_parameters(self):
+        """Validate risk management parameters"""
+        if self.take_profit_pct <= self.stop_loss_pct:
+            raise ValueError("Take profit must be greater than stop loss")
+        return self
 
 
 class LoggingConfig(ConfigSchema):
@@ -157,7 +166,7 @@ class LoggingConfig(ConfigSchema):
     
     level: str = Field(
         default="INFO",
-        regex="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$",
+        pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$",
         description="Logging level"
     )
     
@@ -190,7 +199,8 @@ class LoggingConfig(ConfigSchema):
         description="Number of backup log files"
     )
     
-    @validator('log_file')
+    @field_validator('log_file')
+    @classmethod
     def validate_log_file(cls, v):
         """Ensure log directory exists"""
         if v:
@@ -228,7 +238,8 @@ class SchedulingConfig(ConfigSchema):
         description="Trading days of the week"
     )
     
-    @validator('trading_days')
+    @field_validator('trading_days')
+    @classmethod
     def validate_trading_days(cls, v):
         """Validate trading days"""
         valid_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -341,7 +352,8 @@ class DataConfig(ConfigSchema):
         description="IBKR client ID"
     )
     
-    @validator('symbol')
+    @field_validator('symbol')
+    @classmethod
     def validate_symbol(cls, v):
         """Validate symbol format"""
         if not v or len(v.strip()) == 0:
@@ -373,16 +385,15 @@ class NotificationConfig(ConfigSchema):
         description="Email notification settings"
     )
     
-    @validator('telegram', 'email')
+    @field_validator('telegram', 'email')
+    @classmethod
     def validate_notification_settings(cls, v):
         """Validate notification settings"""
         if v.get('enabled', False):
-            notify_on = v.get('notify_on', [])
-            if not notify_on:
-                raise ValueError("At least one notification event must be specified")
-            for event in notify_on:
-                if event not in [e.value for e in NotificationType]:
-                    raise ValueError(f"Invalid notification event: {event}")
+            required_fields = ['bot_token', 'chat_id'] if 'bot_token' in v else ['smtp_server', 'email']
+            for field in required_fields:
+                if not v.get(field):
+                    raise ValueError(f"Missing required field for notification: {field}")
         return v
 
 
@@ -512,50 +523,46 @@ class TradingConfig(ConfigSchema):
         description="Notification settings"
     )
     
-    @validator('bot_id')
+    @field_validator('bot_id')
+    @classmethod
     def validate_bot_id(cls, v):
         """Validate bot ID format"""
         if not v or len(v.strip()) == 0:
             raise ValueError("Bot ID cannot be empty")
-        # Allow alphanumeric, hyphens, and underscores
-        if not v.replace('-', '').replace('_', '').isalnum():
-            raise ValueError("Bot ID can only contain alphanumeric characters, hyphens, and underscores")
         return v.strip()
     
-    @root_validator
-    def validate_broker_config(cls, values):
+    @model_validator(mode='after')
+    def validate_broker_config(self):
         """Validate broker configuration"""
-        broker = values.get('broker', {})
-        broker_type = broker.get('type')
+        broker_config = self.broker
+        if not broker_config:
+            raise ValueError("Broker configuration is required")
         
+        broker_type = broker_config.get('type')
         if not broker_type:
             raise ValueError("Broker type is required")
         
-        if broker_type not in [bt.value for bt in BrokerType]:
-            raise ValueError(f"Invalid broker type: {broker_type}")
+        # Validate broker-specific requirements
+        if broker_type in [BrokerType.BINANCE_LIVE, BrokerType.BINANCE_PAPER]:
+            if not broker_config.get('api_key') and broker_type == BrokerType.BINANCE_LIVE:
+                raise ValueError("API key required for live Binance trading")
         
-        # Validate broker-specific fields
-        if broker_type == BrokerType.BINANCE_LIVE:
-            if not broker.get('api_key') or not broker.get('api_secret'):
-                raise ValueError("API key and secret required for live Binance trading")
-        
-        return values
+        return self
     
-    @root_validator
-    def validate_strategy_config(cls, values):
+    @model_validator(mode='after')
+    def validate_strategy_config(self):
         """Validate strategy configuration"""
-        strategy = values.get('strategy', {})
-        strategy_type = strategy.get('type')
+        strategy_config = self.strategy
+        if not strategy_config:
+            raise ValueError("Strategy configuration is required")
         
+        strategy_type = strategy_config.get('type')
         if not strategy_type:
             raise ValueError("Strategy type is required")
         
-        if strategy_type not in [st.value for st in StrategyType]:
-            raise ValueError(f"Invalid strategy type: {strategy_type}")
-        
-        # Validate entry/exit logic for custom strategies
+        # Validate strategy-specific requirements
         if strategy_type == StrategyType.CUSTOM:
-            if not strategy.get('entry_logic') or not strategy.get('exit_logic'):
-                raise ValueError("Entry and exit logic required for custom strategies")
+            if not strategy_config.get('entry_logic') or not strategy_config.get('exit_logic'):
+                raise ValueError("Custom strategy requires entry and exit logic")
         
-        return values 
+        return self 

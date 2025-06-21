@@ -13,7 +13,7 @@ Main configuration manager that handles:
 import os
 import json
 import yaml
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any
 from pathlib import Path
 from datetime import datetime
 import logging
@@ -25,7 +25,6 @@ from .schemas import (
     TradingConfig,
     OptimizerConfig,
     DataConfig,
-    Environment
 )
 from .registry import ConfigRegistry
 from .templates import ConfigTemplates
